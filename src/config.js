@@ -27,6 +27,8 @@ export const PADRAO = {
   estilo: { font: 'Bricolage Grotesque', primary: '#FFE600', base: '#FFFFFF', outline: '#000000' },
   corBarra: '0xFFE600',
   semIa: false,
+  portaPainel: 4321,
+  senhaPainel: '', // set one so nobody else on the Wi-Fi opens the panel; open once with /?senha=...
   // file name words that tell the Source Record files apart
   nomesCamera: ['camera', 'câmera', 'gopro', 'cam', 'webcam'],
   nomesJogo: ['jogo', 'game', 'placa', 'ps5', 'captura'],

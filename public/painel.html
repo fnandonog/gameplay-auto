@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cortes</title>
+<style>
+  :root { --bg: #0e0f13; --card: #181a21; --line: #2a2d38; --text: #f2f3f5; --muted: #9aa0ad; --hi: #ffe600; --ok: #2ecc71; --no: #ff5c5c; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); padding: 12px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  h1 { font-size: 18px; margin: 0 auto 0 0; }
+  .filtro button { background: var(--card); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font: inherit; }
+  .filtro button.on { color: var(--bg); background: var(--hi); border-color: var(--hi); }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  h2 { font-size: 14px; color: var(--muted); font-weight: 600; margin: 24px 0 10px; }
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  video { width: 100%; aspect-ratio: 9/16; max-height: 70vh; object-fit: contain; background: #000; display: block; }
+  .corpo { padding: 10px 12px 12px; display: grid; gap: 8px; }
+  .meta { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 8px; }
+  .nota { color: var(--hi); font-weight: 700; }
+  input, textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: inherit; }
+  textarea { min-height: 64px; resize: vertical; }
+  .acoes { display: flex; gap: 8px; }
+  .acoes button { flex: 1; border: 0; border-radius: 8px; padding: 10px; font: inherit; font-weight: 600; }
+  .aprovar { background: var(--ok); color: #04210f; }
+  .descartar { background: transparent; color: var(--no); border: 1px solid var(--no) !important; }
+  .status { font-size: 12px; font-weight: 700; text-transform: uppercase; }
+  .status.aprovado { color: var(--ok); } .status.descartado { color: var(--no); } .status.postado { color: var(--hi); }
+  .vazio { color: var(--muted); text-align: center; padding: 48px 16px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cortes</h1>
+  <div class="filtro" id="filtro">
+    <button data-f="aguardando" class="on">Aguardando</button>
+    <button data-f="aprovado">Aprovados</button>
+    <button data-f="todos">Todos</button>
+  </div>
+</header>
+<main id="lista"><p class="vazio">Carregando...</p></main>
+<script>
+let filtro = 'aguardando', sessoes = [];
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${encodeURIComponent(a)}`;
+
+async function carregar() {
+  try { sessoes = await (await fetch('/api/sessoes')).json(); } catch { sessoes = []; }
+  desenhar();
+}
+
+function desenhar() {
+  const html = sessoes.map((s) => {
+    const cortes = s.cortes.filter((c) => filtro === 'todos' || c.status === filtro);
+    if (!cortes.length) return '';
+    return `<h2>${esc(s.sessao)} · ${cortes.length} corte(s)</h2><div class="grade">${cortes.map((c) => `
+      <article class="card" data-pasta="${esc(s.pasta)}" data-arquivo="${esc(c.arquivo)}">
+        <video src="${midia(s.pasta, c.arquivo)}" ${c.capa ? `poster="${midia(s.pasta, c.capa)}"` : ''} controls playsinline preload="none"></video>
+        <div class="corpo">
+          <div class="meta"><span class="nota">nota ${Number(c.nota).toFixed(1)}</span><span>${Math.round(c.fim - c.inicio)} s · ${esc(c.motivo)}</span></div>
+          <span class="status ${esc(c.status)}">${esc(c.status)}</span>
+          <input class="titulo" value="${esc(c.titulo)}" aria-label="Título">
+          <textarea class="descricao" aria-label="Descrição">${esc(c.descricao)}</textarea>
+          <input class="hashtags" value="${esc((c.hashtags || []).map((h) => '#' + h).join(' '))}" aria-label="Hashtags">
+          <div class="acoes"><button class="descartar">Descartar</button><button class="aprovar">Aprovar</button></div>
+        </div>
+      </article>`).join('')}</div>`;
+  }).join('');
+  $('#lista').innerHTML = html || '<p class="vazio">Nenhum corte aqui. Grave uma sessão no OBS e ele aparece sozinho.</p>';
+}
+
+async function salvar(card, status) {
+  const body = {
+    pasta: card.dataset.pasta, arquivo: card.dataset.arquivo, status,
+    titulo: $('.titulo', card).value, descricao: $('.descricao', card).value,
+    hashtags: $('.hashtags', card).value.split(/[\s,]+/).filter(Boolean),
+  };
+  const r = await fetch('/api/corte', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const c = await r.json();
+  if (!r.ok) return alert(c.erro || 'Não salvou.');
+  const s = sessoes.find((x) => x.pasta === body.pasta);
+  Object.assign(s.cortes.find((x) => x.arquivo === body.arquivo), c);
+  desenhar();
+}
+
+document.addEventListener('click', (e) => {
+  const card = e.target.closest('.card');
+  if (card && e.target.matches('.aprovar')) salvar(card, 'aprovado');
+  if (card && e.target.matches('.descartar')) salvar(card, 'descartado');
+  const f = e.target.closest('#filtro button');
+  if (f) { filtro = f.dataset.f; document.querySelectorAll('#filtro button').forEach((b) => b.classList.toggle('on', b === f)); desenhar(); }
+});
+carregar();
+setInterval(() => { if (!document.querySelector('input:focus, textarea:focus, video:not([paused])')) carregar(); }, 60000);
+</script>
+</body>
+</html>
