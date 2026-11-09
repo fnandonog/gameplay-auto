@@ -1,0 +1,16 @@
+{
+  "name": "gameplay-auto",
+  "private": true,
+  "type": "module",
+  "description": "Grava a gameplay, acha os melhores momentos e monta cortes verticais e o vídeo do YouTube sozinho.",
+  "bin": { "gameplay": "bin/gameplay.mjs" },
+  "scripts": {
+    "test": "node --test 'test/*.test.js'",
+    "processar": "node bin/gameplay.mjs processar",
+    "observar": "node bin/gameplay.mjs observar"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.2.0"
+  }
+}

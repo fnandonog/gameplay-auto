@@ -1,0 +1,8 @@
+{
+  "jogo": "EA FC 26",
+  "canal": "",
+  "cortesPorSessao": 6,
+  "camPct": 0.4,
+  "regiaoCamera": null,
+  "estilo": { "primary": "#FFE600", "base": "#FFFFFF", "outline": "#000000" }
+}
