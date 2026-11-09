@@ -47,8 +47,23 @@ O Claude lê a transcrição de cada candidato, acerta início e fim, dá nota, 
 
 Testes: `npm test`.
 
+## Aprovar no celular
+
+`npm run observar` também abre o painel. No celular, no mesmo Wi-Fi, abra o endereço que aparece no terminal
+(ex.: `http://192.168.0.10:4321`). Cada corte tem o vídeo, título, descrição e hashtags editáveis e os botões
+Aprovar e Descartar. Para ninguém mais da rede abrir, ponha `"senhaPainel": "..."` no `config.json` e abra uma vez com `/?senha=...`.
+
+## Postar
+
+Os cortes aprovados vão para o próximo horário de pico (12:00, 18:30 e 21:00 de Brasília) no TikTok, Reels e YouTube
+Shorts de uma vez, pelo [Upload-Post](https://upload-post.com) (plano Basic, US$ 16/mês; o TikTok exige um app auditado e esse já é).
+
+1. Crie a conta no Upload-Post, em **Manage Users** crie um perfil e conecte TikTok, Instagram (conta profissional) e YouTube.
+2. No `config.json`: `"uploadPost": { "perfil": "nome-do-perfil" }`.
+3. No terminal antes de rodar: `export UPLOAD_POST_API_KEY=...` (ou no `~/.zshrc`).
+
+Com `"postarAutomatico": true`, os cortes com nota 8 ou mais são postados sem esperar aprovação.
+
 ## Próximos passos
 
-- Painel de aprovação no celular (aprovar, refazer, descartar)
-- Postagem: YouTube e Shorts (API oficial), TikTok (Upload-Post), Instagram Reels (API do Instagram)
 - Vídeo longo do YouTube: sessão editada sem tempo morto, capítulos e thumbnail

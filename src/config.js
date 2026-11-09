@@ -27,6 +27,10 @@ export const PADRAO = {
   estilo: { font: 'Bricolage Grotesque', primary: '#FFE600', base: '#FFFFFF', outline: '#000000' },
   corBarra: '0xFFE600',
   semIa: false,
+  // posting (src/postagem.js): UPLOAD_POST_API_KEY in the environment + the profile name here
+  uploadPost: { perfil: '', redes: ['tiktok', 'instagram', 'youtube'], horarios: ['12:00', '18:30', '21:00'] },
+  postarAutomatico: false, // true: cuts with nota >= notaMinima are posted without approval
+  notaMinima: 8,
   portaPainel: 4321,
   senhaPainel: '', // set one so nobody else on the Wi-Fi opens the panel; open once with /?senha=...
   // file name words that tell the Source Record files apart
@@ -37,5 +41,5 @@ export const PADRAO = {
 export function carregarConfig(file = process.env.GAMEPLAY_CONFIG || path.join(ROOT, 'config.json')) {
   let user = {};
   if (fs.existsSync(file)) user = JSON.parse(fs.readFileSync(file, 'utf8'));
-  return { ...PADRAO, ...user, whisper: { ...PADRAO.whisper, ...(user.whisper || {}) }, estilo: { ...PADRAO.estilo, ...(user.estilo || {}) } };
+  return { ...PADRAO, ...user, whisper: { ...PADRAO.whisper, ...(user.whisper || {}) }, estilo: { ...PADRAO.estilo, ...(user.estilo || {}) }, uploadPost: { ...PADRAO.uploadPost, ...(user.uploadPost || {}) } };
 }

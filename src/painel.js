@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGINA = path.join(ROOT, 'public', 'painel.html');
 const MIME = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg' }; // only the cuts and their covers are served
-export const STATUS = ['aguardando', 'aprovado', 'descartado', 'postado'];
+export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'postado'];
 
 // a name that came from the URL must be a plain file/folder name inside the output folder
 export const nomeSeguro = (s) => typeof s === 'string' && s.length > 0 && s === path.basename(s) && !s.startsWith('.');
