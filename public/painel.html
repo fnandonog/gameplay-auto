@@ -16,6 +16,7 @@
   h2 { font-size: 14px; color: var(--muted); font-weight: 600; margin: 24px 0 10px; }
   .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .longo video { aspect-ratio: 16/9; }
   video { width: 100%; aspect-ratio: 9/16; max-height: 70vh; object-fit: contain; background: #000; display: block; }
   .corpo { padding: 10px 12px 12px; display: grid; gap: 8px; }
   .meta { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 8px; }
@@ -55,17 +56,18 @@ async function carregar() {
 
 function desenhar() {
   const html = sessoes.map((s) => {
-    const cortes = s.cortes.filter((c) => filtro === 'todos' || c.status === filtro);
+    const cortes = [...(s.longo ? [{ ...s.longo, capa: s.longo.thumb, inicio: 0, fim: s.longo.duracao, nota: 10, motivo: 'vídeo completo do YouTube', longo: true }] : []), ...s.cortes]
+      .filter((c) => filtro === 'todos' || c.status === filtro);
     if (!cortes.length) return '';
     return `<h2>${esc(s.sessao)} · ${cortes.length} corte(s)</h2><div class="grade">${cortes.map((c) => `
-      <article class="card" data-pasta="${esc(s.pasta)}" data-arquivo="${esc(c.arquivo)}">
+      <article class="card${c.longo ? ' longo' : ''}" data-pasta="${esc(s.pasta)}" data-arquivo="${esc(c.arquivo)}">
         <video src="${midia(s.pasta, c.arquivo)}" ${c.capa ? `poster="${midia(s.pasta, c.capa)}"` : ''} controls playsinline preload="none"></video>
         <div class="corpo">
-          <div class="meta"><span class="nota">nota ${Number(c.nota).toFixed(1)}</span><span>${Math.round(c.fim - c.inicio)} s · ${esc(c.motivo)}</span></div>
+          <div class="meta"><span class="nota">${c.longo ? 'YouTube' : 'nota ' + Number(c.nota).toFixed(1)}</span><span>${c.longo ? Math.round(c.duracao / 60) + ' min' : Math.round(c.fim - c.inicio) + ' s'} · ${esc(c.motivo)}</span></div>
           <span class="status ${esc(c.status)}">${esc(c.status)}${c.agendadoPara ? ' · ' + new Date(c.agendadoPara).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}${c.erroPost ? ' · erro: ' + esc(c.erroPost) : ''}</span>
           <input class="titulo" value="${esc(c.titulo)}" aria-label="Título">
           <textarea class="descricao" aria-label="Descrição">${esc(c.descricao)}</textarea>
-          <input class="hashtags" value="${esc((c.hashtags || []).map((h) => '#' + h).join(' '))}" aria-label="Hashtags">
+          ${c.longo ? '' : `<input class="hashtags" value`="${esc((c.hashtags || []).map((h) => '#' + h).join(' '))}" aria-label="Hashtags">`}
           <div class="acoes"><button class="descartar">Descartar</button><button class="aprovar">Aprovar</button></div>
         </div>
       </article>`).join('')}</div>`;
@@ -77,13 +79,13 @@ async function salvar(card, status) {
   const body = {
     pasta: card.dataset.pasta, arquivo: card.dataset.arquivo, status,
     titulo: $('.titulo', card).value, descricao: $('.descricao', card).value,
-    hashtags: $('.hashtags', card).value.split(/[\s,]+/).filter(Boolean),
+    hashtags: $('.hashtags', card) ? $('.hashtags', card).value.split(/[\s,]+/).filter(Boolean) : undefined,
   };
   const r = await fetch('/api/corte', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const c = await r.json();
   if (!r.ok) return alert(c.erro || 'Não salvou.');
   const s = sessoes.find((x) => x.pasta === body.pasta);
-  Object.assign(s.cortes.find((x) => x.arquivo === body.arquivo), c);
+  Object.assign(s.cortes.find((x) => x.arquivo === body.arquivo) || s.longo, c);
   desenhar();
 }
 

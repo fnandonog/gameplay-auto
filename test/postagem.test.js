@@ -59,3 +59,16 @@ test('agenda os aprovados, o melhor primeiro, e grava no sessao.json', async () 
 test('sem chave do Upload-Post não faz nada', async () => {
   assert.equal(await postarAprovados({ pastaSaida: '/nao/existe', uploadPost: { perfil: 'x' } }), 0);
 });
+
+test('vídeo longo aprovado vai só para o YouTube às 19:00', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'post-'));
+  fs.mkdirSync(path.join(dir, 's1'));
+  fs.writeFileSync(path.join(dir, 's1', 'sessao.json'), JSON.stringify({ sessao: 's1', cortes: [], longo: { arquivo: 'youtube-completo.mp4', thumb: 'youtube-thumb.jpg', titulo: 'Partida', descricao: 'Capítulos', status: 'aprovado' } }));
+  process.env.UPLOAD_POST_API_KEY = 'x';
+  let campos;
+  await postarAprovados({ pastaSaida: dir, uploadPost: { perfil: 'canal' } }, { log: () => {}, agora: Date.parse('2026-11-09T12:00:00Z'), envio: async (e) => { campos = e.campos; return 'j'; } });
+  delete process.env.UPLOAD_POST_API_KEY;
+  assert.deepEqual(campos.filter(([k]) => k === 'platform[]').map(([, v]) => v), ['youtube']);
+  assert.equal(campos.find(([k]) => k === 'scheduled_date')[1], '2026-11-09T22:00:00Z');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 's1', 'sessao.json'), 'utf8')).longo.status, 'agendado');
+});

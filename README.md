@@ -44,6 +44,9 @@ O Claude lê a transcrição de cada candidato, acerta início e fim, dá nota, 
 | `src/momentos.js` | candidatos: comando de voz, marcadores, volume, falas |
 | `src/ia.js` | Claude decide os cortes e escreve os textos |
 | `src/corte.js` + `src/legenda.js` | render vertical com ffmpeg e legenda ASS (adaptado do projeto afiliado) |
+| `src/longo.js` | vídeo completo do YouTube, capítulos e thumbnail |
+| `src/painel.js` + `public/painel.html` | painel de aprovação |
+| `src/postagem.js` | agenda nas redes pelo Upload-Post |
 
 Testes: `npm test`.
 
@@ -64,6 +67,9 @@ Shorts de uma vez, pelo [Upload-Post](https://upload-post.com) (plano Basic, US$
 
 Com `"postarAutomatico": true`, os cortes com nota 8 ou mais são postados sem esperar aprovação.
 
-## Próximos passos
+## Vídeo completo do YouTube
 
-- Vídeo longo do YouTube: sessão editada sem tempo morto, capítulos e thumbnail
+Cada sessão também vira `youtube-completo.mp4`: abre com os 10 s do melhor momento, trechos longos sem fala
+(mais de 20 s, ajuste em `silencioMax`) encolhem para 4 s, os momentos ficam inteiros, os capítulos vão para a descrição
+e a thumbnail sai do melhor quadro com o gancho em letras grandes. Ele aparece no painel; aprovado, vai só para o
+YouTube às 19:00.

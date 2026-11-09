@@ -28,11 +28,11 @@ export function editarCorte(pastaSaida, { pasta, arquivo, ...mud }) {
   if (!nomeSeguro(pasta) || !nomeSeguro(arquivo)) throw new Error('Corte inválido.');
   const file = path.join(pastaSaida, pasta, 'sessao.json');
   const s = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const c = s.cortes.find((x) => x.arquivo === arquivo);
+  const c = s.cortes.find((x) => x.arquivo === arquivo) || (s.longo?.arquivo === arquivo ? s.longo : null);
   if (!c) throw new Error('Corte não encontrado.');
   if (mud.status !== undefined) { if (!STATUS.includes(mud.status)) throw new Error('Status inválido.'); c.status = mud.status; }
   if (typeof mud.titulo === 'string') c.titulo = mud.titulo.slice(0, 100);
-  if (typeof mud.descricao === 'string') c.descricao = mud.descricao.slice(0, 2000);
+  if (typeof mud.descricao === 'string') c.descricao = mud.descricao.slice(0, 5000);
   if (Array.isArray(mud.hashtags)) c.hashtags = mud.hashtags.map((h) => String(h).replace(/^#/, '').trim()).filter(Boolean).slice(0, 10);
   c.atualizadoEm = new Date().toISOString();
   fs.writeFileSync(file, JSON.stringify(s, null, 2));

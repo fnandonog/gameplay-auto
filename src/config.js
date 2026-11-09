@@ -28,7 +28,9 @@ export const PADRAO = {
   corBarra: '0xFFE600',
   semIa: false,
   // posting (src/postagem.js): UPLOAD_POST_API_KEY in the environment + the profile name here
-  uploadPost: { perfil: '', redes: ['tiktok', 'instagram', 'youtube'], horarios: ['12:00', '18:30', '21:00'] },
+  uploadPost: { perfil: '', redes: ['tiktok', 'instagram', 'youtube'], horarios: ['12:00', '18:30', '21:00'], horariosLongo: ['19:00'] },
+  videoLongo: true, // also build the full YouTube video of each session
+  silencioMax: 20, // in the long video, a stretch without speech longer than this shrinks to 4 s
   postarAutomatico: false, // true: cuts with nota >= notaMinima are posted without approval
   notaMinima: 8,
   portaPainel: 4321,

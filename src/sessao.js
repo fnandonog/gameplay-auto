@@ -8,6 +8,7 @@ import { run } from './run.js';
 import { candidatos, escolher, capitulosDe, volumePorSegundo } from './momentos.js';
 import { decidirCortes } from './ia.js';
 import { renderCorte, capa } from './corte.js';
+import { renderLongo } from './longo.js';
 
 const VIDEO = /\.(mp4|mkv|mov)$/i;
 const tem = (nome, lista) => lista.some((p) => nome.toLowerCase().includes(p));
@@ -84,7 +85,13 @@ export async function processarSessao(principal, config, { log = console.log } =
     cortes.push({ arquivo: path.basename(out), capa: jpg && path.basename(jpg), inicio: +c.start.toFixed(2), fim: +c.end.toFixed(2), nota: c.nota, motivo: c.motivo, gancho: c.gancho, titulo: c.titulo, descricao: c.descricao, hashtags: c.hashtags, status: 'aguardando' });
   }
 
-  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, criadoEm: new Date().toISOString(), cortes };
+  // 5. the full YouTube video
+  let longo = null;
+  if (config.videoLongo !== false && duracao >= 120) {
+    try { longo = await renderLongo({ cena: arq.cena, words, duracao, momentos: decididos, pasta, config, log }); } catch (e) { log(`Vídeo longo falhou: ${e.message}`); }
+  }
+
+  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, criadoEm: new Date().toISOString(), cortes, longo };
   fs.writeFileSync(path.join(pasta, 'sessao.json'), JSON.stringify(manifesto, null, 2));
   log(`Pronto: ${cortes.length} cortes em ${pasta}`);
   return { pasta, manifesto };

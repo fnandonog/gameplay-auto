@@ -35,6 +35,15 @@ export function camposPost(c, { perfil, redes, quando }) {
   return f;
 }
 
+// the long video goes only to YouTube, with its thumbnail and chapters in the description
+export function camposLongo(L, { perfil, quando }) {
+  const f = [['user', perfil], ['platform[]', 'youtube'], ['title', String(L.titulo).slice(0, 100)], ['youtube_title', String(L.titulo).slice(0, 100)],
+    ['youtube_description', String(L.descricao || '').slice(0, 4900)], ['privacyStatus', 'public'], ['categoryId', '20']];
+  if (quando) f.push(['scheduled_date', quando]);
+  f.push(['async_upload', 'true']);
+  return f;
+}
+
 // Next free peak slot after `agora` (ms). horarios: ['12:00','18:00'] in Brasília time (UTC-3, no daylight saving).
 // ocupados: ISO strings already taken. Returns an ISO string in UTC.
 export function proximoHorario(agora, horarios, ocupados = [], { fusoHoras = -3, margemMin = 20 } = {}) {
@@ -59,10 +68,11 @@ export function autoAprovar(cortes, notaMinima) {
   return n;
 }
 
-async function enviar({ video, campos, apiKey, chave }) {
+async function enviar({ video, thumb, campos, apiKey, chave }) {
   const form = new FormData();
   for (const [k, v] of campos) form.append(k, v);
   form.set('video', new Blob([fs.readFileSync(video)], { type: 'video/mp4' }), path.basename(video));
+  if (thumb && fs.existsSync(thumb)) form.set('thumbnail', new Blob([fs.readFileSync(thumb)], { type: 'image/jpeg' }), path.basename(thumb));
   const r = await fetch(API, { method: 'POST', headers: { authorization: `Apikey ${apiKey}`, 'idempotency-key': chave }, body: form, signal: AbortSignal.timeout(10 * 60000) });
   const body = await r.json().catch(() => ({}));
   if (!r.ok || body.success === false) throw new Error(`Upload-Post ${r.status}: ${body.message || body.error || 'recusou o post'}`);
@@ -94,6 +104,16 @@ export async function postarAprovados(config, { log = console.log, agora = Date.
         c.erroPost = e.message;
         log(`Não agendou "${c.titulo}": ${e.message}`);
       }
+      mudou = true;
+    }
+    const L = dados.longo;
+    if (L && L.status === 'aprovado') {
+      const quando = proximoHorario(agora, up.horariosLongo || ['19:00'], ocupados);
+      try {
+        L.postId = await envio({ video: path.join(config.pastaSaida, pasta, L.arquivo), thumb: L.thumb && path.join(config.pastaSaida, pasta, L.thumb), campos: camposLongo(L, { perfil: up.perfil, quando }), apiKey, chave: `${pasta}/${L.arquivo}` });
+        L.status = 'agendado'; L.agendadoPara = quando; delete L.erroPost; ocupados.push(quando); n++;
+        log(`Vídeo longo agendado para ${quando}: ${L.titulo}`);
+      } catch (e) { L.erroPost = e.message; log(`Não agendou o vídeo longo: ${e.message}`); }
       mudou = true;
     }
     if (mudou) fs.writeFileSync(file, JSON.stringify(dados, null, 2));
