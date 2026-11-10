@@ -9,5 +9,6 @@ Plano e decisões: https://claude.ai/artifact/AB8V9mzKECfrBrhWFWhRwN. Setup do O
 - Postagem nas redes começa "com aprovação"; modo automático só quando o dono ligar.
 - Documentação e textos em português (pt-BR); código, identificadores e commits em inglês.
 - Marca: FNANDO (amarelo #FFE600) e CLIPAÍ (ciano #00E0FF), decididas em 2026-11-10. Arte gerada por `tools/marca/gerar.py`.
-- Cada corte vai para uma linha de contas só (`src/canais.js`). Cortes de terceiros (CLIPAÍ) só de quem autorizou por escrito, com crédito, e nunca no modo automático.
+- Cada corte vai para uma linha de contas só (`src/canais.js`). Cortes de terceiros (CLIPAÍ) só de quem autorizou por escrito e com crédito; no piloto automático só passam com `terceiros.automatico` e a permissão registrada.
+- Piloto automático (`postarAutomatico`): o filtro de `src/qualidade.js` substitui a aprovação, e erro grave da plataforma pausa toda a postagem (`.pausa.json`) até o dono retomar.
 - Toda etapa nova do pipeline chama `registrar()` (`src/atividade.js`) para aparecer no escritório.

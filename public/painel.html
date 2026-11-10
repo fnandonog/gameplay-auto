@@ -43,6 +43,7 @@
     <button data-f="todos">Todos</button>
   </div>
 </header>
+<p id="pausa" hidden style="margin:0;padding:10px 16px;background:var(--no);color:#fff;font-weight:600">Postagem pausada: <span></span> <button style="margin-left:8px">Retomar</button></p>
 <main id="lista"><p class="vazio">Carregando...</p></main>
 <script>
 let filtro = 'aguardando', sessoes = [], linhas = [];
@@ -66,7 +67,7 @@ function desenhar() {
         <video src="${midia(s.pasta, c.arquivo)}" ${c.capa ? `poster="${midia(s.pasta, c.capa)}"` : ''} controls playsinline preload="none"></video>
         <div class="corpo">
           <div class="meta"><span class="nota">${c.longo ? 'YouTube' : 'nota ' + Number(c.nota).toFixed(1)}</span><span>${c.longo ? Math.round(c.duracao / 60) + ' min' : Math.round(c.fim - c.inicio) + ' s'} · ${esc(c.motivo)}</span></div>
-          <span class="status ${esc(c.status)}">${esc(c.status)}${c.agendadoPara ? ' · ' + new Date(c.agendadoPara).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}${c.erroPost ? ' · erro: ' + esc(c.erroPost) : ''}</span>
+          <span class="status ${esc(c.status)}">${esc(c.status)}${c.agendadoPara ? ' · ' + new Date(c.agendadoPara).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}${c.erroPost ? ' · erro: ' + esc(c.erroPost) : ''}${c.filtro ? ' · filtro: ' + esc(c.filtro.join('; ')) : ''}</span>
           <input class="titulo" value="${esc(c.titulo)}" aria-label="Título">
           <textarea class="descricao" aria-label="Descrição">${esc(c.descricao)}</textarea>
           ${c.longo ? '' : `<input class="hashtags" value="${esc((c.hashtags || []).map((h) => '#' + h).join(' '))}" aria-label="Hashtags">`}
@@ -100,7 +101,13 @@ document.addEventListener('click', (e) => {
   const f = e.target.closest('#filtro button');
   if (f) { filtro = f.dataset.f; document.querySelectorAll('#filtro button').forEach((b) => b.classList.toggle('on', b === f)); desenhar(); }
 });
+async function verPausa() {
+  try { const { pausa } = await (await fetch('/api/pausa')).json(); $('#pausa').hidden = !pausa; if (pausa) $('#pausa span').textContent = pausa.motivo; } catch {}
+}
+$('#pausa button').onclick = async () => { await fetch('/api/retomar', { method: 'POST' }); verPausa(); };
+verPausa();
 carregar();
+setInterval(verPausa, 60000);
 setInterval(() => { if (!document.querySelector('input:focus, textarea:focus, video:not([paused])')) carregar(); }, 60000);
 </script>
 </body>

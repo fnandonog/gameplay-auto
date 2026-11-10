@@ -65,14 +65,18 @@ Shorts de uma vez, pelo [Upload-Post](https://upload-post.com) (plano Basic, US$
 2. No `config.json`: `"uploadPost": { "perfil": "nome-do-perfil" }`.
 3. No terminal antes de rodar: `export UPLOAD_POST_API_KEY=...` (ou no `~/.zshrc`).
 
-Com `"postarAutomatico": true`, os cortes com nota 8 ou mais são postados sem esperar aprovação.
+Com `"postarAutomatico": true` (piloto automático) ninguém aprova: cada corte passa pelo filtro (`"filtro"`: nota mínima 8,5,
+duração de 12 a 75 s, título e gancho; terceiros só com permissão registrada e `terceiros.automatico`). O que passa é
+agendado, o que não passa é descartado com o motivo escrito no corte. Se uma plataforma recusar um post (403, conta
+suspensa, direitos autorais) ou houver 3 erros seguidos, toda a postagem pausa até você tocar em **Retomar** no painel.
+O volume por dia de cada linha é o número de horários dela.
 
 ## Várias contas (linhas)
 
 Com `"linhas"` no `config.json` (modelo em `config.example.json`), cada linha é um perfil do Upload-Post com suas redes e
 horários: FNANDO, FNANDO Shorts, FNANDO Resenha, FNANDO Dicas e CLIPAÍ. Cada corte vai para **uma** linha só: o melhor
 para a principal e os seguintes em rodízio entre as linhas automáticas. No painel dá para trocar a linha antes de aprovar.
-Dicas e CLIPAÍ não recebem cortes da live; corte de terceiros leva crédito na legenda e nunca é aprovado no modo automático.
+Dicas e CLIPAÍ não recebem cortes da live; corte de terceiros leva crédito na legenda. Facebook entra como Reels (`facebookPage` na linha se o perfil tiver mais de uma página).
 O vídeo longo vai para `longo.perfil`. Sem `linhas`, vale o `uploadPost` de antes (uma conta só). Plano da operação: `docs/canais.md`.
 
 ## Escritório

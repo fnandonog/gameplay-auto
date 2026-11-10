@@ -3,9 +3,11 @@
 // posted (TikTok and YouTube push duplicates down and can flag the accounts as unoriginal/inauthentic).
 // The long video goes to the main YouTube channel (config.longo.perfil).
 
-// Suggested map for FNANDO + CLIPAÍ (see docs/operacao.md). Profiles must exist in Upload-Post with these names.
+// Suggested map for FNANDO + CLIPAÍ (see docs/canais.md). Profiles must exist in Upload-Post with these names.
+// A line may set facebookPage (the Page id) when its Upload-Post profile has more than one Facebook Page.
+// Posts per day per line = how many horarios it has (one cut per slot), so volume is set here.
 export const LINHAS_SUGERIDAS = [
-  { id: 'principal', nome: 'FNANDO', perfil: 'fnando', redes: ['tiktok', 'instagram'], automatico: true,
+  { id: 'principal', nome: 'FNANDO', perfil: 'fnando', redes: ['tiktok', 'instagram', 'facebook'], automatico: true,
     conteudo: 'Os melhores momentos da live, com fala e reação', horarios: ['12:00', '18:30', '21:00'] },
   { id: 'shorts', nome: 'FNANDO Shorts', perfil: 'fnando-shorts', redes: ['youtube', 'tiktok', 'instagram'], automatico: true,
     conteudo: 'Lances: gols, dribles, viradas e finais de partida', horarios: ['11:30', '17:30', '20:30'] },
@@ -13,7 +15,7 @@ export const LINHAS_SUGERIDAS = [
     conteudo: 'Raiva, zoeira e reações engraçadas', horarios: ['13:00', '19:30', '22:30'] },
   { id: 'dicas', nome: 'FNANDO Dicas', perfil: 'fnando-dicas', redes: ['youtube', 'tiktok'], automatico: false,
     conteudo: 'Tutoriais e dicas do jogo (gravados de propósito, não saem da live)', horarios: ['10:00', '16:00'] },
-  { id: 'clipai', nome: 'CLIPAÍ', perfil: 'clipai', redes: ['youtube', 'tiktok', 'instagram'], automatico: false, terceiros: true,
+  { id: 'clipai', nome: 'CLIPAÍ', perfil: 'clipai', redes: ['youtube', 'tiktok', 'instagram', 'facebook'], automatico: false, terceiros: true,
     conteudo: 'Cortes de streamers que autorizaram por escrito', horarios: ['12:30', '19:00', '21:30'] },
 ];
 

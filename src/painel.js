@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { lerAtividade, quadroEscritorio } from './atividade.js';
 import { linhasDe } from './canais.js';
+import { lerPausa, retomar } from './qualidade.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGINA = path.join(ROOT, 'public', 'painel.html');
@@ -72,9 +73,11 @@ export function criarPainel(config) {
       if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return fs.createReadStream(PAGINA).pipe(res); }
       if (req.method === 'GET' && url.pathname === '/api/sessoes') return json(res, 200, listarSessoes(config.pastaSaida));
       if (req.method === 'GET' && url.pathname === '/escritorio') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return fs.createReadStream(ESCRITORIO).pipe(res); }
+      if (req.method === 'GET' && url.pathname === '/api/pausa') return json(res, 200, { pausa: lerPausa(config.pastaSaida), automatico: !!config.postarAutomatico });
+      if (req.method === 'POST' && url.pathname === '/api/retomar') { retomar(config.pastaSaida); return json(res, 200, { pausa: null }); }
       if (req.method === 'GET' && url.pathname === '/api/linhas') return json(res, 200, linhasDe(config).map(({ id, nome, redes, conteudo, terceiros }) => ({ id, nome, redes, conteudo, terceiros: !!terceiros })));
       if (req.method === 'GET' && url.pathname === '/api/escritorio') {
-        return json(res, 200, quadroEscritorio({ atividade: lerAtividade(config.pastaSaida), sessoes: listarSessoes(config.pastaSaida), linhas: linhasDe(config), config }));
+        return json(res, 200, quadroEscritorio({ atividade: lerAtividade(config.pastaSaida), sessoes: listarSessoes(config.pastaSaida), linhas: linhasDe(config), config, pausa: lerPausa(config.pastaSaida) }));
       }
       const marca = /^\/marca\/([^/]+\.(svg|png))$/.exec(url.pathname);
       if (req.method === 'GET' && marca && nomeSeguro(marca[1]) && fs.existsSync(path.join(MARCA, marca[1]))) {

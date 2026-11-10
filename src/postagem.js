@@ -7,6 +7,7 @@ import path from 'node:path';
 import { listarSessoes } from './painel.js';
 import { linhasDe, linhaDoCorte, distribuirLinhas } from './canais.js';
 import { registrar } from './atividade.js';
+import { motivosRecusa, lerPausa, pausar, erroGrave, PADRAO_FILTRO } from './qualidade.js';
 
 const API = 'https://api.upload-post.com/api/upload';
 
@@ -24,11 +25,15 @@ export function textos(c) {
 }
 
 // form fields of one post (pure, for the tests): [[name, value], ...]; the video goes in separately
-export function camposPost(c, { perfil, redes, quando }) {
+export function camposPost(c, { perfil, redes, quando, facebookPage }) {
   const t = textos(c);
   const f = [['user', perfil], ...redes.map((r) => ['platform[]', r]), ['title', t.legenda]];
   if (redes.includes('tiktok')) f.push(['tiktok_title', t.legenda], ['privacy_level', 'PUBLIC_TO_EVERYONE'], ['cover_timestamp', '1000']);
   if (redes.includes('instagram')) f.push(['media_type', 'REELS'], ['share_to_feed', 'true']);
+  if (redes.includes('facebook')) {
+    f.push(['facebook_media_type', 'REELS'], ['facebook_description', t.legenda]);
+    if (facebookPage) f.push(['facebook_page_id', facebookPage]);
+  }
   if (redes.includes('youtube')) {
     f.push(['youtube_title', t.tituloYoutube], ['youtube_description', t.descricaoYoutube], ['privacyStatus', 'public'], ['categoryId', '20']); // 20 = Gaming
     for (const h of c.hashtags || []) f.push(['tags[]', h]);
@@ -65,12 +70,18 @@ export function proximoHorario(agora, horarios, ocupados = [], { fusoHoras = -3,
   throw new Error('Sem horário livre nos próximos 60 dias.');
 }
 
-// automatic mode: a cut with a high score is approved without waiting for the owner.
-// Third-party cuts (a line with terceiros: true, or a cut with a credit) always wait for the owner.
-export function autoAprovar(cortes, notaMinima, linhas = []) {
-  const manual = new Set(linhas.filter((l) => l.terceiros).map((l) => l.id));
+// Autopilot: every waiting cut goes through the quality gate (src/qualidade.js). It passes → approved;
+// it fails → discarded, with the reasons written on the cut so the owner can see why.
+// `config` may be a number (the old minimum score).
+export function autoAprovar(cortes, config = {}, linhas = []) {
+  const cfg = typeof config === 'number' ? { filtro: { notaMinima: config } } : config;
   let n = 0;
-  for (const c of cortes) if (c.status === 'aguardando' && Number(c.nota) >= notaMinima && !c.credito && !manual.has(c.linha)) { c.status = 'aprovado'; c.aprovadoPor = 'automatico'; n++; }
+  for (const c of cortes) {
+    if (c.status !== 'aguardando') continue;
+    const motivos = motivosRecusa(c, { config: cfg, linha: linhas.find((l) => l.id === c.linha) });
+    if (motivos.length) { c.status = 'descartado'; c.descartadoPor = 'filtro'; c.filtro = motivos; continue; }
+    c.status = 'aprovado'; c.aprovadoPor = 'automatico'; n++;
+  }
   return n;
 }
 
@@ -93,6 +104,10 @@ export async function postarAprovados(config, { log = console.log, agora = Date.
   const apiKey = process.env.UPLOAD_POST_API_KEY;
   const linhas = linhasDe(config).filter((l) => l.perfil);
   if (!apiKey || !linhas.length) return 0;
+  const pausa = lerPausa(config.pastaSaida);
+  if (pausa) { log(`Postagem pausada: ${pausa.motivo}. Retome no painel.`); return 0; }
+  const errosParaPausar = config.filtro?.errosParaPausar ?? PADRAO_FILTRO.errosParaPausar;
+  let errosSeguidos = 0;
   const perfilLongo = config.longo?.perfil || up.perfil || linhas[0].perfil;
   const sessoes = listarSessoes(config.pastaSaida);
   // a slot is taken per profile: two different accounts may post at the same hour
@@ -103,29 +118,37 @@ export async function postarAprovados(config, { log = console.log, agora = Date.
   for (const s of sessoes) {
     const file = path.join(pasta0, s.pasta, 'sessao.json');
     const { pasta, ...dados } = s;
-    let mudou = config.postarAutomatico ? autoAprovar(dados.cortes, config.notaMinima ?? 8, linhas) > 0 : false;
-    const antes = JSON.stringify(dados.cortes.map((c) => c.linha));
+    const antes = JSON.stringify(dados.cortes.map((c) => [c.linha, c.status]));
     distribuirLinhas(dados.cortes, linhas);
-    if (JSON.stringify(dados.cortes.map((c) => c.linha)) !== antes) mudou = true;
+    if (config.postarAutomatico) autoAprovar(dados.cortes, config, linhas);
+    let mudou = false;
+    if (JSON.stringify(dados.cortes.map((c) => [c.linha, c.status])) !== antes) mudou = true;
     // best score first, so the strongest cut gets the next peak hour of its line
     for (const c of [...dados.cortes].filter((x) => x.status === 'aprovado').sort((a, b) => b.nota - a.nota)) {
+      if (lerPausa(config.pastaSaida)) break;
       const linha = linhaDoCorte(c, linhas);
       const quando = proximoHorario(agora, linha.horarios || up.horarios || ['12:00', '18:30', '21:00'], livres(linha.perfil));
       try {
         registrar(pasta0, 'agendador', 'trabalhando', `Agendando "${c.titulo}" em ${linha.nome}`);
-        c.postId = await envio({ video: path.join(pasta0, pasta, c.arquivo), campos: camposPost(c, { perfil: linha.perfil, redes: linha.redes, quando }), apiKey, chave: `${pasta}/${c.arquivo}` });
+        c.postId = await envio({ video: path.join(pasta0, pasta, c.arquivo), campos: camposPost(c, { perfil: linha.perfil, redes: linha.redes, quando, facebookPage: linha.facebookPage }), apiKey, chave: `${pasta}/${c.arquivo}` });
         c.status = 'agendado'; c.agendadoPara = quando; c.redes = linha.redes; c.perfil = linha.perfil; c.linha = linha.id; delete c.erroPost;
-        ocupados.push(`${linha.perfil}|${quando}`); n++;
+        ocupados.push(`${linha.perfil}|${quando}`); n++; errosSeguidos = 0;
         log(`Agendado para ${quando} em ${linha.nome}: ${c.titulo}`);
       } catch (e) {
         c.erroPost = e.message;
         registrar(pasta0, 'agendador', 'erro', `Não agendou "${c.titulo}": ${e.message}`);
+        errosSeguidos++;
+        if (erroGrave(e.message) || errosSeguidos >= errosParaPausar) {
+          pausar(pasta0, erroGrave(e.message) ? `a plataforma recusou: ${e.message}` : `${errosSeguidos} erros seguidos (último: ${e.message})`);
+          registrar(pasta0, 'agendador', 'erro', 'Postagem pausada. Retome no painel depois de conferir.');
+        }
         log(`Não agendou "${c.titulo}": ${e.message}`);
       }
       mudou = true;
     }
     const L = dados.longo;
-    if (L && L.status === 'aprovado') {
+    if (L && config.postarAutomatico && L.status === 'aguardando') { L.status = 'aprovado'; L.aprovadoPor = 'automatico'; mudou = true; }
+    if (L && L.status === 'aprovado' && !lerPausa(config.pastaSaida)) {
       const quando = proximoHorario(agora, config.longo?.horarios || up.horariosLongo || ['19:00'], livres(perfilLongo));
       try {
         L.postId = await envio({ video: path.join(pasta0, pasta, L.arquivo), thumb: L.thumb && path.join(pasta0, pasta, L.thumb), campos: camposLongo(L, { perfil: perfilLongo, quando }), apiKey, chave: `${pasta}/${L.arquivo}` });

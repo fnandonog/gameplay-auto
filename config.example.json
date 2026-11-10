@@ -16,7 +16,8 @@
       "perfil": "fnando",
       "redes": [
         "tiktok",
-        "instagram"
+        "instagram",
+        "facebook"
       ],
       "automatico": true,
       "conteudo": "Os melhores momentos da live, com fala e reação",
@@ -81,7 +82,8 @@
       "redes": [
         "youtube",
         "tiktok",
-        "instagram"
+        "instagram",
+        "facebook"
       ],
       "automatico": false,
       "terceiros": true,
@@ -107,6 +109,14 @@
         "permissao": "",
         "observacao": "preencha permissao com onde está a autorização (print, e-mail, link da campanha). Sem isso o Clipador não trabalha."
       }
-    ]
+    ],
+    "automatico": false
+  },
+  "postarAutomatico": false,
+  "filtro": {
+    "notaMinima": 8.5,
+    "duracaoMin": 12,
+    "duracaoMax": 75,
+    "errosParaPausar": 3
   }
 }

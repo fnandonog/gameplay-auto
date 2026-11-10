@@ -12,6 +12,7 @@
   header img { height: 28px; }
   header a { color: var(--hi); font-weight: 600; text-decoration: none; margin-left: auto; }
   .chip { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .chip.pausa { color: #fff; background: var(--no); border-color: var(--no); font: inherit; font-size: 12px; cursor: pointer; }
   .chip.auto { color: var(--bg); background: var(--hi); border-color: var(--hi); }
   main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; gap: 18px; }
   .sala { position: relative; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #1c1a24; }
@@ -46,6 +47,7 @@
 <header>
   <img src="/marca/fnando-wordmark.svg" alt="FNANDO">
   <span class="chip" id="modo">com aprovação</span>
+  <button class="chip pausa" id="pausa" hidden>Pausado · retomar</button>
   <a href="/">← Cortes</a>
 </header>
 <main>
@@ -162,7 +164,9 @@ function mostrar() {
 
 function painel() {
   const T = dados.totais || {};
-  $('#modo').textContent = dados.automatico ? 'postagem automática' : 'com aprovação';
+  $('#modo').textContent = dados.automatico ? 'piloto automático' : 'com aprovação';
+  $('#pausa').hidden = !dados.pausa;
+  if (dados.pausa) $('#pausa').title = dados.pausa.motivo;
   $('#modo').classList.toggle('auto', !!dados.automatico);
   $('#totais').innerHTML = [['Esperando você', T.aguardando], ['Aprovados', T.aprovados], ['Agendados', T.agendados], ['Postados', T.postados], ['Lives processadas', T.sessoes]]
     .map(([n, v]) => `<div><b>${v ?? 0}</b><span>${n}</span></div>`).join('');
@@ -179,6 +183,7 @@ async function carregar() {
   try { dados = await (await fetch('/api/escritorio')).json(); } catch { return; }
   painel(); etiquetas(); mostrar();
 }
+$('#pausa').onclick = async () => { if (!confirm(`Postagem pausada: ${dados.pausa?.motivo || ''}\n\nRetomar agora?`)) return; await fetch('/api/retomar', { method: 'POST' }); carregar(); };
 carregar();
 setInterval(carregar, 5000);
 requestAnimationFrame(quadro);

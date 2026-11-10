@@ -50,13 +50,17 @@ export function registrar(pastaSaida, agente, estado, texto, em = new Date().toI
 }
 
 // pure: what the office shows. sessoes = listarSessoes(); linhas = the channel lines.
-export function quadroEscritorio({ atividade, sessoes = [], linhas = [], agora = Date.now(), config = {} }) {
+export function quadroEscritorio({ atividade, sessoes = [], linhas = [], agora = Date.now(), config = {}, pausa = null }) {
   const cortes = sessoes.flatMap((s) => s.cortes || []);
   const conta = (st) => cortes.filter((c) => c.status === st).length;
   const agentes = ELENCO.map((a) => {
     let at = atividade?.agentes?.[a.id] || { estado: 'parado', texto: '' };
     if (at.estado === 'trabalhando' && at.em && agora - Date.parse(at.em) > TRAVADO_MS) at = { ...at, estado: 'parado', texto: `${at.texto} (parou sem terminar)` };
-    if (a.id === 'revisor') {
+    if (a.id === 'agendador' && pausa) at = { estado: 'erro', texto: `Pausado: ${pausa.motivo}`, em: pausa.em };
+    if (a.id === 'revisor' && config.postarAutomatico) {
+      const n = cortes.filter((c) => c.descartadoPor === 'filtro').length;
+      at = { estado: 'pronto', texto: `Piloto automático: o filtro aprova sozinho${n ? ` (${n} corte(s) barrado(s))` : ''}` };
+    } else if (a.id === 'revisor') {
       const n = conta('aguardando');
       at = n ? { estado: 'esperando', texto: `${n} corte(s) esperando sua aprovação` } : { estado: 'pronto', texto: 'Nada para aprovar' };
     }
@@ -79,5 +83,6 @@ export function quadroEscritorio({ atividade, sessoes = [], linhas = [], agora =
     eventos: (atividade?.eventos || []).slice(-30).reverse(),
     totais: { aguardando: conta('aguardando'), aprovados: conta('aprovado'), agendados: conta('agendado'), postados: conta('postado'), sessoes: sessoes.length },
     automatico: !!config.postarAutomatico,
+    pausa,
   };
 }

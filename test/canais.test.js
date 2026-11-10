@@ -43,11 +43,12 @@ test('agenda cada corte no perfil e nas redes da sua linha; perfis diferentes po
   assert.deepEqual(s.cortes.map((x) => x.perfil), ['fnando', 'fnando-shorts', 'fnando']);
 });
 
-test('CLIPAÍ: crédito vai na legenda e corte de terceiro nunca é aprovado sozinho', async () => {
+test('CLIPAÍ: crédito vai na legenda e corte de terceiro sem permissão nunca é aprovado sozinho', async () => {
   const { textos, autoAprovar } = await import('../src/postagem.js');
   const c = { titulo: 'Ele surtou', descricao: '', hashtags: ['clipai'], credito: { streamer: '@streamer', link: 'https://twitch.tv/streamer' } };
   assert.match(textos(c).legenda, /Crédito: @streamer · https:\/\/twitch\.tv\/streamer/);
-  const cs = [{ status: 'aguardando', nota: 10, linha: 'clipai' }, { status: 'aguardando', nota: 10, credito: c.credito }, { status: 'aguardando', nota: 10, linha: 'principal' }];
+  const ok = { status: 'aguardando', nota: 10, titulo: 't', gancho: 'g', inicio: 0, fim: 30 };
+  const cs = [{ ...ok, linha: 'clipai' }, { ...ok, credito: c.credito }, { ...ok, linha: 'principal' }];
   assert.equal(autoAprovar(cs, 8, LINHAS_SUGERIDAS), 1);
-  assert.deepEqual(cs.map((x) => x.status), ['aguardando', 'aguardando', 'aprovado']);
+  assert.deepEqual(cs.map((x) => x.status), ['descartado', 'descartado', 'aprovado']);
 });
