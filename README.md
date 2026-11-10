@@ -67,6 +67,25 @@ Shorts de uma vez, pelo [Upload-Post](https://upload-post.com) (plano Basic, US$
 
 Com `"postarAutomatico": true`, os cortes com nota 8 ou mais são postados sem esperar aprovação.
 
+## Várias contas (linhas)
+
+Com `"linhas"` no `config.json` (modelo em `config.example.json`), cada linha é um perfil do Upload-Post com suas redes e
+horários: FNANDO, FNANDO Shorts, FNANDO Resenha, FNANDO Dicas e CLIPAÍ. Cada corte vai para **uma** linha só: o melhor
+para a principal e os seguintes em rodízio entre as linhas automáticas. No painel dá para trocar a linha antes de aprovar.
+Dicas e CLIPAÍ não recebem cortes da live; corte de terceiros leva crédito na legenda e nunca é aprovado no modo automático.
+O vídeo longo vai para `longo.perfil`. Sem `linhas`, vale o `uploadPost` de antes (uma conta só). Plano da operação: `docs/canais.md`.
+
+## Escritório
+
+`/escritorio` no painel mostra o pipeline como um escritório em pixel art: cada etapa (Vigia, Escriba, Caçador de lances,
+Roteirista IA, Editor, Montador, você, Agendador, Clipador, Analista) num personagem com o estado real, a fila de cada linha
+e os últimos acontecimentos. O estado fica em `<pastaSaida>/.escritorio.json`.
+
+## Marca
+
+Logos, avatares, banners, modelos de thumbnail e overlay do OBS em `docs/marca/` (PNG) e `public/marca/` (SVG).
+Para gerar de novo: `pip install fonttools cairosvg && python3 tools/marca/gerar.py`.
+
 ## Vídeo completo do YouTube
 
 Cada sessão também vira `youtube-completo.mp4`: abre com os 10 s do melhor momento, trechos longos sem fala
