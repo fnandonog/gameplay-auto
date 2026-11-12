@@ -15,7 +15,7 @@ const PAGINA = path.join(ROOT, 'public', 'painel.html');
 const ESCRITORIO = path.join(ROOT, 'public', 'escritorio.html');
 const MARCA = path.join(ROOT, 'public', 'marca');
 const MIME = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg' }; // only the cuts and their covers are served
-export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'postado'];
+export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'entregue', 'postado'];
 
 // a name that came from the URL must be a plain file/folder name inside the output folder
 export const nomeSeguro = (s) => typeof s === 'string' && s.length > 0 && s === path.basename(s) && !s.startsWith('.');
@@ -33,10 +33,18 @@ export function editarCorte(pastaSaida, { pasta, arquivo, ...mud }, linhas = nul
   if (!nomeSeguro(pasta) || !nomeSeguro(arquivo)) throw new Error('Corte inválido.');
   const file = path.join(pastaSaida, pasta, 'sessao.json');
   const s = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const c = s.cortes.find((x) => x.arquivo === arquivo) || (s.longo?.arquivo === arquivo ? s.longo : null);
+  const c = s.cortes.find((x) => x.arquivo === arquivo || Object.values(x.variantes || {}).includes(arquivo)) || (s.longo?.arquivo === arquivo ? s.longo : null);
   if (!c) throw new Error('Corte não encontrado.');
   if (mud.status !== undefined) { if (!STATUS.includes(mud.status)) throw new Error('Status inválido.'); c.status = mud.status; }
   if (mud.linha !== undefined) { if (linhas && !linhas.some((l) => l.id === mud.linha)) throw new Error('Linha inválida.'); c.linha = String(mud.linha); }
+  // another rendered format becomes the one that is posted
+  if (mud.formato !== undefined && mud.formato !== c.formato) {
+    const novo = c.variantes?.[mud.formato];
+    if (!novo) throw new Error('Formato inválido.');
+    c.formato = String(mud.formato); c.arquivo = novo;
+    const jpg = novo.replace(/\.mp4$/, '.jpg');
+    if (fs.existsSync(path.join(pastaSaida, pasta, jpg))) c.capa = jpg;
+  }
   if (typeof mud.titulo === 'string') c.titulo = mud.titulo.slice(0, 100);
   if (typeof mud.descricao === 'string') c.descricao = mud.descricao.slice(0, 5000);
   if (Array.isArray(mud.hashtags)) c.hashtags = mud.hashtags.map((h) => String(h).replace(/^#/, '').trim()).filter(Boolean).slice(0, 10);

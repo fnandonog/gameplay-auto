@@ -24,7 +24,19 @@ export const PADRAO = {
   fps: 60,
   regiaoCamera: null, // scene mode only: {x,y,w,h} of the camera inside the 1920x1080 scene
   offsetCamera: 0, // seconds the camera file is ahead (+) or behind (-) the game file
-  estilo: { font: 'Bricolage Grotesque', primary: '#FFE600', base: '#FFFFFF', outline: '#000000' },
+  // cut formats (src/corte.js FORMATOS): meio (camera half / game half), camtopo (camera 40%), jogo (game square over the
+  // blurred game), jogocheio (game fills the screen). Every cut is rendered in each one; formatoPadrao picks the one that
+  // goes to posting ('auto': meio when there is speech, jogo when it is a quiet play).
+  formatos: ['meio', 'jogo'],
+  formatoPadrao: 'auto',
+  // captions: modo 'karaoke' (short line, word turns yellow as spoken) or 'palavra' (one big word at a time, with a pop)
+  estilo: { font: 'Bricolage Grotesque', primary: '#FFE600', base: '#FFFFFF', outline: '#000000', modo: 'karaoke' },
+  // brand on the video: the @ of the cut's line (src/canais.js), the symbol in the corner and "SEGUE @..." at the end
+  marca: { arroba: '', chamada: 'SEGUE', mostrarLogo: true, mostrarArroba: true },
+  intro: { noLongo: true, nosCortes: false, duracao: 1.2 },
+  // 'skill': approved cuts go to pastaEntrega for the owner's posting skill; 'upload-post': this platform schedules them
+  postagem: 'skill',
+  pastaEntrega: path.join(HOME, 'Gameplay', 'prontos'),
   corBarra: '0xFFE600',
   semIa: false,
   // posting (src/postagem.js): UPLOAD_POST_API_KEY in the environment + the profile name here
@@ -43,5 +55,5 @@ export const PADRAO = {
 export function carregarConfig(file = process.env.GAMEPLAY_CONFIG || path.join(ROOT, 'config.json')) {
   let user = {};
   if (fs.existsSync(file)) user = JSON.parse(fs.readFileSync(file, 'utf8'));
-  return { ...PADRAO, ...user, whisper: { ...PADRAO.whisper, ...(user.whisper || {}) }, estilo: { ...PADRAO.estilo, ...(user.estilo || {}) }, uploadPost: { ...PADRAO.uploadPost, ...(user.uploadPost || {}) } };
+  return { ...PADRAO, ...user, whisper: { ...PADRAO.whisper, ...(user.whisper || {}) }, estilo: { ...PADRAO.estilo, ...(user.estilo || {}) }, marca: { ...PADRAO.marca, ...(user.marca || {}) }, intro: { ...PADRAO.intro, ...(user.intro || {}) }, uploadPost: { ...PADRAO.uploadPost, ...(user.uploadPost || {}) } };
 }

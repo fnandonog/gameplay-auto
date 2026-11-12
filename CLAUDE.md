@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Plataforma de cortes automáticos de gameplay do Fernando (PS5 + GoPro HERO13 + MacBook Air M4, OBS). Roda no Mac dele.
-Plano e decisões: https://claude.ai/artifact/AB8V9mzKECfrBrhWFWhRwN. Setup do OBS: `docs/obs.md`.
+Plano e decisões: https://claude.ai/artifact/AB8V9mzKECfrBrhWFWhRwN. Setup do OBS: `docs/obs.md`. Formatos, legenda, marca, intro e entrega: `docs/formatos.md`.
 
 - Node 20+, ESM, sem build. Dependência externa só `@anthropic-ai/sdk`; vídeo é ffmpeg, transcrição é whisper.cpp local.
 - Partes puras (argumentos do ffmpeg, detecção de momentos, legenda) são exportadas e testadas: `npm test`.
@@ -12,3 +12,4 @@ Plano e decisões: https://claude.ai/artifact/AB8V9mzKECfrBrhWFWhRwN. Setup do O
 - Cada corte vai para uma linha de contas só (`src/canais.js`). Cortes de terceiros (CLIPAÍ) só de quem autorizou por escrito e com crédito; no piloto automático só passam com `terceiros.automatico` e a permissão registrada.
 - Piloto automático (`postarAutomatico`): o filtro de `src/qualidade.js` substitui a aprovação, e erro grave da plataforma pausa toda a postagem (`.pausa.json`) até o dono retomar.
 - Toda etapa nova do pipeline chama `registrar()` (`src/atividade.js`) para aparecer no escritório.
+- Postagem é da skill do dono: os aprovados vão para `pastaEntrega` com `post.json` (`src/entrega.js`). Upload-Post só com `postagem: 'upload-post'`.

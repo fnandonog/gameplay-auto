@@ -7,15 +7,15 @@
 // A line may set facebookPage (the Page id) when its Upload-Post profile has more than one Facebook Page.
 // Posts per day per line = how many horarios it has (one cut per slot), so volume is set here.
 export const LINHAS_SUGERIDAS = [
-  { id: 'principal', nome: 'FNANDO', perfil: 'fnando', redes: ['tiktok', 'instagram', 'facebook'], automatico: true,
+  { id: 'principal', nome: 'FNANDO', perfil: 'fnando', arroba: '@fnando', redes: ['tiktok', 'instagram', 'facebook'], automatico: true,
     conteudo: 'Os melhores momentos da live, com fala e reação', horarios: ['12:00', '18:30', '21:00'] },
-  { id: 'shorts', nome: 'FNANDO Shorts', perfil: 'fnando-shorts', redes: ['youtube', 'tiktok', 'instagram'], automatico: true,
+  { id: 'shorts', nome: 'FNANDO Shorts', perfil: 'fnando-shorts', arroba: '@fnandoshorts', redes: ['youtube', 'tiktok', 'instagram'], automatico: true,
     conteudo: 'Lances: gols, dribles, viradas e finais de partida', horarios: ['11:30', '17:30', '20:30'] },
-  { id: 'resenha', nome: 'FNANDO Resenha', perfil: 'fnando-resenha', redes: ['tiktok', 'instagram'], automatico: true,
+  { id: 'resenha', nome: 'FNANDO Resenha', perfil: 'fnando-resenha', arroba: '@fnandoresenha', redes: ['tiktok', 'instagram'], automatico: true,
     conteudo: 'Raiva, zoeira e reações engraçadas', horarios: ['13:00', '19:30', '22:30'] },
-  { id: 'dicas', nome: 'FNANDO Dicas', perfil: 'fnando-dicas', redes: ['youtube', 'tiktok'], automatico: false,
+  { id: 'dicas', nome: 'FNANDO Dicas', perfil: 'fnando-dicas', arroba: '@fnandodicas', redes: ['youtube', 'tiktok'], automatico: false,
     conteudo: 'Tutoriais e dicas do jogo (gravados de propósito, não saem da live)', horarios: ['10:00', '16:00'] },
-  { id: 'clipai', nome: 'CLIPAÍ', perfil: 'clipai', redes: ['youtube', 'tiktok', 'instagram', 'facebook'], automatico: false, terceiros: true,
+  { id: 'clipai', nome: 'CLIPAÍ', perfil: 'clipai', arroba: '@clipai', marca: 'clipai', redes: ['youtube', 'tiktok', 'instagram', 'facebook'], automatico: false, terceiros: true,
     conteudo: 'Cortes de streamers que autorizaram por escrito', horarios: ['12:30', '19:00', '21:30'] },
 ];
 

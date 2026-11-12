@@ -43,10 +43,12 @@ O Claude lê a transcrição de cada candidato, acerta início e fim, dá nota, 
 | `src/transcricao.js` | whisper.cpp, uma entrada por palavra |
 | `src/momentos.js` | candidatos: comando de voz, marcadores, volume, falas |
 | `src/ia.js` | Claude decide os cortes e escreve os textos |
-| `src/corte.js` + `src/legenda.js` | render vertical com ffmpeg e legenda ASS (adaptado do projeto afiliado) |
+| `src/corte.js` + `src/legenda.js` | render vertical nos formatos (meio a meio, câmera em cima, só o jogo, jogo em tela cheia) e legenda ASS (karaokê ou palavra) |
+| `src/marca.js` + `src/intro.js` | @ da linha, símbolo e "SEGUE @" no vídeo; intro do canal |
+| `src/entrega.js` | entrega os aprovados (vídeo, capa, `post.json`) para a sua skill de postagem |
 | `src/longo.js` | vídeo completo do YouTube, capítulos e thumbnail |
 | `src/painel.js` + `public/painel.html` | painel de aprovação |
-| `src/postagem.js` | agenda nas redes pelo Upload-Post |
+| `src/postagem.js` | opcional: agenda nas redes pelo Upload-Post |
 
 Testes: `npm test`.
 
@@ -57,6 +59,9 @@ Testes: `npm test`.
 Aprovar e Descartar. Para ninguém mais da rede abrir, ponha `"senhaPainel": "..."` no `config.json` e abra uma vez com `/?senha=...`.
 
 ## Postar
+
+Padrão: a postagem é da sua skill. Os aprovados vão para `~/Gameplay/prontos/<linha>/...` com `video.mp4`, `capa.jpg` e `post.json` (veja `docs/formatos.md`).
+O que vem abaixo vale só com `"postagem": "upload-post"`.
 
 Os cortes aprovados vão para o próximo horário de pico (12:00, 18:30 e 21:00 de Brasília) no TikTok, Reels e YouTube
 Shorts de uma vez, pelo [Upload-Post](https://upload-post.com) (plano Basic, US$ 16/mês; o TikTok exige um app auditado e esse já é).

@@ -33,12 +33,39 @@ export function filtroJogo({ gameH, zoom = 1 }) {
   return `scale=-2:${h}:flags=lanczos,crop=${W}:${gameH},setsar=1`;
 }
 
-// job: { jogo, camera (same file as jogo in scene mode), audio (the scene, default jogo), start, end, ass, out, regiaoCamera, camPct, zoom, fps, offsetCamera, encoder }
+// The vertical formats. Each one says where the captions, the hook and the handle go.
+//   meio       camera on top half, game on the bottom half (meio a meio)
+//   camtopo    camera 40% on top, game 60% (more game)
+//   jogo       only the game: a big square of the action in the middle over the same game blurred
+//   jogocheio  only the game, filling the whole screen (the sides are cut)
+export const FORMATOS = {
+  meio: { nome: 'Meio a meio', camPct: 0.5 },
+  camtopo: { nome: 'Câmera em cima', camPct: 0.4 },
+  jogo: { nome: 'Só o jogo', semCamera: true },
+  jogocheio: { nome: 'Jogo em tela cheia', semCamera: true },
+};
+
+// layout of a format: where each thing sits (pure)
+export function layoutFormato(formato = 'camtopo', { camPct } = {}) {
+  const f = FORMATOS[formato] ? formato : 'camtopo';
+  if (f === 'jogo') {
+    const lado = W, top = Math.round((H - lado) / 2); // 420..1500
+    return { formato: f, W, H, quadro: { y: top, lado }, seam: top + lado + 150, ganchoY: 150, arrobaPos: { x: W - 30, y: top + lado + 40 }, logoPos: { x: 30, y: top + lado + 14 } };
+  }
+  if (f === 'jogocheio') return { formato: f, W, H, seam: 1380, ganchoY: 200, arrobaPos: { x: W - 30, y: 1500 }, logoPos: { x: 30, y: 1470 } };
+  const L = layoutDe(camPct ?? FORMATOS[f].camPct);
+  return { ...L, formato: f, ganchoY: 90, arrobaPos: { x: W - 30, y: L.camH - 50 }, logoPos: { x: 30, y: L.camH - 120 } };
+}
+
+// job: { jogo, camera (same file as jogo in scene mode), audio (the scene, default jogo), start, end, ass, out, formato,
+//        regiaoCamera, camPct, zoom, fps, offsetCamera, encoder, logo (png, optional), logoTam }
 export function argsCorte(job) {
-  const L = layoutDe(job.camPct);
+  const formato = FORMATOS[job.formato] ? job.formato : (job.camPct ? 'camtopo' : 'camtopo');
+  const L = layoutFormato(formato, { camPct: job.camPct });
+  const semCam = !!FORMATOS[formato].semCamera;
   const dur = +(job.end - job.start).toFixed(3);
   const fps = job.fps || 60;
-  const mesmo = job.camera === job.jogo;
+  const mesmo = semCam || job.camera === job.jogo;
   const args = ['-hide_banner', '-loglevel', 'error', '-y',
     '-ss', String(job.start), '-t', String(dur), '-i', job.jogo];
   if (!mesmo) args.push('-ss', String(Math.max(0, job.start + (job.offsetCamera || 0))), '-t', String(dur), '-i', job.camera);
@@ -46,20 +73,37 @@ export function argsCorte(job) {
   const audio = job.audio || job.jogo;
   let n = mesmo ? 1 : 2;
   let audIn = '0:a:0';
-  if (audio !== job.jogo && audio !== job.camera) { args.push('-ss', String(job.start), '-t', String(dur), '-i', audio); audIn = `${n}:a:0`; n++; }
+  if (audio !== job.jogo && (semCam || audio !== job.camera)) { args.push('-ss', String(job.start), '-t', String(dur), '-i', audio); audIn = `${n}:a:0`; n++; }
   args.push('-f', 'lavfi', '-t', String(dur), '-i', `color=c=${job.corBarra || '0xFFE600'}:s=${W}x10:r=${fps}`);
+  const barIn = `${n}:v`; n++;
+  let logoIn = null;
+  if (job.logo) { args.push('-loop', '1', '-t', String(dur), '-i', job.logo); logoIn = `${n}:v`; n++; }
   const camIn = mesmo ? '0:v' : '1:v';
-  const barIn = `${n}:v`;
-  const graph = [
-    mesmo ? '[0:v]split=2[src_c][src_g]' : null,
-    `[${mesmo ? 'src_c' : camIn}]${filtroCamera({ regiao: job.regiaoCamera, camH: L.camH })},fps=${fps}[cam]`,
-    `[${mesmo ? 'src_g' : '0:v'}]${filtroJogo({ gameH: L.gameH, zoom: job.zoom })},fps=${fps}[game]`,
-    '[cam][game]vstack=inputs=2[st]',
-    `[st][${barIn}]overlay=x='-W+W*t/${dur}':y=H-10:eval=frame:shortest=1[pb]`,
+  const g = [];
+  if (formato === 'jogo') {
+    const q = L.quadro;
+    g.push('[0:v]split=2[gb][gf]',
+      `[gb]scale=${W}:${H}:force_original_aspect_ratio=increase:flags=bilinear,crop=${W}:${H},boxblur=24:2,eq=brightness=-0.12:saturation=1.2,setsar=1,fps=${fps}[bg]`,
+      `[gf]${filtroJogo({ gameH: q.lado, zoom: job.zoom })},fps=${fps}[fg]`,
+      `[bg][fg]overlay=0:${q.y}[st]`);
+  } else if (formato === 'jogocheio') {
+    g.push(`[0:v]${filtroJogo({ gameH: H, zoom: job.zoom })},fps=${fps}[st]`);
+  } else {
+    if (job.camera === job.jogo) g.push('[0:v]split=2[src_c][src_g]');
+    g.push(`[${job.camera === job.jogo ? 'src_c' : camIn}]${filtroCamera({ regiao: job.regiaoCamera, camH: L.camH })},fps=${fps}[cam]`,
+      `[${job.camera === job.jogo ? 'src_g' : '0:v'}]${filtroJogo({ gameH: L.gameH, zoom: job.zoom })},fps=${fps}[game]`,
+      '[cam][game]vstack=inputs=2[st]');
+  }
+  let ultimo = 'st';
+  if (logoIn) {
+    const tam = job.logoTam || 96;
+    g.push(`[${logoIn}]scale=${tam}:-1,format=rgba,colorchannelmixer=aa=0.92[lg]`, `[st][lg]overlay=${L.logoPos.x}:${L.logoPos.y}:shortest=1[sl]`);
+    ultimo = 'sl';
+  }
+  g.push(`[${ultimo}][${barIn}]overlay=x='-W+W*t/${dur}':y=H-10:eval=frame:shortest=1[pb]`,
     `[pb]ass='${fp(job.ass)}':fontsdir='${fp(FONTS)}',format=yuv420p[v]`,
-    `[${audIn}]afade=t=in:d=0.15,afade=t=out:st=${Math.max(0, dur - 0.3).toFixed(2)}:d=0.3,loudnorm=I=-14:TP=-1.5:LRA=11[a]`,
-  ].filter(Boolean).join(';');
-  args.push('-filter_complex', graph, '-map', '[v]', '-map', '[a]', ...encoderArgs(job.encoder), '-r', String(fps),
+    `[${audIn}]afade=t=in:d=0.15,afade=t=out:st=${Math.max(0, dur - 0.3).toFixed(2)}:d=0.3,loudnorm=I=-14:TP=-1.5:LRA=11,aformat=sample_rates=48000:channel_layouts=stereo[a]`);
+  args.push('-filter_complex', g.join(';'), '-map', '[v]', '-map', '[a]', ...encoderArgs(job.encoder), '-r', String(fps),
     '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', job.out);
   return args;
 }
@@ -77,12 +121,16 @@ export async function melhorEncoder() {
   return _enc;
 }
 
-// Writes the ASS next to the output and renders. palavras: words relative to the cut start.
-export async function renderCorte({ jogo, camera, audio, start, end, palavras = [], gancho = '', out, config = {} }) {
-  const L = layoutDe(config.camPct);
+// Writes the ASS next to the output and renders one format.
+// marca: { arroba, chamada, logo } of the cut's channel line (see marcaDaLinha in src/marca.js)
+export async function renderCorte({ jogo, camera, audio, start, end, palavras = [], gancho = '', out, formato, marca = null, config = {} }) {
+  const fmt = formato || config.formatoPadrao || 'camtopo';
+  const L = layoutFormato(FORMATOS[fmt] ? fmt : 'camtopo', { camPct: fmt === 'camtopo' ? config.camPct : undefined });
   const ass = out.replace(/\.mp4$/, '.ass');
-  fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho }));
-  const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, regiaoCamera: config.regiaoCamera, camPct: config.camPct, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: config.corBarra, encoder: config.encoder || await melhorEncoder() });
+  const dur = end - start;
+  fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null }));
+  const logo = marca?.logo && fs.existsSync(marca.logo) ? marca.logo : null;
+  const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo, encoder: config.encoder || await melhorEncoder() });
   await run('ffmpeg', args, { timeoutMs: 30 * 60000 });
   return out;
 }

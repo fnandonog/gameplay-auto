@@ -28,7 +28,7 @@
   .aprovar { background: var(--ok); color: #04210f; }
   .descartar { background: transparent; color: var(--no); border: 1px solid var(--no) !important; }
   .status { font-size: 12px; font-weight: 700; text-transform: uppercase; }
-  .status.aprovado { color: var(--ok); } .status.descartado { color: var(--no); } .status.postado, .status.agendado { color: var(--hi); }
+  .status.aprovado { color: var(--ok); } .status.descartado { color: var(--no); } .status.postado, .status.agendado, .status.entregue { color: var(--hi); }
   .vazio { color: var(--muted); text-align: center; padding: 48px 16px; }
 </style>
 </head>
@@ -40,6 +40,7 @@
     <button data-f="aguardando" class="on">Aguardando</button>
     <button data-f="aprovado">Aprovados</button>
     <button data-f="agendado">Agendados</button>
+    <button data-f="entregue">Entregues</button>
     <button data-f="todos">Todos</button>
   </div>
 </header>
@@ -47,6 +48,7 @@
 <main id="lista"><p class="vazio">Carregando...</p></main>
 <script>
 let filtro = 'aguardando', sessoes = [], linhas = [];
+const NOMES_FORMATO = { meio: 'Meio a meio', camtopo: 'Câmera em cima', jogo: 'Só o jogo', jogocheio: 'Jogo em tela cheia' };
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${encodeURIComponent(a)}`;
@@ -71,6 +73,7 @@ function desenhar() {
           <input class="titulo" value="${esc(c.titulo)}" aria-label="Título">
           <textarea class="descricao" aria-label="Descrição">${esc(c.descricao)}</textarea>
           ${c.longo ? '' : `<input class="hashtags" value="${esc((c.hashtags || []).map((h) => '#' + h).join(' '))}" aria-label="Hashtags">`}
+          ${c.variantes && Object.keys(c.variantes).length > 1 ? `<select class="formato" aria-label="Formato">${Object.keys(c.variantes).map((f) => `<option value="${esc(f)}"${f === c.formato ? ' selected' : ''}>${esc(NOMES_FORMATO[f] || f)}</option>`).join('')}</select>` : ''}
           ${c.longo ? '' : `<select class="linha" aria-label="Canal">${linhas.map((l) => `<option value="${esc(l.id)}"${l.id === c.linha ? ' selected' : ''}>${esc(l.nome)} · ${esc(l.redes.join(', '))}</option>`).join('')}</select>`}
           <div class="acoes"><button class="descartar">Descartar</button><button class="aprovar">Aprovar</button></div>
         </div>
@@ -84,15 +87,25 @@ async function salvar(card, status) {
     pasta: card.dataset.pasta, arquivo: card.dataset.arquivo, status,
     titulo: $('.titulo', card).value, descricao: $('.descricao', card).value,
     linha: $('.linha', card) ? $('.linha', card).value : undefined,
+    formato: $('.formato', card) ? $('.formato', card).value : undefined,
     hashtags: $('.hashtags', card) ? $('.hashtags', card).value.split(/[\s,]+/).filter(Boolean) : undefined,
   };
   const r = await fetch('/api/corte', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const c = await r.json();
   if (!r.ok) return alert(c.erro || 'Não salvou.');
   const s = sessoes.find((x) => x.pasta === body.pasta);
-  Object.assign(s.cortes.find((x) => x.arquivo === body.arquivo) || s.longo, c);
+  Object.assign(s.cortes.find((x) => x.arquivo === body.arquivo || Object.values(x.variantes || {}).includes(body.arquivo)) || s.longo, c);
   desenhar();
 }
+
+// picking a format plays that version right away; it is saved with Aprovar
+document.addEventListener('change', (e) => {
+  const card = e.target.closest('.card');
+  if (!card || !e.target.matches('.formato')) return;
+  const s = sessoes.find((x) => x.pasta === card.dataset.pasta);
+  const c = s && s.cortes.find((x) => x.arquivo === card.dataset.arquivo);
+  if (c && c.variantes[e.target.value]) { const v = $('video', card); v.removeAttribute('poster'); v.src = midia(s.pasta, c.variantes[e.target.value]); }
+});
 
 document.addEventListener('click', (e) => {
   const card = e.target.closest('.card');
