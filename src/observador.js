@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { processarSessao, ehArquivoExtra, arquivosDaSessao } from './sessao.js';
+import { registrar } from './atividade.js';
 
 const VIDEO = /\.(mp4|mkv|mov)$/i;
 
@@ -19,6 +20,7 @@ export function prontos(agora, antes, desde, now, estavelMs) {
 export function observar(config, { estavelSeg = 30, intervaloSeg = 10, log = console.log } = {}) {
   fs.mkdirSync(config.pastaEntrada, { recursive: true });
   fs.mkdirSync(config.pastaProcessados, { recursive: true });
+  registrar(config.pastaSaida, 'vigia', 'esperando', 'De olho na pasta do OBS');
   log(`Observando ${config.pastaEntrada}. Grave no OBS e os cortes aparecem em ${config.pastaSaida}.`);
   let antes = {}; const desde = {}; let ocupado = false; const falhas = new Set();
   const tick = async () => {
@@ -36,11 +38,14 @@ export function observar(config, { estavelSeg = 30, intervaloSeg = 10, log = con
         const arq = arquivosDaSessao(principal, nomes, config);
         // the extra files must be finished too
         if ([arq.jogo, arq.camera].some((p) => !ok.includes(path.basename(p)))) continue;
+        registrar(config.pastaSaida, 'vigia', 'trabalhando', `Gravação nova: ${f}`);
         await processarSessao(principal, config, { log });
+        registrar(config.pastaSaida, 'vigia', 'esperando', `${f} processada. De olho na pasta do OBS`);
         for (const p of new Set([arq.cena, arq.jogo, arq.camera])) fs.renameSync(p, path.join(config.pastaProcessados, path.basename(p)));
       } catch (e) {
         falhas.add(f);
         log(`Falhou ${f}: ${e.message}`);
+        registrar(config.pastaSaida, 'vigia', 'erro', `Falhou ${f}: ${e.message}`);
       }
     }
     ocupado = false;

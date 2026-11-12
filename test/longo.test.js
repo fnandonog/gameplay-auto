@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { capitulos, listaConcat, mapearTempo, segmentosLongos } from '../src/longo.js';
+import { capitulos, filtrosSelecao, mapearTempo, segmentosLongos } from '../src/longo.js';
 
 const w = (s, e) => ({ text: 'x', start: s, end: e });
 
@@ -29,7 +29,8 @@ test('capítulos começam em 0:00 e só saem com pelo menos 3', () => {
   assert.deepEqual(capitulos([], segs, 0), []);
 });
 
-test('lista do concat: prévia primeiro, caminho com aspas escapado', () => {
-  const l = listaConcat("/in/o'k.mp4", [{ start: 0, end: 17 }], { start: 90, end: 100 });
-  assert.match(l, /^ffconcat version 1.0\nfile '\/in\/o'\\''k.mp4'\ninpoint 90.000\noutpoint 100.000\nfile/);
+test('seleção exata dos trechos mantidos, em uma passada', () => {
+  const f = filtrosSelecao([{ start: 0, end: 17 }, { start: 90, end: 100.5 }]);
+  assert.equal(f.vf, "select='between(t,0.000,17.000)+between(t,90.000,100.500)',setpts=N/FRAME_RATE/TB");
+  assert.equal(f.af, "aselect='between(t,0.000,17.000)+between(t,90.000,100.500)',asetpts=N/SR/TB");
 });

@@ -21,36 +21,41 @@
   .corpo { padding: 10px 12px 12px; display: grid; gap: 8px; }
   .meta { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 8px; }
   .nota { color: var(--hi); font-weight: 700; }
-  input, textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: inherit; }
+  input, textarea, select { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: inherit; }
   textarea { min-height: 64px; resize: vertical; }
   .acoes { display: flex; gap: 8px; }
   .acoes button { flex: 1; border: 0; border-radius: 8px; padding: 10px; font: inherit; font-weight: 600; }
   .aprovar { background: var(--ok); color: #04210f; }
   .descartar { background: transparent; color: var(--no); border: 1px solid var(--no) !important; }
   .status { font-size: 12px; font-weight: 700; text-transform: uppercase; }
-  .status.aprovado { color: var(--ok); } .status.descartado { color: var(--no); } .status.postado, .status.agendado { color: var(--hi); }
+  .status.aprovado { color: var(--ok); } .status.descartado { color: var(--no); } .status.postado, .status.agendado, .status.entregue { color: var(--hi); }
   .vazio { color: var(--muted); text-align: center; padding: 48px 16px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Cortes</h1>
+  <h1><img src="/marca/fnando-simbolo.svg" alt="" width="28" height="28" style="vertical-align:-7px;margin-right:6px">Cortes</h1>
+  <a href="/escritorio" style="color:var(--hi);font-weight:600;text-decoration:none;margin-right:8px">Escritório →</a>
   <div class="filtro" id="filtro">
     <button data-f="aguardando" class="on">Aguardando</button>
     <button data-f="aprovado">Aprovados</button>
     <button data-f="agendado">Agendados</button>
+    <button data-f="entregue">Entregues</button>
     <button data-f="todos">Todos</button>
   </div>
 </header>
+<p id="pausa" hidden style="margin:0;padding:10px 16px;background:var(--no);color:#fff;font-weight:600">Postagem pausada: <span></span> <button style="margin-left:8px">Retomar</button></p>
 <main id="lista"><p class="vazio">Carregando...</p></main>
 <script>
-let filtro = 'aguardando', sessoes = [];
+let filtro = 'aguardando', sessoes = [], linhas = [];
+const NOMES_FORMATO = { meio: 'Meio a meio', camtopo: 'Câmera em cima', jogo: 'Só o jogo', jogocheio: 'Jogo em tela cheia' };
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${encodeURIComponent(a)}`;
 
 async function carregar() {
   try { sessoes = await (await fetch('/api/sessoes')).json(); } catch { sessoes = []; }
+  try { linhas = await (await fetch('/api/linhas')).json(); } catch { linhas = []; }
   desenhar();
 }
 
@@ -64,10 +69,12 @@ function desenhar() {
         <video src="${midia(s.pasta, c.arquivo)}" ${c.capa ? `poster="${midia(s.pasta, c.capa)}"` : ''} controls playsinline preload="none"></video>
         <div class="corpo">
           <div class="meta"><span class="nota">${c.longo ? 'YouTube' : 'nota ' + Number(c.nota).toFixed(1)}</span><span>${c.longo ? Math.round(c.duracao / 60) + ' min' : Math.round(c.fim - c.inicio) + ' s'} · ${esc(c.motivo)}</span></div>
-          <span class="status ${esc(c.status)}">${esc(c.status)}${c.agendadoPara ? ' · ' + new Date(c.agendadoPara).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}${c.erroPost ? ' · erro: ' + esc(c.erroPost) : ''}</span>
+          <span class="status ${esc(c.status)}">${esc(c.status)}${c.agendadoPara ? ' · ' + new Date(c.agendadoPara).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}${c.erroPost ? ' · erro: ' + esc(c.erroPost) : ''}${c.filtro ? ' · filtro: ' + esc(c.filtro.join('; ')) : ''}</span>
           <input class="titulo" value="${esc(c.titulo)}" aria-label="Título">
           <textarea class="descricao" aria-label="Descrição">${esc(c.descricao)}</textarea>
-          ${c.longo ? '' : `<input class="hashtags" value`="${esc((c.hashtags || []).map((h) => '#' + h).join(' '))}" aria-label="Hashtags">`}
+          ${c.longo ? '' : `<input class="hashtags" value="${esc((c.hashtags || []).map((h) => '#' + h).join(' '))}" aria-label="Hashtags">`}
+          ${c.variantes && Object.keys(c.variantes).length > 1 ? `<select class="formato" aria-label="Formato">${Object.keys(c.variantes).map((f) => `<option value="${esc(f)}"${f === c.formato ? ' selected' : ''}>${esc(NOMES_FORMATO[f] || f)}</option>`).join('')}</select>` : ''}
+          ${c.longo ? '' : `<select class="linha" aria-label="Canal">${linhas.map((l) => `<option value="${esc(l.id)}"${l.id === c.linha ? ' selected' : ''}>${esc(l.nome)} · ${esc(l.redes.join(', '))}</option>`).join('')}</select>`}
           <div class="acoes"><button class="descartar">Descartar</button><button class="aprovar">Aprovar</button></div>
         </div>
       </article>`).join('')}</div>`;
@@ -79,15 +86,26 @@ async function salvar(card, status) {
   const body = {
     pasta: card.dataset.pasta, arquivo: card.dataset.arquivo, status,
     titulo: $('.titulo', card).value, descricao: $('.descricao', card).value,
+    linha: $('.linha', card) ? $('.linha', card).value : undefined,
+    formato: $('.formato', card) ? $('.formato', card).value : undefined,
     hashtags: $('.hashtags', card) ? $('.hashtags', card).value.split(/[\s,]+/).filter(Boolean) : undefined,
   };
   const r = await fetch('/api/corte', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const c = await r.json();
   if (!r.ok) return alert(c.erro || 'Não salvou.');
   const s = sessoes.find((x) => x.pasta === body.pasta);
-  Object.assign(s.cortes.find((x) => x.arquivo === body.arquivo) || s.longo, c);
+  Object.assign(s.cortes.find((x) => x.arquivo === body.arquivo || Object.values(x.variantes || {}).includes(body.arquivo)) || s.longo, c);
   desenhar();
 }
+
+// picking a format plays that version right away; it is saved with Aprovar
+document.addEventListener('change', (e) => {
+  const card = e.target.closest('.card');
+  if (!card || !e.target.matches('.formato')) return;
+  const s = sessoes.find((x) => x.pasta === card.dataset.pasta);
+  const c = s && s.cortes.find((x) => x.arquivo === card.dataset.arquivo);
+  if (c && c.variantes[e.target.value]) { const v = $('video', card); v.removeAttribute('poster'); v.src = midia(s.pasta, c.variantes[e.target.value]); }
+});
 
 document.addEventListener('click', (e) => {
   const card = e.target.closest('.card');
@@ -96,7 +114,13 @@ document.addEventListener('click', (e) => {
   const f = e.target.closest('#filtro button');
   if (f) { filtro = f.dataset.f; document.querySelectorAll('#filtro button').forEach((b) => b.classList.toggle('on', b === f)); desenhar(); }
 });
+async function verPausa() {
+  try { const { pausa } = await (await fetch('/api/pausa')).json(); $('#pausa').hidden = !pausa; if (pausa) $('#pausa span').textContent = pausa.motivo; } catch {}
+}
+$('#pausa button').onclick = async () => { await fetch('/api/retomar', { method: 'POST' }); verPausa(); };
+verPausa();
 carregar();
+setInterval(verPausa, 60000);
 setInterval(() => { if (!document.querySelector('input:focus, textarea:focus, video:not([paused])')) carregar(); }, 60000);
 </script>
 </body>

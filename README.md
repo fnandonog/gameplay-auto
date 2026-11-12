@@ -43,10 +43,12 @@ O Claude lê a transcrição de cada candidato, acerta início e fim, dá nota, 
 | `src/transcricao.js` | whisper.cpp, uma entrada por palavra |
 | `src/momentos.js` | candidatos: comando de voz, marcadores, volume, falas |
 | `src/ia.js` | Claude decide os cortes e escreve os textos |
-| `src/corte.js` + `src/legenda.js` | render vertical com ffmpeg e legenda ASS (adaptado do projeto afiliado) |
+| `src/corte.js` + `src/legenda.js` | render vertical nos formatos (meio a meio, câmera em cima, só o jogo, jogo em tela cheia) e legenda ASS (karaokê ou palavra) |
+| `src/marca.js` + `src/intro.js` | @ da linha, símbolo e "SEGUE @" no vídeo; intro do canal |
+| `src/entrega.js` | entrega os aprovados (vídeo, capa, `post.json`) para a sua skill de postagem |
 | `src/longo.js` | vídeo completo do YouTube, capítulos e thumbnail |
 | `src/painel.js` + `public/painel.html` | painel de aprovação |
-| `src/postagem.js` | agenda nas redes pelo Upload-Post |
+| `src/postagem.js` | opcional: agenda nas redes pelo Upload-Post |
 
 Testes: `npm test`.
 
@@ -58,6 +60,9 @@ Aprovar e Descartar. Para ninguém mais da rede abrir, ponha `"senhaPainel": "..
 
 ## Postar
 
+Padrão: a postagem é da sua skill. Os aprovados vão para `~/Gameplay/prontos/<linha>/...` com `video.mp4`, `capa.jpg` e `post.json` (veja `docs/formatos.md`).
+O que vem abaixo vale só com `"postagem": "upload-post"`.
+
 Os cortes aprovados vão para o próximo horário de pico (12:00, 18:30 e 21:00 de Brasília) no TikTok, Reels e YouTube
 Shorts de uma vez, pelo [Upload-Post](https://upload-post.com) (plano Basic, US$ 16/mês; o TikTok exige um app auditado e esse já é).
 
@@ -65,7 +70,30 @@ Shorts de uma vez, pelo [Upload-Post](https://upload-post.com) (plano Basic, US$
 2. No `config.json`: `"uploadPost": { "perfil": "nome-do-perfil" }`.
 3. No terminal antes de rodar: `export UPLOAD_POST_API_KEY=...` (ou no `~/.zshrc`).
 
-Com `"postarAutomatico": true`, os cortes com nota 8 ou mais são postados sem esperar aprovação.
+Com `"postarAutomatico": true` (piloto automático) ninguém aprova: cada corte passa pelo filtro (`"filtro"`: nota mínima 8,5,
+duração de 12 a 75 s, título e gancho; terceiros só com permissão registrada e `terceiros.automatico`). O que passa é
+agendado, o que não passa é descartado com o motivo escrito no corte. Se uma plataforma recusar um post (403, conta
+suspensa, direitos autorais) ou houver 3 erros seguidos, toda a postagem pausa até você tocar em **Retomar** no painel.
+O volume por dia de cada linha é o número de horários dela.
+
+## Várias contas (linhas)
+
+Com `"linhas"` no `config.json` (modelo em `config.example.json`), cada linha é um perfil do Upload-Post com suas redes e
+horários: FNANDO, FNANDO Shorts, FNANDO Resenha, FNANDO Dicas e CLIPAÍ. Cada corte vai para **uma** linha só: o melhor
+para a principal e os seguintes em rodízio entre as linhas automáticas. No painel dá para trocar a linha antes de aprovar.
+Dicas e CLIPAÍ não recebem cortes da live; corte de terceiros leva crédito na legenda. Facebook entra como Reels (`facebookPage` na linha se o perfil tiver mais de uma página).
+O vídeo longo vai para `longo.perfil`. Sem `linhas`, vale o `uploadPost` de antes (uma conta só). Plano da operação: `docs/canais.md`.
+
+## Escritório
+
+`/escritorio` no painel mostra o pipeline como um escritório em pixel art: cada etapa (Vigia, Escriba, Caçador de lances,
+Roteirista IA, Editor, Montador, você, Agendador, Clipador, Analista) num personagem com o estado real, a fila de cada linha
+e os últimos acontecimentos. O estado fica em `<pastaSaida>/.escritorio.json`.
+
+## Marca
+
+Logos, avatares, banners, modelos de thumbnail e overlay do OBS em `docs/marca/` (PNG) e `public/marca/` (SVG).
+Para gerar de novo: `pip install fonttools cairosvg && python3 tools/marca/gerar.py`.
 
 ## Vídeo completo do YouTube
 

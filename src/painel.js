@@ -6,11 +6,16 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lerAtividade, quadroEscritorio } from './atividade.js';
+import { linhasDe } from './canais.js';
+import { lerPausa, retomar } from './qualidade.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGINA = path.join(ROOT, 'public', 'painel.html');
+const ESCRITORIO = path.join(ROOT, 'public', 'escritorio.html');
+const MARCA = path.join(ROOT, 'public', 'marca');
 const MIME = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg' }; // only the cuts and their covers are served
-export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'postado'];
+export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'entregue', 'postado'];
 
 // a name that came from the URL must be a plain file/folder name inside the output folder
 export const nomeSeguro = (s) => typeof s === 'string' && s.length > 0 && s === path.basename(s) && !s.startsWith('.');
@@ -24,13 +29,22 @@ export function listarSessoes(pastaSaida) {
 }
 
 // applies an edit to one cut; returns the cut or throws
-export function editarCorte(pastaSaida, { pasta, arquivo, ...mud }) {
+export function editarCorte(pastaSaida, { pasta, arquivo, ...mud }, linhas = null) {
   if (!nomeSeguro(pasta) || !nomeSeguro(arquivo)) throw new Error('Corte inválido.');
   const file = path.join(pastaSaida, pasta, 'sessao.json');
   const s = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const c = s.cortes.find((x) => x.arquivo === arquivo) || (s.longo?.arquivo === arquivo ? s.longo : null);
+  const c = s.cortes.find((x) => x.arquivo === arquivo || Object.values(x.variantes || {}).includes(arquivo)) || (s.longo?.arquivo === arquivo ? s.longo : null);
   if (!c) throw new Error('Corte não encontrado.');
   if (mud.status !== undefined) { if (!STATUS.includes(mud.status)) throw new Error('Status inválido.'); c.status = mud.status; }
+  if (mud.linha !== undefined) { if (linhas && !linhas.some((l) => l.id === mud.linha)) throw new Error('Linha inválida.'); c.linha = String(mud.linha); }
+  // another rendered format becomes the one that is posted
+  if (mud.formato !== undefined && mud.formato !== c.formato) {
+    const novo = c.variantes?.[mud.formato];
+    if (!novo) throw new Error('Formato inválido.');
+    c.formato = String(mud.formato); c.arquivo = novo;
+    const jpg = novo.replace(/\.mp4$/, '.jpg');
+    if (fs.existsSync(path.join(pastaSaida, pasta, jpg))) c.capa = jpg;
+  }
   if (typeof mud.titulo === 'string') c.titulo = mud.titulo.slice(0, 100);
   if (typeof mud.descricao === 'string') c.descricao = mud.descricao.slice(0, 5000);
   if (Array.isArray(mud.hashtags)) c.hashtags = mud.hashtags.map((h) => String(h).replace(/^#/, '').trim()).filter(Boolean).slice(0, 10);
@@ -66,10 +80,22 @@ export function criarPainel(config) {
       if (!autorizado(req)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Abra o endereço com ?senha=...'); }
       if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return fs.createReadStream(PAGINA).pipe(res); }
       if (req.method === 'GET' && url.pathname === '/api/sessoes') return json(res, 200, listarSessoes(config.pastaSaida));
+      if (req.method === 'GET' && url.pathname === '/escritorio') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return fs.createReadStream(ESCRITORIO).pipe(res); }
+      if (req.method === 'GET' && url.pathname === '/api/pausa') return json(res, 200, { pausa: lerPausa(config.pastaSaida), automatico: !!config.postarAutomatico });
+      if (req.method === 'POST' && url.pathname === '/api/retomar') { retomar(config.pastaSaida); return json(res, 200, { pausa: null }); }
+      if (req.method === 'GET' && url.pathname === '/api/linhas') return json(res, 200, linhasDe(config).map(({ id, nome, redes, conteudo, terceiros }) => ({ id, nome, redes, conteudo, terceiros: !!terceiros })));
+      if (req.method === 'GET' && url.pathname === '/api/escritorio') {
+        return json(res, 200, quadroEscritorio({ atividade: lerAtividade(config.pastaSaida), sessoes: listarSessoes(config.pastaSaida), linhas: linhasDe(config), config, pausa: lerPausa(config.pastaSaida) }));
+      }
+      const marca = /^\/marca\/([^/]+\.(svg|png))$/.exec(url.pathname);
+      if (req.method === 'GET' && marca && nomeSeguro(marca[1]) && fs.existsSync(path.join(MARCA, marca[1]))) {
+        res.writeHead(200, { 'content-type': marca[2] === 'svg' ? 'image/svg+xml' : 'image/png', 'cache-control': 'max-age=3600' });
+        return fs.createReadStream(path.join(MARCA, marca[1])).pipe(res);
+      }
       if (req.method === 'POST' && url.pathname === '/api/corte') {
         let body = '';
         req.on('data', (d) => { body += d; if (body.length > 1e5) req.destroy(); });
-        req.on('end', () => { try { json(res, 200, editarCorte(config.pastaSaida, JSON.parse(body || '{}'))); } catch (e) { json(res, 400, { erro: e.message }); } });
+        req.on('end', () => { try { json(res, 200, editarCorte(config.pastaSaida, JSON.parse(body || '{}'), linhasDe(config))); } catch (e) { json(res, 400, { erro: e.message }); } });
         return;
       }
       const mid = /^\/midia\/([^/]+)\/([^/]+)$/.exec(url.pathname);
