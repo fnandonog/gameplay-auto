@@ -11,7 +11,7 @@ import { linhasDe } from './canais.js';
 import { lerPausa, retomar } from './qualidade.js';
 import { lerContas, salvarConta } from './contas.js';
 import { coletarMetricas, salvarTiktok } from './metricas.js';
-import { lerRadar, sincronizarRadar, lerEstadoRadar, salvarEstadoRadar, statusDaIdeia, pastaImagensRadar, imagemRadarSegura } from './radar.js';
+import { lerRadar, sincronizarRadar, lerEstadoRadar, salvarEstadoRadar, statusDaIdeia, pastaImagensRadar, imagemRadarSegura, salvarFotoEnviada, fotoDaGravacao } from './radar.js';
 import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
 import { arquivoToken, garantirToken, bearerOk, assinaturaOk, proximoJob, arquivoDoVideo, registrarResultado } from './tiktokChrome.js';
 import { registrar } from './atividade.js';
@@ -254,6 +254,18 @@ export function criarPainel(config) {
         const nome = decodeURIComponent(ri[1]), file = path.join(pastaImagensRadar(config), nome);
         if (!imagemRadarSegura(nome) || !fs.existsSync(file)) return json(res, 404, { erro: 'Não encontrado.' });
         return servirArquivo(req, res, file, { 'content-type': /\.png$/i.test(nome) ? 'image/png' : /\.webp$/i.test(nome) ? 'image/webp' : 'image/jpeg' });
+      }
+      if (req.method === 'POST' && url.pathname === '/api/radar/foto') {
+        const partes = []; let n = 0;
+        req.on('data', (d) => { n += d.length; if (n > 15e6) req.destroy(); else partes.push(d); });
+        req.on('end', () => { Promise.resolve().then(() => salvarFotoEnviada(config, url.searchParams.get('id'), Buffer.concat(partes))).then((r) => json(res, 200, r), (e) => json(res, 400, { erro: e.message })); });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/radar/quadro') {
+        let body = '';
+        req.on('data', (d) => { body += d; if (body.length > 1e4) req.destroy(); });
+        req.on('end', () => { Promise.resolve().then(() => { const { id, gravacao, tempo } = JSON.parse(body || '{}'); return fotoDaGravacao(config, id, gravacao, tempo); }).then((r) => json(res, 200, r), (e) => json(res, 400, { erro: e.message })); });
+        return;
       }
       if (req.method === 'POST' && url.pathname === '/api/radar/estado') {
         let body = '';

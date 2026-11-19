@@ -135,6 +135,44 @@
   .md .lr div { display: flex; align-items: center; gap: 8px; font-size: 13px; }
   .md .lr .v { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
   .aviso { background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.35); color: #ffb3b3; border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+  /* radar */
+  .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filtros .seg { flex-wrap: wrap; }
+  .feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .idc { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  .idc.ign { opacity: .55; }
+  .idc-capa { position: relative; border: 0; padding: 0; background: none; cursor: pointer; display: block; width: 100%; }
+  .capa { aspect-ratio: 16/9; background: #000 center/cover; position: relative; }
+  .capa.g { aspect-ratio: 16/8; border-radius: 16px 16px 0 0; }
+  .capa.vazia { background: radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--c) 40%, transparent), transparent 60%), repeating-linear-gradient(45deg, #1a1c24 0 10px, #16181f 10px 20px); display: grid; place-content: center; text-align: center; gap: 2px; }
+  .capa.vazia span { font-weight: 800; font-size: 18px; } .capa.vazia small { color: var(--muted); font-size: 12px; }
+  .nfotos { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,.7); border-radius: 6px; padding: 1px 7px; font-size: 11px; font-weight: 700; }
+  .selos { position: absolute; left: 8px; top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .selo { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,.72); color: var(--cy); }
+  .selo.fogo { background: var(--hi); color: #111; } .selo.cinza { color: var(--muted); }
+  .stp { position: absolute; right: 8px; top: 8px; background: rgba(0,0,0,.72); }
+  .idc-c { padding: 12px 14px 14px; display: grid; gap: 7px; flex: 1; align-content: start; }
+  .tp { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; font-weight: 600; }
+  .idc h3 { margin: 0; font-size: 16px; line-height: 1.3; cursor: pointer; }
+  .idc p { margin: 0; font-size: 13px; color: #cfd2d8; }
+  .idc .oq { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .idc .pq b, .idc .onde b { color: var(--text); }
+  .idc .onde { color: var(--muted); }
+  .tsug { display: flex; gap: 8px; align-items: center; background: rgba(255,230,0,.07); border: 1px dashed rgba(255,230,0,.35); border-radius: 9px; padding: 7px 9px; font-size: 13px; font-weight: 700; }
+  .tsug span { flex: 1; }
+  .copiar { background: none; border: 0; color: var(--hi); font-size: 12px; font-weight: 700; cursor: pointer; }
+  .acoes-i { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .mk { background: var(--card2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); }
+  .mk.on { background: var(--hi); color: #111; border-color: var(--hi); } .mk.mais { margin-left: auto; color: var(--text); }
+  .mi .info { padding: 18px; display: grid; gap: 14px; } .mi h3 { margin: 0; font-size: 19px; padding-right: 30px; }
+  .mi p { margin: 0; font-size: 14px; color: #d4d7dd; white-space: pre-wrap; }
+  .mi .rot { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); font-weight: 700; margin-bottom: 5px; }
+  .mi .chips { display: flex; gap: 5px; flex-wrap: wrap; } .mi .fonte { font-size: 13px; padding: 3px 0; }
+  .mi .fechar { position: absolute; top: 10px; right: 10px; z-index: 2; background: rgba(0,0,0,.6); border: 1px solid var(--line); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; }
+  .galeria { display: grid; grid-auto-flow: column; grid-auto-columns: 80%; gap: 6px; overflow-x: auto; border-radius: 16px 16px 0 0; }
+  .galeria a { aspect-ratio: 16/9; background: #000 center/cover; display: block; }
+  .addfoto { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  select.campo { appearance: auto; }
   /* older tabs */
   .lista { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
   .item { background: var(--card); padding: 12px 14px; display: flex; gap: 12px; align-items: center; }
@@ -196,7 +234,7 @@
     <button class="nav" data-a="cortes"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg>Cortes<span class="n" data-n="cortes"></span></button>
     <a class="nav" href="/cortes"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Revisar e aprovar</a>
     <button class="nav" data-a="gravacoes"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/></svg>Gravações</button>
-    <button class="nav" data-a="ideias"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Ideias e radar</button>
+    <button class="nav" data-a="ideias"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Radar</button>
     <div class="sec">Ajustes</div>
     <button class="nav" data-a="redes"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>Contas e conexões<span class="n" data-n="redes"></span></button>
     <a class="nav" href="/escritorio"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>Escritório</a>
@@ -209,7 +247,7 @@
 let D = null, P = null, C = null, A = null;
 const ANTIGAS = { hoje: 'visao', inicio: 'visao', checklist: 'visao', longos: 'cortes', prontos: 'agenda', contas: 'redes', radar: 'ideias', roteiros: 'ideias', brutos: 'gravacoes' };
 let aba = (location.hash || '#visao').slice(1); aba = ANTIGAS[aba] || aba;
-const est = { medida: 'seguidores', dias: 30, semana: 0, ordem: 'data' };
+const est = { medida: 'seguidores', dias: 30, semana: 0, ordem: 'data', radarFiltro: 'todas', radarTipo: '' };
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${String(a).split('/').map(encodeURIComponent).join('/')}`;
@@ -341,6 +379,63 @@ function cardPost(p) {
   </button>`;
 }
 
+const TIPO = { easter_egg: ['Easter eggs', '#a855f7', 'Easter egg'], arma: ['Armas', '#f0564c', 'Arma'], carro: ['Carros', '#5b8ff9', 'Carro'], dica: ['Dicas', '#2ecc71', 'Dica'], dinheiro: ['Dinheiro', '#e3b341', 'Dinheiro'], momento_engracado: ['Engraçados', '#e8457f', 'Momento engraçado'] };
+const ST_IDEIA = { nova: ['nova', 'hi'], 'quero gravar': ['quero gravar', 'cy'], 'tem corte': ['já tem corte', 'ok'], gravado: ['gravado', 'ok'], postado: ['postado', 'ok'], ignorado: ['ignorada', ''] };
+function capaIdeia(i, grande) {
+  const cor = TIPO[i.tipo]?.[1] || '#646a78';
+  return i.fotos?.length ? `<div class="capa${grande ? ' g' : ''}" style="background-image:url('${esc(i.fotos[0])}')">${i.fotos.length > 1 ? `<span class="nfotos">${i.fotos.length} fotos</span>` : ''}</div>`
+    : `<div class="capa vazia${grande ? ' g' : ''}" style="--c:${cor}"><span>${esc(i.local?.regiao || 'Leonida')}</span><small>Sem foto do local ainda</small></div>`;
+}
+function cardIdeia(i) {
+  const [st, sc] = ST_IDEIA[i.status] || [i.status, ''];
+  const tit = i.tituloSugerido || i.titulo_short || '';
+  return `<article class="idc${i.status === 'ignorado' ? ' ign' : ''}">
+    <button class="idc-capa" data-ideia="${esc(i.id)}">${capaIdeia(i)}
+      <span class="selos">${i.prioridade <= 1 ? '<span class="selo fogo">Bombando</span>' : ''}${!i.coberto_no_br ? '<span class="selo">Ninguém fez no BR</span>' : ''}${i.confirmado === false ? '<span class="selo cinza">não confirmado</span>' : ''}</span>
+</button>
+    <div class="idc-c">
+      <div class="tp"><span class="sw" style="background:${TIPO[i.tipo]?.[1] || 'var(--faint)'}"></span>${esc(TIPO[i.tipo]?.[2] || i.tipo || '')}${i.local?.regiao ? ` · ${esc(i.local.regiao)}` : ''}<span class="pill ${sc}" style="margin-left:auto">${esc(st)}</span></div>
+      <h3 data-ideia="${esc(i.id)}">${esc(i.titulo)}</h3>
+      <p class="oq">${esc(i.o_que_e || i.resumo || '')}</p>
+      ${i.por_que_viraliza ? `<p class="pq"><b>Por que viraliza:</b> ${esc(i.por_que_viraliza)}</p>` : ''}
+      <p class="onde"><b>Onde:</b> ${esc(i.local?.referencia || i.como_achar || 'local ainda não publicado')}</p>
+      ${tit ? `<div class="tsug"><span>${esc(tit)}</span><button class="copiar" data-copiar="${esc(tit)}" title="Copiar título">Copiar</button></div>` : ''}
+      <div class="acoes-i">
+        <button class="mk${i.marcado === 'salvo' ? ' on' : ''}" data-marcar="${esc(i.id)}" data-estado="salvo">Quero gravar</button>
+        <button class="mk${i.marcado === 'gravado' ? ' on' : ''}" data-marcar="${esc(i.id)}" data-estado="gravado">Já gravei</button>
+        <button class="mk${i.marcado === 'ignorado' ? ' on' : ''}" data-marcar="${esc(i.id)}" data-estado="ignorado">Ignorar</button>
+        <button class="mk mais" data-ideia="${esc(i.id)}">Detalhes</button>
+      </div>
+    </div></article>`;
+}
+function abrirIdeia(id) {
+  const i = (D.radar?.itens || []).find((x) => x.id === id);
+  if (!i) return;
+  const fontes = (i.fontes?.length ? i.fontes : i.fonte ? [{ url: i.fonte }] : []).filter((f) => /^https:\/\//.test(f.url || ''));
+  const grav = D.brutos.filter((b) => b.onde === 'gravacoes' || b.status === 'processado');
+  const m = $('#modal');
+  m.innerHTML = `<div class="mi" style="position:relative"><button class="fechar" data-fechar aria-label="Fechar">✕</button>
+    ${i.fotos?.length ? `<div class="galeria" style="grid-auto-columns:${i.fotos.length > 1 ? '80%' : '100%'}">${i.fotos.map((f) => `<a href="${esc(f)}" target="_blank" rel="noopener" style="background-image:url('${esc(f)}')"></a>`).join('')}</div>` : capaIdeia(i, true)}
+    <div class="info">
+      <div class="tp"><span class="sw" style="background:${TIPO[i.tipo]?.[1] || 'var(--faint)'}"></span>${esc(TIPO[i.tipo]?.[2] || i.tipo || '')}${i.local?.regiao ? ` · ${esc(i.local.regiao)}` : ''} · ${esc((ST_IDEIA[i.status] || [i.status])[0])}</div>
+      <h3>${esc(i.titulo)}</h3>
+      <div><div class="rot">O que é</div><p>${esc(i.o_que_e || i.resumo || '')}</p></div>
+      ${i.por_que_viraliza ? `<div><div class="rot">Por que viraliza</div><p>${esc(i.por_que_viraliza)}</p></div>` : ''}
+      <div><div class="rot">Onde fica e como achar</div><p>${esc([i.local?.referencia, i.como_achar].filter(Boolean).join('\n\n') || 'Local ainda não publicado.')}</p></div>
+      ${i.tituloSugerido || i.gancho ? `<div><div class="rot">Para o vídeo</div>${i.tituloSugerido ? `<div class="tsug"><span>${esc(i.tituloSugerido)}</span><button class="copiar" data-copiar="${esc(i.tituloSugerido)}">Copiar</button></div>` : ''}${i.gancho ? `<p style="margin-top:6px"><b>Gancho:</b> ${esc(i.gancho)}</p>` : ''}</div>` : ''}
+      ${[...(i.palavras || []), ...(i.frases || [])].length ? `<div><div class="rot">Fale isso na gravação que a central acha o trecho sozinha</div><div class="chips">${[...(i.frases || []), ...(i.palavras || [])].slice(0, 14).map((k) => `<span class="pill">${esc(k)}</span>`).join('')}</div></div>` : ''}
+      ${fontes.length ? `<div><div class="rot">Fontes lá fora</div>${fontes.map((f) => `<div class="fonte"><a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.titulo || new URL(f.url).hostname)}</a>${f.plataforma ? ` <span class="faint">· ${esc(f.plataforma)}</span>` : ''}${f.views ? ` <span class="faint">· ${num(f.views)} views</span>` : ''}</div>`).join('')}</div>` : ''}
+      ${i.cortes?.length ? `<div><div class="rot">Cortes que saíram disso</div>${i.cortes.map((c) => `<div class="fonte">${esc(c.titulo)} ${pill(c.status)}</div>`).join('')}</div>` : ''}
+      <div class="addfoto"><div class="rot">Foto do local exato</div>
+        <p class="faint" style="margin:0 0 8px">Quando achar o lugar, abra o mapa do jogo por 2 segundos. Depois diga aqui a gravação e o minuto, ou mande um print.</p>
+        <div class="linha2"><select class="campo" data-fgrav style="flex:2">${grav.map((b) => `<option>${esc(b.nome)}</option>`).join('') || '<option value="">nenhuma gravação</option>'}</select>
+          <input class="campo" data-ftempo placeholder="min:seg" style="flex:1;min-width:80px"><button class="btn sec" data-quadro="${esc(i.id)}">Pegar da gravação</button></div>
+        <div class="linha2" style="margin-top:8px"><label class="btn sec" style="cursor:pointer">Enviar print<input type="file" accept="image/jpeg,image/png" hidden data-fupload="${esc(i.id)}"></label><span class="faint" data-fmsg></span></div>
+      </div>
+    </div></div>`;
+  m.showModal();
+}
+
 const TELAS = {
   visao() {
     const R = redes(), T = D.redes?.total || {}, H = D.redes?.historico || [];
@@ -460,13 +555,18 @@ const TELAS = {
   },
   ideias() {
     const R = D.radar || { itens: [] };
-    const it = [...R.itens].sort((a, b) => (a.cortes.length > 0) - (b.cortes.length > 0) || a.prioridade - b.prioridade);
-    return `<div class="cab"><div><h1>Ideias e radar</h1><div class="sub">Se você falar desses assuntos enquanto grava, o trecho vira corte com prioridade e com este título.${R.atualizadoEm ? ` Radar atualizado ${ha(R.atualizadoEm)}.` : ''}</div></div></div>
-    <h3 class="sub">Bombando lá fora</h3>
-    ${it.length ? `<div class="lista">${it.map((i) => `<details class="ideia"><summary><span class="t">${esc(i.titulo)}</span>${i.cortes.length ? '<span class="pill ok">já tem corte</span>' : i.prioridade <= 1 ? '<span class="pill hi">grave isso</span>' : ''}</summary>
-      <div class="corpo">${esc([i.o_que_e || i.resumo, i.como_achar ? 'Como achar: ' + i.como_achar : '', i.tituloSugerido ? 'Título: ' + i.tituloSugerido : '', i.confirmado ? '' : 'Ainda não confirmado: confira no jogo antes.'].filter(Boolean).join('\n'))}</div></details>`).join('')}</div>` : '<div class="vazio">O radar ainda não mandou nada.</div>'}
-    <h3 class="sub">Roteiros</h3>
-    ${D.roteiros.length ? `<div class="lista">${D.roteiros.map((r) => `<details class="ideia"><summary><span class="t">${esc(r.titulo || r.arquivo)}</span><span class="pill">${esc(r.tipo)}</span></summary><div class="corpo">${esc(r.texto)}</div></details>`).join('')}</div>` : '<div class="vazio">Nenhum roteiro.</div>'}`;
+    const todos = R.itens;
+    const F = { todas: (i) => i.status !== 'ignorado', gravar: (i) => ['nova', 'quero gravar'].includes(i.status), salvas: (i) => i.status === 'quero gravar', feitas: (i) => ['tem corte', 'gravado'].includes(i.status), postadas: (i) => i.status === 'postado', ignoradas: (i) => i.status === 'ignorado' };
+    const NF = [['todas', 'Todas'], ['gravar', 'Para gravar'], ['salvas', 'Quero gravar'], ['feitas', 'Já gravei'], ['postadas', 'Postadas'], ['ignoradas', 'Ignoradas']];
+    const tipos = [...new Set(todos.map((i) => i.tipo).filter(Boolean))];
+    const ORD = { 'quero gravar': 0, nova: 1, 'tem corte': 2, gravado: 3, postado: 4, ignorado: 5 };
+    const lista = todos.filter(F[est.radarFiltro] || F.todas).filter((i) => !est.radarTipo || i.tipo === est.radarTipo)
+      .sort((a, b) => ORD[a.status] - ORD[b.status] || a.prioridade - b.prioridade || (a.coberto_no_br ? 1 : 0) - (b.coberto_no_br ? 1 : 0));
+    return `<div class="cab"><div><h1>Radar</h1><div class="sub">O que bombou lá fora e ainda não tem no Brasil. Se você falar disso enquanto grava, o trecho vira corte com prioridade e com o título sugerido.${R.atualizadoEm ? ` Atualizado ${ha(R.atualizadoEm)}.` : ''}</div></div></div>
+    <div class="filtros"><div class="seg">${NF.map(([k, t]) => `<button data-rfiltro="${k}" class="${(est.radarFiltro || 'todas') === k ? 'on' : ''}">${t} <span class="faint">${todos.filter(F[k]).length}</span></button>`).join('')}</div>
+      <div class="seg"><button data-rtipo="" class="${!est.radarTipo ? 'on' : ''}">Tudo</button>${tipos.map((t) => `<button data-rtipo="${esc(t)}" class="${est.radarTipo === t ? 'on' : ''}">${esc(TIPO[t]?.[0] || t)}</button>`).join('')}</div></div>
+    ${lista.length ? `<div class="feed">${lista.map(cardIdeia).join('')}</div>` : `<div class="semdados">${todos.length ? 'Nada nesse filtro.' : 'O radar ainda não mandou nada.'}</div>`}
+    ${D.roteiros.length ? `<h3 class="sub">Roteiros</h3><div class="lista">${D.roteiros.map((r) => `<details class="ideia"><summary><span class="t">${esc(r.titulo || r.arquivo)}</span><span class="pill">${esc(r.tipo)}</span></summary><div class="corpo">${esc(r.texto)}</div></details>`).join('')}</div>` : ''}`;
   },
   gravacoes() {
     return `<div class="cab"><div><h1>Gravações</h1><div class="sub">Grave no OBS que a gravação entra sozinha.</div></div></div>
@@ -561,6 +661,17 @@ document.addEventListener('click', async (e) => {
   const q = (s) => e.target.closest(s);
   if (q('[data-fechar]') || e.target.id === 'modal') { $('#modal').close(); return; }
   const post = q('[data-post]'); if (post) { abrirPost(post.dataset.post); return; }
+  const idq = q('[data-ideia]'); if (idq) { abrirIdeia(idq.dataset.ideia); return; }
+  const rf = q('[data-rfiltro]'); if (rf) { est.radarFiltro = rf.dataset.rfiltro; desenhar(); return; }
+  const rt = q('[data-rtipo]'); if (rt) { est.radarTipo = rt.dataset.rtipo; desenhar(); return; }
+  const cp = q('[data-copiar]'); if (cp) { navigator.clipboard?.writeText(cp.dataset.copiar).catch(() => {}); const t = cp.textContent; cp.textContent = 'Copiado'; setTimeout(() => { cp.textContent = t; }, 1200); return; }
+  const mk = q('[data-marcar]');
+  if (mk) { const it = D.radar.itens.find((x) => x.id === mk.dataset.marcar); const estado = it?.marcado === mk.dataset.estado ? null : mk.dataset.estado;
+    await fetch('/api/radar/estado', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: mk.dataset.marcar, estado }) }); await carregar(); return; }
+  const qd = q('[data-quadro]');
+  if (qd) { const box = qd.closest('.addfoto'), msg = $('[data-fmsg]', box); msg.textContent = 'Pegando o quadro...';
+    const r = await fetch('/api/radar/quadro', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: qd.dataset.quadro, gravacao: $('[data-fgrav]', box).value, tempo: $('[data-ftempo]', box).value }) }).then((x) => x.json()).catch(() => ({ erro: 'Não foi.' }));
+    if (r.erro) { msg.textContent = r.erro; return; } await carregar(); abrirIdeia(qd.dataset.quadro); return; }
   const md = q('[data-medida]'); if (md) { est.medida = md.dataset.medida; desenhar(); return; }
   const di = q('[data-dias]'); if (di) { est.dias = +di.dataset.dias; desenhar(); return; }
   const se = q('[data-semana]'); if (se) { est.semana = +se.dataset.semana === 0 ? 0 : est.semana + +se.dataset.semana; desenhar(); return; }
@@ -583,6 +694,10 @@ document.addEventListener('click', async (e) => {
   if (b) { e.preventDefault(); aba = b.dataset.a || b.dataset.ir; history.replaceState(null, '', '#' + aba); desenhar(); scrollTo(0, 0); }
 });
 document.addEventListener('change', async (e) => {
+  const up = e.target.closest('[data-fupload]');
+  if (up && up.files[0]) { const msg = $('[data-fmsg]', up.closest('.addfoto')); msg.textContent = 'Enviando...';
+    const r = await fetch(`/api/radar/foto?id=${encodeURIComponent(up.dataset.fupload)}`, { method: 'POST', body: up.files[0] }).then((x) => x.json()).catch(() => ({ erro: 'Não foi.' }));
+    if (r.erro) { msg.textContent = r.erro; return; } await carregar(); abrirIdeia(up.dataset.fupload); return; }
   const box = e.target.closest('[data-chave]');
   if (!box) return;
   const chave = box.dataset.chave;

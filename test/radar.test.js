@@ -30,3 +30,18 @@ test('one window per mention, and the radar id survives merging', () => {
   const m = mesclar([{ start: 90, end: 120, nota: 6, motivo: 'pico' }, ...c]);
   assert.equal(m[0].radar, 'ovo');
 });
+
+test('radar: idea status, time parsing and image names', async () => {
+  const { statusDaIdeia, segundosDe, nomeImagemRadar } = await import('../src/radar.js');
+  assert.equal(statusDaIdeia([], null), 'nova');
+  assert.equal(statusDaIdeia([], 'salvo'), 'quero gravar');
+  assert.equal(statusDaIdeia([{ status: 'descartado' }], 'gravado'), 'gravado');
+  assert.equal(statusDaIdeia([{ status: 'aguardando' }], 'ignorado'), 'tem corte');
+  assert.equal(statusDaIdeia([{ status: 'postado' }], null), 'postado');
+  assert.equal(segundosDe('12:30'), 750);
+  assert.equal(segundosDe('1:02:03'), 3723);
+  assert.ok(Number.isNaN(segundosDe('abc')));
+  assert.equal(nomeImagemRadar('radar/img/gta6-ovo-1.jpg'), 'gta6-ovo-1.jpg');
+  assert.equal(nomeImagemRadar('../x.jpg'), null);
+  assert.equal(nomeImagemRadar('radar/img/x.exe'), null);
+});

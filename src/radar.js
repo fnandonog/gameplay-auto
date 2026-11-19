@@ -62,11 +62,49 @@ export function statusDaIdeia(cortes = [], marcado) {
   return 'nova';
 }
 
+// photos of the exact spot the owner adds: a frame of his recording (he opens the game map for 2 s) or an upload.
+// Saved next to the radar images as local-<id>-<n>.jpg and listed in radar-fotos.json { id: ['local-...jpg'] }.
+const arquivoFotos = (config) => path.join(path.dirname(arquivoRadar(config)), 'radar-fotos.json');
+export const lerFotosDoDono = (config) => lerJson(arquivoFotos(config), {}) || {};
+function guardarFoto(config, id, ext, escrever) {
+  if (!/^[\w-]{1,80}$/.test(String(id || ''))) throw new Error('Item inválido.');
+  const dir = pastaImagensRadar(config);
+  fs.mkdirSync(dir, { recursive: true });
+  const nome = `local-${id}-${Date.now()}.${ext}`;
+  return Promise.resolve(escrever(path.join(dir, nome))).then(() => {
+    const f = lerFotosDoDono(config);
+    f[id] = [...(f[id] || []), nome].slice(-12);
+    fs.writeFileSync(arquivoFotos(config), JSON.stringify(f, null, 2));
+    return { id, foto: `/radar/img/${nome}` };
+  });
+}
+export const salvarFotoEnviada = (config, id, buf) => {
+  const png = buf[0] === 0x89 && buf[1] === 0x50, jpg = buf[0] === 0xff && buf[1] === 0xd8;
+  if (!png && !jpg) throw new Error('Mande uma foto JPG ou PNG.');
+  return guardarFoto(config, id, png ? 'png' : 'jpg', (f) => fs.writeFileSync(f, buf));
+};
+// pure: "12:30", "1:02:03" or 750 -> seconds
+export function segundosDe(t) {
+  if (typeof t === 'number') return t >= 0 ? t : NaN;
+  const p = String(t || '').trim().split(':').map(Number);
+  if (!p.length || p.some((n) => !Number.isFinite(n) || n < 0)) return NaN;
+  return p.reduce((n, x) => n * 60 + x, 0);
+}
+export function fotoDaGravacao(config, id, nomeGravacao, tempo) {
+  const nome = path.basename(String(nomeGravacao || ''));
+  const arq = [config.pastaProcessados, config.pastaEntrada].filter(Boolean).map((d) => path.join(d, nome)).find((f) => nome && !nome.startsWith('.') && fs.existsSync(f));
+  const seg = segundosDe(tempo);
+  if (!arq) throw new Error('Gravação não encontrada.');
+  if (!Number.isFinite(seg)) throw new Error('Tempo inválido (use minutos:segundos).');
+  return guardarFoto(config, id, 'jpg', (f) => run('ffmpeg', ['-v', 'error', '-y', '-ss', String(seg), '-i', arq, '-frames:v', '1', '-vf', 'scale=1280:-2', '-q:v', '3', f], { timeoutMs: 60000 }));
+}
+
 export function lerRadar(config) {
   const r = lerJson(arquivoRadar(config), null);
   const dirImg = pastaImagensRadar(config);
   const temImg = (n) => n && fs.existsSync(path.join(dirImg, n));
-  const imagens = (i) => [...(i.local?.imagens || []), ...(i.imagens || []), i.imagem].filter(Boolean).map(nomeImagemRadar).filter(temImg).map((n) => `/radar/img/${encodeURIComponent(n)}`);
+  const doDono = lerFotosDoDono(config);
+  const imagens = (i) => [...(doDono[i.id] || []).slice().reverse(), ...(i.local?.imagens || []), ...(i.imagens || []), i.imagem].filter(Boolean).map(nomeImagemRadar).filter(temImg).map((n) => `/radar/img/${encodeURIComponent(n)}`);
   const itens = (Array.isArray(r?.itens) ? r.itens : []).filter((i) => i && i.id && i.titulo).map(normalizarItem)
     .map((i) => ({ ...i, fotos: [...imagens(i), ...[i.imagem_url, ...(i.local?.imagem_urls || [])].filter((u) => /^https:\/\//.test(u || ''))] }));
   const mapa = ['mapa-leonida.jpg', 'mapa-leonida.png', 'mapa-leonida.webp'].find(temImg);
