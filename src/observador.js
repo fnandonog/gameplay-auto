@@ -5,6 +5,7 @@ import path from 'node:path';
 import { processarSessao, ehArquivoExtra, arquivosDaSessao } from './sessao.js';
 import { registrar } from './atividade.js';
 import { pastaDaGravacao } from './central.js';
+import { execFile } from 'node:child_process';
 
 const VIDEO = /\.(mp4|mkv|mov)$/i;
 
@@ -29,7 +30,13 @@ export function prontos(agora, antes, desde, now, estavelMs) {
   return out;
 }
 
-export function observar(config, { estavelSeg = config.aoVivo?.ligado ? 15 : 30, intervaloSeg = config.aoVivo?.ligado ? 5 : 10, log = console.log } = {}) {
+// OBS still has the file open (recording in progress): a hybrid MP4 can stay the same size for a while mid-recording,
+// so the size alone is not enough. macOS/Linux `lsof`; when lsof is missing the answer is "not open".
+export function arquivoAberto(file) {
+  return new Promise((resolve) => execFile('lsof', ['-t', '--', file], { timeout: 10000 }, (err, out) => resolve(!err && String(out).trim().length > 0)));
+}
+
+export function observar(config, { estavelSeg = config.aoVivo?.ligado ? 15 : 90, aberto = arquivoAberto, intervaloSeg = config.aoVivo?.ligado ? 5 : 10, log = console.log } = {}) {
   fs.mkdirSync(config.pastaEntrada, { recursive: true });
   fs.mkdirSync(config.pastaProcessados, { recursive: true });
   registrar(config.pastaSaida, 'vigia', 'esperando', 'De olho na pasta do OBS');
@@ -39,8 +46,10 @@ export function observar(config, { estavelSeg = config.aoVivo?.ligado ? 15 : 30,
     if (ocupado) return;
     const nomes = fs.readdirSync(config.pastaEntrada).filter((f) => VIDEO.test(f) && !f.startsWith('.'));
     const agora = Object.fromEntries(nomes.map((f) => [f, fs.statSync(path.join(config.pastaEntrada, f)).size]));
-    const ok = prontos(agora, antes, desde, Date.now(), estavelSeg * 1000);
+    const estaveis = prontos(agora, antes, desde, Date.now(), estavelSeg * 1000);
     antes = agora;
+    const ok = [];
+    for (const f of estaveis) if (!(await aberto(path.join(config.pastaEntrada, f)))) ok.push(f); else desde[f] = Date.now();
     const sessoes = ok.filter((f) => !ehArquivoExtra(f, nomes) && !falhas.has(f));
     if (!sessoes.length) return;
     ocupado = true;

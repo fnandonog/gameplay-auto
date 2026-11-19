@@ -99,3 +99,14 @@ test('a separate camera file is used whole: the scene corner (regiaoCamera) only
   const cena = argsCorte({ jogo: 'cena.mp4', camera: 'cena.mp4', audio: 'cena.mp4', start: 0, end: 10, ass: 'a.ass', out: 'o.mp4', formato: 'meio', regiaoCamera: reg }).join(' ');
   assert.ok(cena.includes('crop=440:248:1440:40'));
 });
+
+test('a recording still open by OBS is not ready, even with a steady size', async (t) => {
+  const { arquivoAberto } = await import('../src/observador.js');
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'obs-')), 'rec.mp4');
+  fs.writeFileSync(f, 'x');
+  const fd = fs.openSync(f, 'a');
+  const aberto = await arquivoAberto(f);
+  fs.closeSync(fd);
+  if (!aberto) return t.skip('lsof not available here');
+  assert.equal(await arquivoAberto(f), false);
+});
