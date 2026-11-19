@@ -67,7 +67,7 @@ export function montarMissoes(eventos, duracao, { minSeg = 150, folga = 5, reini
 
 async function quadros(cena, dir, passo) {
   fs.mkdirSync(dir, { recursive: true });
-  await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-skip_frame', 'nokey', '-i', cena, '-vf', `fps=1/${passo},scale=512:-2`, '-vsync', 'vfr', '-q:v', '6', path.join(dir, 'q_%05d.jpg')], { timeoutMs: 60 * 60000 });
+  await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-skip_frame', 'nokey', '-i', cena, '-vf', `fps=1/${passo},scale=512:-2`, '-fps_mode', 'vfr', '-q:v', '6', path.join(dir, 'q_%05d.jpg')], { timeoutMs: 60 * 60000 });
   return fs.readdirSync(dir).filter((f) => f.endsWith('.jpg')).sort().map((f, i) => ({ t: i * passo, file: path.join(dir, f) }));
 }
 
