@@ -8,6 +8,17 @@ import { pastaDaGravacao } from './central.js';
 
 const VIDEO = /\.(mp4|mkv|mov)$/i;
 
+// Live mode (config.aoVivo.ligado): OBS splits the recording every few minutes (Gravação > Dividir arquivo
+// automaticamente) and each block is cut as soon as OBS closes it, while the live goes on. A block gives fewer cuts, no
+// long video, and may use a lighter transcription model so the Mac keeps up with the stream. A Replay Buffer file
+// ("Replay ...mp4", the "save the last 60 s" key) gives exactly one cut. (pure)
+export function configDoArquivo(nome, config) {
+  const av = config.aoVivo || {};
+  if (/^replay/i.test(nome)) return { ...config, cortesPorSessao: 1, videoLongo: false, ...(av.ligado ? { whisper: { ...config.whisper, ...(av.whisper || {}) } } : {}) };
+  if (!av.ligado) return config;
+  return { ...config, cortesPorSessao: av.cortesPorBloco ?? 2, videoLongo: false, whisper: { ...config.whisper, ...(av.whisper || {}) } };
+}
+
 // pure: given sizes seen now and before, which files are ready
 export function prontos(agora, antes, desde, now, estavelMs) {
   const out = [];
@@ -18,7 +29,7 @@ export function prontos(agora, antes, desde, now, estavelMs) {
   return out;
 }
 
-export function observar(config, { estavelSeg = 30, intervaloSeg = 10, log = console.log } = {}) {
+export function observar(config, { estavelSeg = config.aoVivo?.ligado ? 15 : 30, intervaloSeg = config.aoVivo?.ligado ? 5 : 10, log = console.log } = {}) {
   fs.mkdirSync(config.pastaEntrada, { recursive: true });
   fs.mkdirSync(config.pastaProcessados, { recursive: true });
   registrar(config.pastaSaida, 'vigia', 'esperando', 'De olho na pasta do OBS');
@@ -46,7 +57,7 @@ export function observar(config, { estavelSeg = 30, intervaloSeg = 10, log = con
         // the extra files must be finished too
         if ([arq.jogo, arq.camera].some((p) => !ok.includes(path.basename(p)))) continue;
         registrar(config.pastaSaida, 'vigia', 'trabalhando', `Gravação nova: ${f}`);
-        await processarSessao(principal, config, { log });
+        await processarSessao(principal, configDoArquivo(f, config), { log });
         registrar(config.pastaSaida, 'vigia', 'esperando', `${f} processada. De olho na pasta do OBS`);
         for (const p of new Set([arq.cena, arq.jogo, arq.camera])) fs.renameSync(p, path.join(config.pastaProcessados, path.basename(p)));
       } catch (e) {

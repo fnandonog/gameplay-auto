@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Plataforma de cortes automáticos de gameplay do Fernando (PS5 + GoPro HERO13 + MacBook Air M4, OBS). Roda no Mac dele.
-Plano e decisões: https://claude.ai/artifact/AB8V9mzKECfrBrhWFWhRwN. Setup do OBS: `docs/obs.md`. Formatos, legenda, marca, intro e entrega: `docs/formatos.md`.
+Plano e decisões: https://claude.ai/artifact/AB8V9mzKECfrBrhWFWhRwN. Setup do OBS: `docs/obs.md`. Modo ao vivo e enquadramento: `docs/ao-vivo.md`. Formatos, legenda, marca, intro e entrega: `docs/formatos.md`.
 
 - Node 20+, ESM, sem build. Dependência externa só `@anthropic-ai/sdk`; vídeo é ffmpeg, transcrição é whisper.cpp local.
 - Partes puras (argumentos do ffmpeg, detecção de momentos, legenda) são exportadas e testadas: `npm test`.

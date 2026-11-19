@@ -82,3 +82,12 @@ test('servidor: central, envio para a pasta do OBS', async () => {
     assert.ok(!fs.readdirSync(c.pastaEntrada).some((f) => f.startsWith('.envio')));
   } finally { srv.close(); }
 });
+
+import { configDoArquivo } from '../src/observador.js';
+test('ao vivo: bloco dá 2 cortes sem vídeo longo; replay dá 1', () => {
+  const base = { cortesPorSessao: 6, videoLongo: true, whisper: { modelo: 'turbo' }, aoVivo: { ligado: true, cortesPorBloco: 2, whisper: { modelo: 'small' } } };
+  const b = configDoArquivo('2026-11-19 20-05-00.mp4', base);
+  assert.equal(b.cortesPorSessao, 2); assert.equal(b.videoLongo, false); assert.equal(b.whisper.modelo, 'small');
+  assert.equal(configDoArquivo('Replay 2026-11-19 20-10-00.mp4', base).cortesPorSessao, 1);
+  assert.equal(configDoArquivo('x.mp4', { ...base, aoVivo: { ligado: false } }).cortesPorSessao, 6);
+});

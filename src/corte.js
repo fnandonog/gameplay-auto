@@ -33,6 +33,60 @@ export function filtroJogo({ gameH, zoom = 1 }) {
   return `scale=-2:${h}:flags=lanczos,crop=${W}:${gameH},setsar=1`;
 }
 
+// Automatic framing for the game-only formats: when the player talks about the minimap the cut jumps to it, and on a
+// reaction word ("bizarro", "olha", "caraca"...) the game punches in for a moment. Pure: words (relative to the cut) →
+// pieces covering [0, dur], each { de, ate, tipo: 'normal' | 'zoom' | 'regiao', regiao? }.
+export const PALAVRAS_MINIMAPA = /^(minimapa|mapinha|radar|gps|minimap)$/i;
+export const FRASES_MINIMAPA = /\b(no|o|do|pelo) (mini ?)?mapa\b|\bcanto do mapa\b|\bali embaixo\b/i;
+export const PALAVRAS_REACAO = /^(bizarro|bizarra|caraca|caralho|nossa|olha|insano|genial|doideira|louca|louco|absurdo|incrível|incrivel|sensacional)$/i;
+// GTA 6's minimap on a 1920x1080 capture (bottom left)
+export const MINIMAPA_GTA = { x: 20, y: 830, w: 340, h: 230 };
+
+export function focosDe(palavras = [], dur, { minimapa = MINIMAPA_GTA, zoom = 1.25, zoomSeg = 0.9, intervalo = 3, minimapaSeg = 3.2, reacoes = true } = {}) {
+  const limpa = (w) => String(w.text || '').toLowerCase().replace(/[^\p{L}]/gu, '');
+  const marcas = [];
+  if (minimapa) {
+    for (let i = 0; i < palavras.length; i++) {
+      const w = palavras[i], dupla = `${limpa(palavras[i - 1] || {})} ${limpa(w)}`;
+      if (PALAVRAS_MINIMAPA.test(limpa(w)) || FRASES_MINIMAPA.test(dupla) || FRASES_MINIMAPA.test(`${dupla} ${limpa(palavras[i + 1] || {})}`)) {
+        marcas.push({ de: Math.max(0, w.start - 0.2), ate: Math.min(dur, w.start + minimapaSeg), tipo: 'regiao', regiao: minimapa });
+      }
+    }
+  }
+  if (reacoes) {
+    let ultimo = -Infinity;
+    for (const w of palavras) {
+      if (!PALAVRAS_REACAO.test(limpa(w)) || w.start - ultimo < intervalo || w.start < 0.5) continue;
+      if (marcas.some((m) => w.start < m.ate + 0.3 && w.start + zoomSeg > m.de - 0.3)) continue;
+      marcas.push({ de: w.start, ate: Math.min(dur, w.start + zoomSeg), tipo: 'zoom', zoom });
+      ultimo = w.start;
+    }
+  }
+  // merge overlaps (the first wins), then fill the gaps with normal framing
+  marcas.sort((a, b) => a.de - b.de);
+  const out = []; let t = 0;
+  for (const m of marcas) {
+    if (m.ate - Math.max(m.de, t) < 0.4) continue;
+    const de = Math.max(m.de, t);
+    if (de - t > 0.04) out.push({ de: +t.toFixed(2), ate: +de.toFixed(2), tipo: 'normal' });
+    out.push({ ...m, de: +de.toFixed(2), ate: +m.ate.toFixed(2) });
+    t = m.ate;
+  }
+  if (dur - t > 0.04) out.push({ de: +t.toFixed(2), ate: +dur.toFixed(2), tipo: 'normal' });
+  return out.length ? out : [{ de: 0, ate: dur, tipo: 'normal' }];
+}
+
+// crop of one framing piece, for a box of aspect ar (w/h), inside a 1920x1080 source (pure)
+export function cropFoco(f, ar, src = { w: 1920, h: 1080 }) {
+  if (f.tipo === 'zoom') return `crop=iw/${f.zoom || 1.25}:ih/${f.zoom || 1.25},`;
+  if (f.tipo !== 'regiao' || !f.regiao) return '';
+  const r = f.regiao, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+  let w = Math.max(r.w, r.h * ar) * 1.12, h = w / ar;
+  if (h > src.h) { h = src.h; w = h * ar; }
+  const x = Math.round(Math.min(Math.max(0, cx - w / 2), src.w - w) / 2) * 2, y = Math.round(Math.min(Math.max(0, cy - h / 2), src.h - h) / 2) * 2;
+  return `crop=${Math.round(w / 2) * 2}:${Math.round(h / 2) * 2}:${x}:${y},`;
+}
+
 // The vertical formats. Each one says where the captions, the hook and the handle go.
 //   meio       camera on top half, game on the bottom half (meio a meio)
 //   camtopo    camera 40% on top, game 60% (more game)
@@ -80,14 +134,23 @@ export function argsCorte(job) {
   if (job.logo) { args.push('-loop', '1', '-t', String(dur), '-i', job.logo); logoIn = `${n}:v`; n++; }
   const camIn = mesmo ? '0:v' : '1:v';
   const g = [];
+  // game-only formats: each framing piece (job.focos, see focosDe) is cropped on its own and the pieces are joined
+  const focos = semCam && Array.isArray(job.focos) && job.focos.some((f) => f.tipo !== 'normal') ? job.focos : null;
+  const jogoEnquadrado = (entrada, gameH, saida) => {
+    if (!focos) { g.push(`[${entrada}]${filtroJogo({ gameH, zoom: job.zoom })},fps=${fps}[${saida}]`); return; }
+    const ar = W / gameH;
+    g.push(`[${entrada}]split=${focos.length}${focos.map((_, i) => `[p${i}]`).join('')}`);
+    focos.forEach((f, i) => g.push(`[p${i}]trim=start=${f.de}:end=${f.ate},setpts=PTS-STARTPTS,${cropFoco(f, ar, job.fonte)}${filtroJogo({ gameH, zoom: f.tipo === 'normal' ? job.zoom : 1 })},fps=${fps}[q${i}]`));
+    g.push(`${focos.map((_, i) => `[q${i}]`).join('')}concat=n=${focos.length}:v=1:a=0[${saida}]`);
+  };
   if (formato === 'jogo') {
     const q = L.quadro;
     g.push('[0:v]split=2[gb][gf]',
-      `[gb]scale=${W}:${H}:force_original_aspect_ratio=increase:flags=bilinear,crop=${W}:${H},boxblur=24:2,eq=brightness=-0.12:saturation=1.2,setsar=1,fps=${fps}[bg]`,
-      `[gf]${filtroJogo({ gameH: q.lado, zoom: job.zoom })},fps=${fps}[fg]`,
-      `[bg][fg]overlay=0:${q.y}[st]`);
+      `[gb]scale=${W}:${H}:force_original_aspect_ratio=increase:flags=bilinear,crop=${W}:${H},boxblur=24:2,eq=brightness=-0.12:saturation=1.2,setsar=1,fps=${fps}[bg]`);
+    jogoEnquadrado('gf', q.lado, 'fg');
+    g.push(`[bg][fg]overlay=0:${q.y}[st]`);
   } else if (formato === 'jogocheio') {
-    g.push(`[0:v]${filtroJogo({ gameH: H, zoom: job.zoom })},fps=${fps}[st]`);
+    jogoEnquadrado('0:v', H, 'st');
   } else {
     if (job.camera === job.jogo) g.push('[0:v]split=2[src_c][src_g]');
     g.push(`[${job.camera === job.jogo ? 'src_c' : camIn}]${filtroCamera({ regiao: job.regiaoCamera, camH: L.camH })},fps=${fps}[cam]`,
@@ -124,14 +187,15 @@ export async function melhorEncoder() {
 // Writes the ASS next to the output and renders one format.
 // marca: { arroba, chamada, logo } of the cut's channel line (see marcaDaLinha in src/marca.js)
 // ganchoSeg: how long the hook stays on top (default 2.5 s; Infinity keeps it the whole cut as a title)
-export async function renderCorte({ jogo, camera, audio, start, end, palavras = [], gancho = '', ganchoSeg, out, formato, marca = null, config = {} }) {
+export async function renderCorte({ jogo, camera, audio, start, end, palavras = [], gancho = '', ganchoSeg, out, formato, marca = null, config = {}, focos }) {
   const fmt = formato || config.formatoPadrao || 'camtopo';
   const L = layoutFormato(FORMATOS[fmt] ? fmt : 'camtopo', { camPct: fmt === 'camtopo' ? config.camPct : undefined });
   const ass = out.replace(/\.mp4$/, '.ass');
   const dur = end - start;
   fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, hookSec: Math.min(ganchoSeg ?? config.estilo?.ganchoSeg ?? 2.5, dur), marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null }));
   const logo = marca?.logo && fs.existsSync(marca.logo) ? marca.logo : null;
-  const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo, encoder: config.encoder || await melhorEncoder() });
+  const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo,
+    focos: focos ?? (config.enquadramento === false ? null : focosDe(palavras, dur, config.enquadramento || {})), encoder: config.encoder || await melhorEncoder() });
   await run('ffmpeg', args, { timeoutMs: 30 * 60000 });
   return out;
 }

@@ -46,6 +46,10 @@ export const PADRAO = {
   uploadPost: { perfil: '', redes: ['tiktok', 'instagram', 'youtube'], horarios: ['12:00', '18:30', '21:00'], horariosLongo: ['19:00'] },
   videoLongo: true, // also build the full YouTube video of each session
   silencioMax: 20, // in the long video, a stretch without speech longer than this shrinks to 4 s
+  // live mode: see docs/ao-vivo.md. whisper here overrides the model while live (a lighter one keeps the Mac free for OBS)
+  aoVivo: { ligado: false, cortesPorBloco: 2, whisper: {} },
+  // automatic framing in the game-only formats (src/corte.js focosDe): false turns it off; { reacoes: false } keeps only the minimap
+  enquadramento: {},
   postarAutomatico: false, // true: cuts with nota >= notaMinima are posted without approval
   notaMinima: 8,
   portaPainel: 4321,
@@ -58,5 +62,5 @@ export const PADRAO = {
 export function carregarConfig(file = process.env.GAMEPLAY_CONFIG || path.join(ROOT, 'config.json')) {
   let user = {};
   if (fs.existsSync(file)) user = JSON.parse(fs.readFileSync(file, 'utf8'));
-  return { ...PADRAO, ...user, whisper: { ...PADRAO.whisper, ...(user.whisper || {}) }, estilo: { ...PADRAO.estilo, ...(user.estilo || {}) }, marca: { ...PADRAO.marca, ...(user.marca || {}) }, intro: { ...PADRAO.intro, ...(user.intro || {}) }, uploadPost: { ...PADRAO.uploadPost, ...(user.uploadPost || {}) } };
+  return { ...PADRAO, ...user, whisper: { ...PADRAO.whisper, ...(user.whisper || {}) }, estilo: { ...PADRAO.estilo, ...(user.estilo || {}) }, marca: { ...PADRAO.marca, ...(user.marca || {}) }, intro: { ...PADRAO.intro, ...(user.intro || {}) }, uploadPost: { ...PADRAO.uploadPost, ...(user.uploadPost || {}) }, aoVivo: { ...PADRAO.aoVivo, ...(user.aoVivo || {}) } };
 }
