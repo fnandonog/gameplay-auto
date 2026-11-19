@@ -34,6 +34,16 @@ export function postDoCorte(c, { sessao, linha, duracao, agendarPara = null } = 
   };
 }
 
+// post.json of a long video: YouTube only, title ≤100, description with the chapters (pure)
+export function postDoLongo(v, { sessao, agendarPara = null } = {}) {
+  return {
+    tipo: v.missao ? 'missao' : 'longo', missao: v.missao || null, titulo: String(v.titulo || '').slice(0, 100), descricao: String(v.descricao || '').slice(0, 4900),
+    hashtags: v.tags || v.hashtags || [], legendas: { youtube: { titulo: String(v.titulo || '').slice(0, 100), descricao: String(v.descricao || '').slice(0, 4900) } },
+    linha: { id: 'youtube-longo', nome: 'YouTube (vídeo longo)', redes: ['youtube'] }, formato: 'horizontal',
+    duracao: v.duracao ?? null, sessao, criadoEm: new Date().toISOString(), agendarPara,
+  };
+}
+
 export const pastaDoCorte = (base, { linha, sessao, arquivo }) =>
   path.join(base, slug(linha?.id || 'geral'), `${slug(sessao).slice(0, 30)}_${slug(arquivo.replace(/\.mp4$/, '')).slice(0, 40)}`);
 
@@ -68,6 +78,23 @@ export function entregarAprovados(config, { log = console.log } = {}) {
         registrar(config.pastaSaida, 'agendador', 'trabalhando', `Entregue "${c.titulo}" para ${linha.nome}`);
         log(`Entregue: ${c.titulo} → ${destino}`); n++;
       } catch (e) { c.erroEntrega = e.message; log(`Não entregou "${c.titulo}": ${e.message}`); }
+      mudou = true;
+    }
+    // long YouTube videos (the whole session and one per mission): prontos/youtube-longo/<sessão>_<vídeo>/
+    for (const v of [dados.longo, ...(dados.missoes || [])].filter((x) => x?.status === 'aprovado')) {
+      const destino = pastaDoCorte(base, { linha: { id: 'youtube-longo' }, sessao: dados.sessao || pasta, arquivo: path.basename(v.arquivo) });
+      try {
+        fs.mkdirSync(destino, { recursive: true });
+        fs.copyFileSync(path.join(config.pastaSaida, pasta, v.arquivo), path.join(destino, 'video.mp4'));
+        if (v.thumb && fs.existsSync(path.join(config.pastaSaida, pasta, v.thumb))) fs.copyFileSync(path.join(config.pastaSaida, pasta, v.thumb), path.join(destino, 'capa.jpg'));
+        let agendarPara = null;
+        try { agendarPara = proximoHorario(Date.now(), config.longo?.horarios || ['19:00'], slotsDaLinha(base, 'youtube-longo')); } catch {}
+        const post = postDoLongo(v, { sessao: dados.sessao || pasta, agendarPara });
+        fs.writeFileSync(path.join(destino, 'post.json'), JSON.stringify(post, null, 2));
+        v.status = 'entregue'; v.entregueEm = post.criadoEm; v.agendadoPara = agendarPara; v.pastaEntrega = destino; delete v.erroEntrega;
+        registrar(config.pastaSaida, 'agendador', 'trabalhando', `Entregue o vídeo longo "${v.titulo}"`);
+        log(`Entregue: ${v.titulo} → ${destino}`); n++;
+      } catch (e) { v.erroEntrega = e.message; log(`Não entregou "${v.titulo}": ${e.message}`); }
       mudou = true;
     }
     if (mudou) fs.writeFileSync(file, JSON.stringify(dados, null, 2));

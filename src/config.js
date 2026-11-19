@@ -46,6 +46,8 @@ export const PADRAO = {
   semIa: false,
   // posting (src/postagem.js): UPLOAD_POST_API_KEY in the environment + the profile name here
   uploadPost: { perfil: '', redes: ['tiktok', 'instagram', 'youtube'], horarios: ['12:00', '18:30', '21:00'], horariosLongo: ['19:00'] },
+  // one YouTube video per mission (src/missoes.js): { passo: seconds between frames, minSeg: shortest mission }; false turns it off
+  missoes: { passo: 6, minSeg: 150 },
   videoLongo: true, // also build the full YouTube video of each session
   silencioMax: 20, // in the long video, a stretch without speech longer than this shrinks to 4 s
   // live mode: see docs/ao-vivo.md. whisper here overrides the model while live (a lighter one keeps the Mac free for OBS)

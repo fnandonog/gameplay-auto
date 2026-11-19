@@ -68,3 +68,7 @@ Para a postagem ser feita aqui pelo Upload-Post, use `postagem: "upload-post"`.
 ## Volume seguro
 
 Cada conta posta no máximo `limites` por dia (padrão: TikTok 4, Instagram 3, YouTube 4, Facebook 3), nos horários de pico da linha. O `post.json` leva `agendarPara` com o horário que a sua skill deve publicar. Acima disso as redes tratam como spam (alcance zero, "conteúdo não original", bloqueio de postagem). Para postar mais, crie mais contas (linhas), sem repetir o mesmo corte em duas contas.
+
+## Vídeo por missão (YouTube)
+
+Além do vídeo da sessão inteira, cada missão vira um vídeo longo (`src/missoes.js`): a IA olha um quadro a cada 6 s e marca onde a missão começa (nome ou "CAPÍTULO N" na tela, ligação, objetivo novo) e termina (missão concluída, última cena). O trecho é cortado sem recodificar (rápido), ganha thumbnail, título, descrição com capítulos e tags, e aparece na aba **Vídeo longo** e em **Aprovar cortes**. Missão com nudez ou violência explícita na tela vem com aviso. Aprovado, vai para `prontos/youtube-longo/`. `missoes: false` desliga; `{ "passo": 6, "minSeg": 150 }` ajusta. Precisa da IA.

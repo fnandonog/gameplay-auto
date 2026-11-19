@@ -22,6 +22,9 @@ export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'entr
 // a name that came from the URL must be a plain file/folder name inside the output folder
 export const nomeSeguro = (s) => typeof s === 'string' && s.length > 0 && s === path.basename(s) && !s.startsWith('.');
 
+// a file inside the session folder, at most one subfolder deep (missoes/01-x.mp4)
+export const caminhoSeguro = (s) => typeof s === 'string' && s.split('/').length <= 2 && s.split('/').every(nomeSeguro);
+
 export function listarSessoes(pastaSaida) {
   if (!fs.existsSync(pastaSaida)) return [];
   return fs.readdirSync(pastaSaida)
@@ -32,10 +35,10 @@ export function listarSessoes(pastaSaida) {
 
 // applies an edit to one cut; returns the cut or throws
 export function editarCorte(pastaSaida, { pasta, arquivo, ...mud }, linhas = null) {
-  if (!nomeSeguro(pasta) || !nomeSeguro(arquivo)) throw new Error('Corte inválido.');
+  if (!nomeSeguro(pasta) || !caminhoSeguro(arquivo)) throw new Error('Corte inválido.');
   const file = path.join(pastaSaida, pasta, 'sessao.json');
   const s = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const c = s.cortes.find((x) => x.arquivo === arquivo || Object.values(x.variantes || {}).includes(arquivo)) || (s.longo?.arquivo === arquivo ? s.longo : null);
+  const c = s.cortes.find((x) => x.arquivo === arquivo || Object.values(x.variantes || {}).includes(arquivo)) || (s.longo?.arquivo === arquivo ? s.longo : null) || (s.missoes || []).find((x) => x.arquivo === arquivo);
   if (!c) throw new Error('Corte não encontrado.');
   if (mud.status !== undefined) { if (!STATUS.includes(mud.status)) throw new Error('Status inválido.'); c.status = mud.status; }
   if (mud.linha !== undefined) { if (linhas && !linhas.some((l) => l.id === mud.linha)) throw new Error('Linha inválida.'); c.linha = String(mud.linha); }
@@ -112,11 +115,11 @@ export function criarPainel(config) {
         req.on('end', () => { try { json(res, 200, editarCorte(config.pastaSaida, JSON.parse(body || '{}'), linhasDe(config))); } catch (e) { json(res, 400, { erro: e.message }); } });
         return;
       }
-      const mid = /^\/midia\/([^/]+)\/([^/]+)$/.exec(url.pathname);
+      const mid = /^\/midia\/([^/]+)\/(.+)$/.exec(url.pathname);
       if (req.method === 'GET' && mid) {
         const [pasta, arquivo] = [decodeURIComponent(mid[1]), decodeURIComponent(mid[2])];
         const file = path.join(config.pastaSaida, pasta, arquivo);
-        if (!nomeSeguro(pasta) || !nomeSeguro(arquivo) || !MIME[path.extname(arquivo)] || !fs.existsSync(file)) return json(res, 404, { erro: 'Não encontrado.' });
+        if (!nomeSeguro(pasta) || !caminhoSeguro(arquivo) || !MIME[path.extname(arquivo)] || !fs.existsSync(file)) return json(res, 404, { erro: 'Não encontrado.' });
         return servirArquivo(req, res, file);
       }
       json(res, 404, { erro: 'Não encontrado.' });

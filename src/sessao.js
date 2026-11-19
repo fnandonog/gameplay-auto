@@ -14,6 +14,7 @@ import { renderLongo } from './longo.js';
 import { registrar } from './atividade.js';
 import { linhasDe, distribuirLinhas } from './canais.js';
 import { aplicarSeries } from './series.js';
+import { detectarMissoes, renderMissoes } from './missoes.js';
 
 const VIDEO = /\.(mp4|mkv|mov)$/i;
 const tem = (nome, lista) => lista.some((p) => nome.toLowerCase().includes(p));
@@ -139,7 +140,14 @@ export async function processarSessao(principal, config, { log = console.log } =
     try { longo = await renderLongo({ cena: arq.cena, words, duracao, momentos: decididos, pasta, config, marca: marcaDaLinha(linhas.find((l) => !l.terceiros) || linhas[0], config), log }); at('montador', 'pronto', 'Vídeo longo pronto'); } catch (e) { log(`Vídeo longo falhou: ${e.message}`); at('montador', 'erro', `Vídeo longo falhou: ${e.message}`); }
   }
 
-  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, criadoEm: new Date().toISOString(), cortes, longo };
+  // 6. one YouTube video per mission (needs the AI to read the screen)
+  let missoes = [];
+  if (config.videoLongo !== false && config.missoes !== false && !config.semIa && duracao >= 600) {
+    try { missoes = await renderMissoes({ cena: arq.cena, words, missoes: await detectarMissoes({ cena: arq.cena, words, duracao, pasta, config, log }), pasta, config, log }); }
+    catch (e) { log(`Missões falharam: ${e.message}`); }
+  }
+
+  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, criadoEm: new Date().toISOString(), cortes, longo, missoes };
   fs.writeFileSync(path.join(pasta, 'sessao.json'), JSON.stringify(manifesto, null, 2));
   log(`Pronto: ${cortes.length} cortes em ${pasta}`);
   return { pasta, manifesto };

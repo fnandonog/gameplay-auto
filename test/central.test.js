@@ -100,3 +100,38 @@ test('séries: cada série tem sua numeração, o melhor corte pega o número me
   assert.equal(cs[1].parte, 3); assert.equal(cs[0].parte, 4); assert.equal(cs[2].parte, undefined);
   assert.equal(cs[1].titulo, 'A (Parte 3)');
 });
+
+import { entregarAprovados } from '../src/entrega.js';
+test('missões: aparecem, aprovam e são entregues para o YouTube', async () => {
+  const c = montar();
+  const pasta = path.join(c.pastaSaida, '2026-11-18 20-00-00');
+  fs.mkdirSync(path.join(pasta, 'missoes'));
+  fs.writeFileSync(path.join(pasta, 'missoes', '01-m.mp4'), 'v'); fs.writeFileSync(path.join(pasta, 'missoes', '01-m.jpg'), 'j');
+  const s = JSON.parse(fs.readFileSync(path.join(pasta, 'sessao.json'), 'utf8'));
+  s.missoes = [{ arquivo: 'missoes/01-m.mp4', thumb: 'missoes/01-m.jpg', missao: 'Aluguel', titulo: 'GTA 6: missão do aluguel', descricao: '00:00 início', status: 'aguardando' }];
+  fs.writeFileSync(path.join(pasta, 'sessao.json'), JSON.stringify(s));
+  const srv = criarPainel(c).listen(0);
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    assert.equal((await fetch(`${base}/midia/2026-11-18%2020-00-00/missoes/01-m.mp4`)).status, 200);
+    assert.equal((await fetch(`${base}/midia/2026-11-18%2020-00-00/missoes/../sessao.json`)).status, 404);
+    const r = await fetch(`${base}/api/corte`, { method: 'POST', body: JSON.stringify({ pasta: '2026-11-18 20-00-00', arquivo: 'missoes/01-m.mp4', status: 'aprovado' }) });
+    assert.equal(r.status, 200);
+    assert.equal((await (await fetch(`${base}/api/central`)).json()).resumo.longos, 1);
+  } finally { srv.close(); }
+  entregarAprovados(c, { log: () => {} });
+  const d = fs.readdirSync(path.join(c.pastaEntrega, 'youtube-longo'));
+  const post = JSON.parse(fs.readFileSync(path.join(c.pastaEntrega, 'youtube-longo', d[0], 'post.json'), 'utf8'));
+  assert.equal(post.missao, 'Aluguel'); assert.ok(post.agendarPara);
+  assert.ok(fs.existsSync(path.join(c.pastaEntrega, 'youtube-longo', d[0], 'capa.jpg')));
+});
+
+import { montarMissoes } from '../src/missoes.js';
+test('missões: início abre, fim ou próximo início fecha, curta cai, nudez vira aviso', () => {
+  const ev = [{ t: 100, tipo: 'inicio', missao: 'Aluguel' }, { t: 130, tipo: 'inicio', missao: 'aluguel' }, { t: 520, tipo: 'sensivel', missao: 'nudez' },
+    { t: 700, tipo: 'fim', missao: 'Aluguel' }, { t: 900, tipo: 'inicio', missao: 'Curta' }, { t: 950, tipo: 'inicio', missao: 'Roubo' }];
+  const m = montarMissoes(ev, 1400);
+  assert.deepEqual(m.map((x) => x.missao), ['Aluguel', 'Roubo']);
+  assert.equal(m[0].inicio, 95); assert.equal(m[0].fim, 705); assert.equal(m[1].fim, 1400);
+  assert.equal(m[0].avisos.length, 1);
+});

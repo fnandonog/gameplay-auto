@@ -52,7 +52,7 @@ let filtro = 'aguardando', sessoes = [], linhas = [];
 const NOMES_FORMATO = { meio: 'Meio a meio', camtopo: 'Câmera em cima', jogo: 'Só o jogo', jogocheio: 'Jogo em tela cheia' };
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${encodeURIComponent(a)}`;
+const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${String(a).split('/').map(encodeURIComponent).join('/')}`;
 
 async function carregar() {
   try { sessoes = await (await fetch('/api/sessoes')).json(); } catch { sessoes = []; }
@@ -62,7 +62,7 @@ async function carregar() {
 
 function desenhar() {
   const html = sessoes.map((s) => {
-    const cortes = [...(s.longo ? [{ ...s.longo, capa: s.longo.thumb, inicio: 0, fim: s.longo.duracao, nota: 10, motivo: 'vídeo completo do YouTube', longo: true }] : []), ...s.cortes]
+    const cortes = [...(s.longo ? [{ ...s.longo, capa: s.longo.thumb, inicio: 0, fim: s.longo.duracao, nota: 10, motivo: 'vídeo completo do YouTube', longo: true }] : []), ...(s.missoes || []).map((m) => ({ ...m, capa: m.thumb, nota: 10, motivo: `missão: ${m.missao || ''}${m.aviso ? ' · ⚠️ ' + m.aviso : ''}`, longo: true })), ...s.cortes]
       .filter((c) => filtro === 'todos' || c.status === filtro);
     if (!cortes.length) return '';
     return `<h2>${esc(s.sessao)} · ${cortes.length} corte(s)</h2><div class="grade">${cortes.map((c) => `
@@ -95,7 +95,7 @@ async function salvar(card, status) {
   const c = await r.json();
   if (!r.ok) return alert(c.erro || 'Não salvou.');
   const s = sessoes.find((x) => x.pasta === body.pasta);
-  Object.assign(s.cortes.find((x) => x.arquivo === body.arquivo || Object.values(x.variantes || {}).includes(body.arquivo)) || s.longo, c);
+  Object.assign(s.cortes.find((x) => x.arquivo === body.arquivo || Object.values(x.variantes || {}).includes(body.arquivo)) || (s.missoes || []).find((x) => x.arquivo === body.arquivo) || s.longo, c);
   desenhar();
 }
 

@@ -82,7 +82,7 @@
 let D = null, P = null, aba = (location.hash || '#inicio').slice(1);
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${encodeURIComponent(a)}`;
+const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${String(a).split('/').map(encodeURIComponent).join('/')}`;
 const num = (n) => Number(n || 0).toLocaleString('pt-BR');
 const mb = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : Math.round(b / 1e6) + ' MB';
 const quando = (iso) => iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
@@ -136,11 +136,11 @@ const TELAS = {
     return `<p class="dica">Para editar título, trocar o formato e aprovar, use <a href="/cortes" style="color:var(--hi)">Aprovar cortes</a>. Aprovado vai para a pasta da sua skill de postagem.</p>${html || '<p class="vazio">Nenhum corte ainda.</p>'}`;
   },
   longos() {
-    const l = D.sessoes.filter((s) => s.longo);
-    return l.length ? `<div class="grade" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">${l.map((s) => `<div class="corte longo">
-      <video src="${midia(s.pasta, s.longo.arquivo)}" ${s.longo.thumb ? `poster="${midia(s.pasta, s.longo.thumb)}"` : ''} controls playsinline preload="none"></video>
-      <div class="corpo"><div class="t">${esc(s.longo.titulo || s.sessao)}</div><div class="sub"><span>${dur(s.longo.duracao)}</span>${tag(s.longo.status || 'aguardando')}</div></div></div>`).join('')}</div>`
-      : '<p class="vazio">O vídeo longo do YouTube aparece aqui depois que uma sessão é processada.</p>';
+    const l = D.sessoes.flatMap((s) => [...(s.longo ? [{ ...s.longo, pasta: s.pasta, tipo: 'Sessão inteira' }] : []), ...(s.missoes || []).map((m) => ({ ...m, pasta: s.pasta, tipo: `Missão: ${m.missao || ''}` }))]);
+    return l.length ? `<p class="dica">Vídeos do YouTube: a sessão inteira e uma por missão. Para editar e aprovar, use <a href="/cortes" style="color:var(--hi)">Aprovar cortes</a>.</p><div class="grade" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">${l.map((v) => `<div class="corte longo">
+      <video src="${midia(v.pasta, v.arquivo)}" ${v.thumb ? `poster="${midia(v.pasta, v.thumb)}"` : ''} controls playsinline preload="none"></video>
+      <div class="corpo"><div class="t">${esc(v.titulo || v.missao)}</div><div class="sub"><span>${esc(v.tipo)} · ${dur(v.duracao)}</span>${tag(v.status || 'aguardando')}</div></div></div>`).join('')}</div>`
+      : '<p class="vazio">Os vídeos longos do YouTube aparecem aqui depois que uma sessão é processada.</p>';
   },
   roteiros() {
     return `<p class="dica">Ideias de vídeo, roteiros de short e de live. Ficam em <code>${esc(D.pastas.roteiros)}</code> (arquivos .md ou .json).</p>
