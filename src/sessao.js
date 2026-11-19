@@ -5,7 +5,8 @@ import path from 'node:path';
 import { probe } from './run.js';
 import { argsExtrairAudio, transcrever, palavrasEntre } from './transcricao.js';
 import { run } from './run.js';
-import { candidatos, escolher, capitulosDe, volumePorSegundo } from './momentos.js';
+import { candidatos, escolher, mesclar, capitulosDe, volumePorSegundo } from './momentos.js';
+import { lerRadar, candidatosDoRadar, sincronizarRadar } from './radar.js';
 import { decidirCortes } from './ia.js';
 import { renderCorte, capa, FORMATOS } from './corte.js';
 import { marcaDaLinha } from './marca.js';
@@ -95,7 +96,10 @@ export async function processarSessao(principal, config, { log = console.log } =
   const volJogo = audios > config.faixaJogo ? await volumePorSegundo(arq.cena, config.faixaJogo) : [];
 
   // 3. candidates → AI
-  const cands = escolher(candidatos({ words, capitulos, volMic, volJogo, duracao, config }), config.cortesPorSessao * 2);
+  await sincronizarRadar(config);
+  const doRadar = candidatosDoRadar(words, lerRadar(config).itens).map((c) => ({ ...c, end: Math.min(duracao || Infinity, c.end) }));
+  if (doRadar.length) log(`Radar: ${doRadar.length} trecho(s) com assunto que bombou lá fora.`);
+  const cands = escolher(mesclar([...candidatos({ words, capitulos, volMic, volJogo, duracao, config }), ...doRadar]), config.cortesPorSessao * 2 + doRadar.length);
   log(`${cands.length} momentos candidatos (${capitulos.length} marcadores do OBS).`);
   at('cacador', 'pronto', `${cands.length} momentos candidatos`);
   at('roteirista', 'trabalhando', 'Escolhendo cortes, ganchos e títulos');
@@ -129,7 +133,7 @@ export async function processarSessao(principal, config, { log = console.log } =
     }
     const arquivo = variantes[principal];
     const jpg = fs.existsSync(path.join(pasta, arquivo.replace(/\.mp4$/, '.jpg'))) ? arquivo.replace(/\.mp4$/, '.jpg') : null;
-    cortes.push({ arquivo, capa: jpg, formato: principal, variantes, linha: linha.id, arroba: marca?.arroba || '', inicio: +c.start.toFixed(2), fim: +c.end.toFixed(2), nota: c.nota, motivo: c.motivo, gancho: c.gancho, titulo: c.titulo, descricao: c.descricao, hashtags: c.hashtags, serie: c.serie || '', parte: c.parte || null, status: 'aguardando' });
+    cortes.push({ arquivo, capa: jpg, formato: principal, variantes, linha: linha.id, arroba: marca?.arroba || '', inicio: +c.start.toFixed(2), fim: +c.end.toFixed(2), nota: c.nota, motivo: c.motivo, gancho: c.gancho, titulo: c.titulo, descricao: c.descricao, hashtags: c.hashtags, serie: c.serie || '', parte: c.parte || null, radar: c.radar || null, status: 'aguardando' });
   }
 
   at('editor', 'pronto', `${cortes.length} cortes montados`);

@@ -10,6 +10,7 @@ import { lerAtividade, quadroEscritorio } from './atividade.js';
 import { linhasDe } from './canais.js';
 import { lerPausa, retomar } from './qualidade.js';
 import { lerContas, salvarConta } from './contas.js';
+import { lerRadar, sincronizarRadar } from './radar.js';
 import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
 import { arquivoToken, garantirToken, bearerOk, assinaturaOk, proximoJob, arquivoDoVideo, registrarResultado } from './tiktokChrome.js';
 import { registrar } from './atividade.js';
@@ -132,7 +133,10 @@ export function criarPainel(config) {
       if (req.method === 'GET' && url.pathname === '/cortes') return pagina(PAGINA);
       if (req.method === 'GET' && url.pathname === '/api/central') {
         const sessoes = listarSessoes(config.pastaSaida);
-        const dados = { brutos: listarBrutos(config), sessoes, roteiros: listarRoteiros(config), prontos: listarProntos(config), redes: lerRedes(config) };
+        sincronizarRadar(config).catch(() => {});
+        const radar = lerRadar(config);
+        radar.itens = radar.itens.map((i) => ({ ...i, cortes: sessoes.flatMap((s) => (s.cortes || []).filter((c) => c.radar === i.id).map((c) => ({ pasta: s.pasta, titulo: c.titulo, status: c.status }))) }));
+        const dados = { brutos: listarBrutos(config), sessoes, roteiros: listarRoteiros(config), prontos: listarProntos(config), redes: lerRedes(config), radar };
         return json(res, 200, { ...dados, resumo: resumo(dados), pastas: { entrada: config.pastaEntrada, saida: config.pastaSaida, entrega: config.pastaEntrega, roteiros: config.pastaRoteiros, metricas: config.arquivoMetricas } });
       }
       if (req.method === 'GET' && url.pathname === '/api/prontidao') { prontidao(config).then((r) => json(res, 200, r), (e) => json(res, 500, { erro: e.message })); return; }

@@ -82,6 +82,7 @@
     <button data-a="brutos">Vídeos brutos<span class="n" data-n="brutos"></span></button>
     <button data-a="cortes">Cortes<span class="n" data-n="cortes"></span></button>
     <button data-a="longos">Vídeo longo<span class="n" data-n="longos"></span></button>
+    <button data-a="radar">Radar da gringa<span class="n" data-n="radar"></span></button>
     <button data-a="roteiros">Roteiros<span class="n" data-n="roteiros"></span></button>
     <button data-a="prontos">Prontos p/ postar<span class="n" data-n="prontos"></span></button>
     <button data-a="redes">Redes</button>
@@ -114,7 +115,8 @@ async function carregar() {
 function contadores() {
   const r = D.resumo;
   const fc = C ? C.contas.filter((c) => c.status !== 'conectada').length : 0;
-  const n = { contas: fc ? `${fc} a fazer` : '', checklist: P?.faltam ? `faltam ${P.faltam}` : '', brutos: r.brutos, cortes: r.aguardando ? `${r.aguardando} p/ aprovar` : r.cortes, longos: r.longos, roteiros: r.roteiros, prontos: r.prontos };
+  const rn = D.radar ? D.radar.itens.filter((i) => !i.cortes.length).length : 0;
+  const n = { radar: rn ? `${rn} p/ gravar` : '', contas: fc ? `${fc} a fazer` : '', checklist: P?.faltam ? `faltam ${P.faltam}` : '', brutos: r.brutos, cortes: r.aguardando ? `${r.aguardando} p/ aprovar` : r.cortes, longos: r.longos, roteiros: r.roteiros, prontos: r.prontos };
   document.querySelectorAll('[data-n]').forEach((el) => { const v = n[el.dataset.n]; el.textContent = v ? v : ''; });
 }
 
@@ -156,6 +158,14 @@ const TELAS = {
       <video src="${midia(v.pasta, v.arquivo)}" ${v.thumb ? `poster="${midia(v.pasta, v.thumb)}"` : ''} controls playsinline preload="none"></video>
       <div class="corpo"><div class="t">${esc(v.titulo || v.missao)}</div><div class="sub"><span>${esc(v.tipo)} · ${dur(v.duracao)}</span>${tag(v.status || 'aguardando')}</div></div></div>`).join('')}</div>`
       : '<p class="vazio">Os vídeos longos do YouTube aparecem aqui depois que uma sessão é processada.</p>';
+  },
+  radar() {
+    const R = D.radar || { itens: [] };
+    const it = [...R.itens].sort((a, b) => (a.cortes.length > 0) - (b.cortes.length > 0) || a.prioridade - b.prioridade);
+    return `<p class="dica">O que bombou lá fora${R.jogo ? ' em ' + esc(R.jogo) : ''}${R.atualizadoEm ? ` (lista de ${quando(R.atualizadoEm)})` : ''}. Quando você fala desses assuntos numa gravação, o trecho vira corte com prioridade e com o título sugerido. Os de cima ainda não têm corte: são os que valem gravar.</p>
+    ${it.length ? `<div class="lista">${it.map((i) => `<details class="roteiro"><summary><span class="nome">${esc(i.titulo)}</span>${i.prioridade <= 1 ? '<span class="tag hi">prioridade</span>' : ''}${i.confirmado ? '' : '<span class="tag">não confirmado</span>'}${i.coberto_no_br ? '<span class="tag">já tem no BR</span>' : ''}${i.cortes.length ? `<span class="tag ok">${i.cortes.length} corte(s)</span>` : '<span class="tag no">falta gravar</span>'}</summary>
+      <pre>${esc([i.o_que_e || i.resumo, i.como_achar ? 'Como achar: ' + i.como_achar : '', i.tituloSugerido ? 'Título: ' + i.tituloSugerido : '', i.gancho ? 'Gancho: ' + i.gancho : '', 'Palavras que a central procura na sua fala: ' + [...i.palavras, ...i.frases].join(', '), ...i.cortes.map((c) => `Corte: ${c.titulo} (${c.status})`)].filter(Boolean).join('\n'))}</pre>
+      ${/^https:\/\//.test(i.fonte || '') ? `<p class="dica" style="padding:0 12px 10px;margin:0"><a href="${esc(i.fonte)}" target="_blank" rel="noopener" style="color:var(--cy)">fonte</a></p>` : ''}</details>`).join('')}</div>` : '<p class="vazio">O radar ainda não mandou nada.</p>'}`;
   },
   roteiros() {
     return `<p class="dica">Ideias de vídeo, roteiros de short e de live. Ficam em <code>${esc(D.pastas.roteiros)}</code> (arquivos .md ou .json).</p>

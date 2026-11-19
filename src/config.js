@@ -44,6 +44,7 @@ export const PADRAO = {
   // the central (src/central.js): scripts and ideas, and the numbers of the accounts (written by the posting skill)
   pastaRoteiros: path.join(HOME, 'Gameplay', 'roteiros'),
   arquivoMetricas: path.join(HOME, 'Gameplay', 'metricas.json'),
+  arquivoRadar: path.join(HOME, 'Gameplay', 'radar', 'tendencias.json'), // copied from the `radar` branch (src/radar.js)
   corBarra: '0xFFE600',
   semIa: false,
   // posting (src/postagem.js): UPLOAD_POST_API_KEY in the environment + the profile name here

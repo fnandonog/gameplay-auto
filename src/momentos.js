@@ -95,6 +95,7 @@ export function mesclar(lista) {
       ult.end = Math.max(ult.end, c.end);
       if (c.nota > ult.nota) { ult.nota = c.nota; }
       ult.fixo = ult.fixo || c.fixo;
+      ult.radar ||= c.radar;
       if (!ult.motivo.includes(c.motivo)) ult.motivo += `; ${c.motivo}`;
     } else out.push({ ...c });
   }
