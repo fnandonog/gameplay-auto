@@ -10,6 +10,7 @@ import { lerAtividade, quadroEscritorio } from './atividade.js';
 import { linhasDe } from './canais.js';
 import { lerPausa, retomar } from './qualidade.js';
 import { lerContas, salvarConta } from './contas.js';
+import { coletarMetricas, salvarTiktok } from './metricas.js';
 import { lerRadar, sincronizarRadar } from './radar.js';
 import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
 import { arquivoToken, garantirToken, bearerOk, assinaturaOk, proximoJob, arquivoDoVideo, registrarResultado } from './tiktokChrome.js';
@@ -229,6 +230,18 @@ export function criarPainel(config) {
         let body = '';
         req.on('data', (d) => { body += d; if (body.length > 1e5) req.destroy(); });
         req.on('end', () => { try { json(res, 200, editarCorte(config.pastaSaida, JSON.parse(body || '{}'), linhasDe(config))); } catch (e) { json(res, 400, { erro: e.message }); } });
+        return;
+      }
+      // video and cover of a delivered post (the schedule shows them)
+      const pr = /^\/pronto\/([^/]+)\/([^/]+)\/(video\.mp4|capa\.jpg)$/.exec(url.pathname);
+      if (req.method === 'GET' && pr) {
+        const [l, p, f] = [decodeURIComponent(pr[1]), decodeURIComponent(pr[2]), pr[3]];
+        const file = path.join(config.pastaEntrega || '', l, p, f);
+        if (!nomeSeguro(l) || !nomeSeguro(p) || !config.pastaEntrega || !fs.existsSync(file)) return json(res, 404, { erro: 'Não encontrado.' });
+        return servirArquivo(req, res, file);
+      }
+      if (req.method === 'POST' && url.pathname === '/api/metricas/atualizar') {
+        coletarMetricas(config).then((m) => json(res, 200, { atualizadoEm: m.atualizadoEm, erros: m.erros }), (e) => json(res, 500, { erro: e.message }));
         return;
       }
       const mid = /^\/midia\/([^/]+)\/(.+)$/.exec(url.pathname);

@@ -10,6 +10,7 @@ import { processarSessao } from '../src/sessao.js';
 import { observar } from '../src/observador.js';
 import { arquivoToken, garantirToken } from '../src/tiktokChrome.js';
 import { iniciarPostador } from '../src/postador.js';
+import { iniciarMetricas } from '../src/metricas.js';
 import { arquivoCredenciais, aplicarChaveIa } from '../src/credenciais.js';
 import { temFfmpeg } from '../src/run.js';
 import { criarPainel, enderecosLocais } from '../src/painel.js';
@@ -40,6 +41,7 @@ if (cmd === 'processar' && args[0]) {
   if (cmd === 'observar') observar(config);
   // Instagram, Facebook Page and YouTube through the official APIs (TikTok goes through the Chrome extension)
   iniciarPostador(config);
+  iniciarMetricas(config); // followers, subscribers and views from the official APIs, every 3 h
   // every 5 minutes, what was approved on the panel goes out: to the posting skill's folder, or to Upload-Post
   if (config.postagem === 'upload-post') {
     const postar = () => postarAprovados(config).catch((e) => console.log(`Postagem: ${e.message}`));

@@ -78,7 +78,9 @@ export function listarProntos(config) {
       out.push({
         linha, pasta: p, titulo: post.titulo, gancho: post.gancho, duracao: post.duracao, redes: post.linha?.redes || [],
         criadoEm: post.criadoEm, agendarPara: post.agendarPara || null, status: feito || post.postadoEm ? 'postado' : 'esperando a postagem',
-        postadoEm: feito?.em || post.postadoEm || null, links: feito?.links || post.links || {},
+        postadoEm: feito?.em || post.postadoEm || null, links: feito?.links || post.links || {}, emRede: feito?.emRede || {},
+        temVideo: fs.existsSync(path.join(pasta, 'video.mp4')), temCapa: fs.existsSync(path.join(pasta, 'capa.jpg')),
+        legenda: post.legenda || post.descricao || '', hashtags: post.hashtags || [], aviso: post.aviso || null,
       });
     }
   }
@@ -102,7 +104,8 @@ export function lerRedes(config) {
     atualizadoEm: m?.atualizadoEm || null,
     contas: [...contas.map((c) => ({ ...c, conectada: true })), ...faltam],
     total: { seguidores: soma('seguidores'), views7d: soma('views7d'), curtidas7d: soma('curtidas7d'), posts: soma('posts') },
-    historico: Array.isArray(m?.historico) ? m.historico.slice(-60) : [],
+    historico: Array.isArray(m?.historico) ? m.historico.slice(-90) : [],
+    posts: m?.posts || {}, erros: m?.erros || {},
   };
 }
 
