@@ -79,9 +79,11 @@ export function registrarResultadoYoutube(base, { id, ok, link, erro, etapa, pos
     return { ok: true, postado };
   }
   // once the video was attached, YouTube keeps it as a draft: a retry would make a second draft, so it stops here
+  // the daily upload limit stops the upload before YouTube keeps anything: no draft, and the try does not count
   const antesDoAnexo = /^(abrir|anexar)/.test(String(etapa || ''));
-  if (/limite di[aá]rio|daily upload limit/i.test(String(erro || ''))) fs.writeFileSync(path.join(base, LIMITE), JSON.stringify({ em, ate: new Date(agora + 24 * 3600000).toISOString(), erro: String(erro).slice(0, 200) }, null, 2));
-  const novo = { ...estado, em, ok: false, rascunho: !antesDoAnexo || !!estado.rascunho, postou: !!postou || !!estado.postou, erro: String(erro || 'sem detalhe').slice(0, 300), etapa: etapa ? String(etapa).slice(0, 80) : null };
+  const limite = /limite di[aá]rio|daily upload limit/i.test(String(erro || ''));
+  if (limite) fs.writeFileSync(path.join(base, LIMITE), JSON.stringify({ em, ate: new Date(agora + 24 * 3600000).toISOString(), erro: String(erro).slice(0, 200) }, null, 2));
+  const novo = { ...estado, em, ok: false, rascunho: (!antesDoAnexo && !limite) || !!estado.rascunho, ...(limite ? { tentativas: Math.max(0, (estado.tentativas || 1) - 1) } : {}), postou: !!postou || !!estado.postou, erro: String(erro || 'sem detalhe').slice(0, 300), etapa: etapa ? String(etapa).slice(0, 80) : null };
   fs.writeFileSync(path.join(dir, ESTADO), JSON.stringify(novo, null, 2));
   return { ok: false, estado: novo };
 }

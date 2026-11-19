@@ -76,3 +76,17 @@ test('Source Record files a few seconds off the main recording still join the se
   assert.equal(ehArquivoExtra('2026-11-19 21-00-00.mp4', nomes), false);
   assert.equal(arquivosDaSessao('/in/2026-11-19 22-00-00.mp4', nomes, cfg).separados, false);
 });
+
+test('the YouTube daily limit is not a draft and does not use up a try', async () => {
+  const { registrarResultadoYoutube } = await import('../src/youtubeChrome.js');
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'ytlim-'));
+  const dir = path.join(base, 'fnando', '02-supino');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'post.json'), '{}');
+  fs.writeFileSync(path.join(dir, '.youtube-chrome.json'), JSON.stringify({ tentativas: 1 }));
+  const r = registrarResultadoYoutube(base, { id: 'fnando/02-supino', ok: false, etapa: 'esperar o envio terminar', erro: 'o YouTube mostrou: O limite diário de envios foi alcançado.' });
+  assert.equal(r.estado.rascunho, false); assert.equal(r.estado.tentativas, 0);
+  assert.ok(fs.existsSync(path.join(base, '.youtube-limite.json')));
+  const d = registrarResultadoYoutube(base, { id: 'fnando/02-supino', ok: false, etapa: 'marcar Público', erro: 'não consegui marcar Público' });
+  assert.equal(d.estado.rascunho, true);
+});

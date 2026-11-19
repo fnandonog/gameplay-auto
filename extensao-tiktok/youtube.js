@@ -22,7 +22,7 @@ export function estadoYoutube() {
   const progresso = (prog?.innerText || '').replace(/\s+/g, ' ').trim();
   const link = [...document.querySelectorAll('ytcp-uploads-dialog a[href*="youtu"], .video-url-fadeable a[href*="youtu"]')].map((a) => a.href).find((h) => /youtu\.be\/|youtube\.com\/(shorts|watch)/.test(h)) || null;
   const erro = (q('ytcp-uploads-dialog .error-area, .ytcp-uploads-dialog .error-message')?.innerText || '').trim();
-  const limite = /limite di[aá]rio de envios|daily upload limit/i.test(document.body?.innerText || '');
+  const limite = /limite di[aá]rio( de envios)?|daily upload limit/i.test(document.body?.innerText || '');
   return { login, input: !!input, titulo: !!titulo, progresso, link, erro, limite, dialogo: !!q('ytcp-uploads-dialog'), passo: q('ytcp-uploads-dialog #step-badge-3[state="active"], ytcp-uploads-dialog [test-id="REVIEW"][state="active"]') ? 'visibilidade' : null };
 }
 
