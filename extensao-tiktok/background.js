@@ -18,19 +18,29 @@ async function marcar(texto, titulo) {
   await chrome.action.setTitle({ title: `FNANDO: ${titulo}` });
 }
 
-// TikTok Studio numa janela própria, sem foco (as abas do dono ficam como estão); devolve a aba e a janela.
+// O Studio abre numa ABA em segundo plano numa janela que já está aberta neste perfil (o fnando.gameplay), sem tirar o
+// foco do que o dono está fazendo; no fim fecha só essa aba. Só quando o perfil não tem janela nenhuma cria uma
+// janela minimizada (e fecha só ela). Nunca fecha outra aba ou janela.
 async function abrirStudio(url = STUDIO) {
-  const janela = await chrome.windows.create({ url, focused: false, width: 1280, height: 900 });
-  const id = janela.tabs[0].id;
+  const janelas = await chrome.windows.getAll({ windowTypes: ['normal'] }).catch(() => []);
+  let tab, criouJanela = null;
+  if (janelas.length) {
+    tab = await chrome.tabs.create({ url, active: false, windowId: janelas[0].id });
+  } else {
+    const janela = await chrome.windows.create({ url, focused: false, state: 'minimized' });
+    tab = janela.tabs[0];
+    criouJanela = janela.id;
+  }
+  const id = tab.id;
   await new Promise((ok, falha) => {
     const fim = setTimeout(() => { chrome.tabs.onUpdated.removeListener(ver); falha(new Error('o Studio não abriu')); }, 60000);
     function ver(t, info) { if (t === id && info.status === 'complete') { clearTimeout(fim); chrome.tabs.onUpdated.removeListener(ver); ok(); } }
     chrome.tabs.onUpdated.addListener(ver);
   });
-  return { tabId: id, windowId: janela.id };
+  return { tabId: id, windowId: criouJanela };
 }
-// fechar a janela não para na pergunta "Sair do site?" do TikTok
-const fechar = (a) => (a ? chrome.windows.remove(a.windowId).catch(() => {}) : null);
+// fecha só o que a extensão abriu: a aba (ou a janela minimizada que ela criou). Remover não para na pergunta "Sair do site?"
+const fechar = (a) => (!a ? null : a.windowId ? chrome.windows.remove(a.windowId).catch(() => {}) : chrome.tabs.remove(a.tabId).catch(() => {}));
 
 // Teclas e cliques de verdade na aba (Chrome DevTools Protocol pelo chrome.debugger): o editor da legenda aceita como
 // digitação de uma pessoa, o que não acontece com texto posto por script (studio.js diz por quê). Enquanto está ligado, o
