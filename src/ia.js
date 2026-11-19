@@ -68,8 +68,9 @@ export function aplicarDecisoes(cands, cortes) {
   for (const d of cortes || []) {
     const c = cands[d.id];
     if (!c || (!d.usar && !c.obrigatorio)) continue;
-    let start = Math.max(c.start, Math.min(d.inicio, c.end - 15));
-    let end = Math.min(c.end, Math.max(d.fim, start + 15));
+    // a stretch the owner asked for keeps its whole window (what matters there may be on screen, not in the talk)
+    let start = c.obrigatorio ? c.start : Math.max(c.start, Math.min(d.inicio, c.end - 15));
+    let end = c.obrigatorio ? c.end : Math.min(c.end, Math.max(d.fim, start + 15));
     if (end - start > 75) end = start + 75;
     out.push({ ...c, start, end, nota: d.nota, gancho: d.gancho, titulo: d.titulo, descricao: d.descricao, hashtags: d.hashtags, serie: d.serie || '' });
   }

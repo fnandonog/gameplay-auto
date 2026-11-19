@@ -60,7 +60,8 @@ export const COTA_YOUTUBE_DIA = 6;
 export function limitesDe(config = {}) {
   const r = config.ritmo || {};
   const base = r.automatico ? (() => { const m = Number(r.maxPorDia) || 15; return { tiktok: m, instagram: m, facebook: m, youtube: Math.min(m, COTA_YOUTUBE_DIA) }; })() : {};
-  return { ...LIMITES_SEGUROS, ...base, ...(config.limites || {}) };
+  // the automatic pace is the owner's own choice: it wins over the old fixed limits in config.json
+  return r.automatico ? { ...LIMITES_SEGUROS, ...(config.limites || {}), ...base } : { ...LIMITES_SEGUROS, ...(config.limites || {}) };
 }
 // pure: n times spread evenly between inicio and fim ("HH:MM")
 export function gerarHorarios(n, { inicio = '09:00', fim = '23:30' } = {}) {

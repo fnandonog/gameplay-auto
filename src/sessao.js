@@ -137,7 +137,7 @@ export async function processarSessao(principal, config, { log = console.log } =
     for (const fmt of formatos) {
       at('editor', 'trabalhando', `Corte ${i + 1}/${decididos.length} (${FORMATOS[fmt].nome}): ${c.titulo}`);
       const out = path.join(pasta, `${nome}-${fmt}.mp4`);
-      await renderCorte({ jogo: arq.jogo, camera: arq.camera, audio: arq.cena, start: c.start, end: c.end, palavras, gancho: c.gancho, selo: c.parte ? `PARTE ${c.parte}` : '', out, formato: fmt, marca, config });
+      await renderCorte({ jogo: arq.jogo, camera: arq.camera, audio: arq.cena, start: c.start, end: c.end, palavras, gancho: c.gancho, selo: c.parte ? `PARTE ${c.parte}` : '', out, formato: fmt, marca, config: c.obrigatorio ? { ...config, cortarSilencio: false } : config });
       if (config.intro?.nosCortes) await comIntro(out, { orientacao: 'vertical', marca, config, log });
       variantes[fmt] = path.basename(out);
       // one cover per format, so switching the format on the panel switches the cover too
@@ -145,7 +145,7 @@ export async function processarSessao(principal, config, { log = console.log } =
     }
     const arquivo = variantes[principal];
     const jpg = fs.existsSync(path.join(pasta, arquivo.replace(/\.mp4$/, '.jpg'))) ? arquivo.replace(/\.mp4$/, '.jpg') : null;
-    cortes.push({ arquivo, capa: jpg, formato: principal, variantes, linha: linha.id, arroba: marca?.arroba || '', inicio: +c.start.toFixed(2), fim: +c.end.toFixed(2), nota: c.nota, motivo: c.motivo, gancho: c.gancho, titulo: c.titulo, descricao: c.descricao, hashtags: c.hashtags, serie: c.serie || '', parte: c.parte || null, radar: c.radar || null, ...(c.semIa ? { semIa: true } : {}), status: 'aguardando' });
+    cortes.push({ arquivo, capa: jpg, formato: principal, variantes, linha: linha.id, arroba: marca?.arroba || '', inicio: +c.start.toFixed(2), fim: +c.end.toFixed(2), nota: c.nota, motivo: c.motivo, gancho: c.gancho, titulo: c.titulo, descricao: c.descricao, hashtags: c.hashtags, serie: c.serie || '', parte: c.parte || null, radar: c.radar || null, ...(c.semIa ? { semIa: true } : {}), ...(c.obrigatorio ? { obrigatorio: true } : {}), status: 'aguardando' });
   }
 
   at('editor', 'pronto', `${cortes.length} cortes montados`);
