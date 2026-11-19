@@ -14,7 +14,7 @@ import { lerPausa, pausar } from './qualidade.js';
 import { registrar } from './atividade.js';
 import { arquivoCredenciais, lerCredenciais, salvarCredenciais } from './credenciais.js';
 import { publicarInstagram, publicarFacebook, legendaMeta } from './postadores/meta.js';
-import { publicarYoutube } from './postadores/youtube.js';
+import { publicarYoutube, definirThumbYoutube } from './postadores/youtube.js';
 
 export const REDES_API = ['instagram', 'facebook', 'youtube'];
 export const MAX_TENTATIVAS = 3;
@@ -100,6 +100,19 @@ export function gravarSucesso(dir, rede, link, agora = Date.now()) {
   return novo;
 }
 
+// pure: the video id inside a youtu.be / shorts / watch link
+export const idDoLinkYoutube = (l) => (String(l || '').match(/(?:youtu\.be\/|shorts\/|[?&]v=)([\w-]{11})/) || [])[1] || null;
+// posted YouTube videos without the custom cover yet (at most 3 tries each)
+export function thumbsPendentes(posts) {
+  return posts.map((p) => ({ p, videoId: idDoLinkYoutube(p.postado.links?.youtube) }))
+    .filter(({ p, videoId }) => videoId && !p.postado.thumbYoutube && (p.postado.thumbTentativas || 0) < 3 && fs.existsSync(path.join(p.dir, 'capa.jpg')));
+}
+export function marcarThumb(dir, r) {
+  const f = path.join(dir, 'postado.json');
+  const antes = ler(f) || {};
+  fs.writeFileSync(f, JSON.stringify({ ...antes, thumbYoutube: !!r.thumb, thumbTentativas: (antes.thumbTentativas || 0) + (r.thumb ? 0 : 1), thumbErro: r.thumb ? null : (r.thumbErro || null) }, null, 2));
+}
+
 export function gravarFalha(dir, rede, err, agora = Date.now()) {
   const f = path.join(dir, '.postador.json');
   const e = ler(f) || {};
@@ -126,12 +139,25 @@ export async function rodadaPostador(config, { agora = Date.now(), publicar = PU
   if (!conectadas.length) return { feito: 'sem redes conectadas' };
   const posts = listarEntregues(config.pastaEntrega);
   const prox = proximoEnvio(posts, { agora, conectadas, limites: limitesDe(config) });
-  if (!prox) return { feito: 'nada vencido' };
+  if (!prox) {
+    // nothing due: put the cover on a YouTube video that went up without one (e.g. before the channel was verified)
+    if (conectadas.includes('youtube')) {
+      const sem = thumbsPendentes(posts)[0];
+      if (sem) {
+        const r = await definirThumbYoutube(cred.youtube, sem.videoId, path.join(sem.p.dir, 'capa.jpg')).catch((e) => ({ thumb: false, thumbErro: e.message }));
+        marcarThumb(sem.p.dir, r);
+        log(`Postador: capa do YouTube ${sem.videoId}: ${r.thumb ? 'ok' : r.thumbErro}`);
+        return { feito: r.thumb ? 'capa' : 'capa falhou', id: sem.p.id, erro: r.thumbErro };
+      }
+    }
+    return { feito: 'nada vencido' };
+  }
   const { post: p, rede } = prox;
   registrar(config.pastaSaida, 'agendador', 'trabalhando', `Postando "${p.post.titulo}" no ${rede}`);
   try {
     const r = await publicar[rede](cred, p, config);
     gravarSucesso(p.dir, rede, r.link, agora);
+    if (rede === 'youtube') marcarThumb(p.dir, r);
     if (rede === 'youtube' && r.travadoPrivado !== undefined) salvarCredenciais(credFile, 'youtube', { travadoPrivado: !!r.travadoPrivado });
     registrar(config.pastaSaida, 'agendador', 'pronto', `Publicado no ${rede}: "${p.post.titulo}"${r.travadoPrivado ? ' (o YouTube travou como privado)' : ''}`);
     log(`Postador: ${rede} ← ${p.id} ${r.link || ''}`);

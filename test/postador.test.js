@@ -198,3 +198,15 @@ test('YouTube by Chrome takes what the API quota leaves, never the same post', (
   assert.equal(j2.id, 'principal/forte');
   assert.ok(j2.capa.startsWith('/api/tiktok-chrome/capa/'));
 });
+
+import { idDoLinkYoutube, thumbsPendentes } from '../src/postador.js';
+test('YouTube covers: id from the link, pending only with capa and not done', () => {
+  assert.equal(idDoLinkYoutube('https://youtube.com/shorts/dtHqdyrKGas'), 'dtHqdyrKGas');
+  assert.equal(idDoLinkYoutube('https://youtu.be/xqYvALPy6mc'), 'xqYvALPy6mc');
+  const base = tmp();
+  const d = entregar(base, 'a', { titulo: 'A' }, { links: { youtube: 'https://youtu.be/xqYvALPy6mc' } });
+  entregar(base, 'b', { titulo: 'B' }, { links: { youtube: 'https://youtu.be/xqYvALPy6md' }, thumbYoutube: true });
+  assert.equal(thumbsPendentes(listarEntregues(base)).length, 0);
+  fs.writeFileSync(path.join(d, 'capa.jpg'), 'j');
+  assert.deepEqual(thumbsPendentes(listarEntregues(base)).map((x) => x.videoId), ['xqYvALPy6mc']);
+});
