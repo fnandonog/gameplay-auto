@@ -295,7 +295,8 @@ export function criarPainel(config) {
         return;
       }
       if (req.method === 'POST' && url.pathname === '/api/reagendar') {
-        try { return json(res, 200, reagendarFila(config)); } catch (e) { return json(res, 400, { erro: e.message }); }
+        // "Despachar" is the owner asking for the pace he set: it turns the automatic pace on (maxPorDia per network)
+        try { if (!config.ritmo?.automatico) salvarRitmo(config, { automatico: true }); return json(res, 200, reagendarFila(config)); } catch (e) { return json(res, 400, { erro: e.message }); }
       }
       if (req.method === 'POST' && url.pathname === '/api/postar-agora') {
         let body = '';

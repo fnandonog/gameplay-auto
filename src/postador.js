@@ -232,8 +232,10 @@ export function reagendarFila(config, { agora = Date.now(), fusoHoras = -3 } = {
     const longo = linhaId === 'youtube-longo';
     const redes = fila[0].post.linha?.redes || [];
     const feitos = contagemHoje(posts, agora);
-    const porDia = longo ? (Number(config.ritmo?.longosPorDia) || 3) : Math.min(...redes.map((r) => lim[r] ?? 3));
-    const jaHoje = Math.max(0, ...redes.map((r) => feitos[r] || 0));
+    // YouTube does not hold the line back: what passes the API quota goes by the Chrome extension
+    const redesRitmo = redes.filter((r) => r !== 'youtube').length ? redes.filter((r) => r !== 'youtube') : redes;
+    const porDia = longo ? (Number(config.ritmo?.longosPorDia) || 3) : Math.min(...redesRitmo.map((r) => lim[r] ?? 3));
+    const jaHoje = Math.max(0, ...redesRitmo.map((r) => feitos[r] || 0));
     const hoje = Math.max(0, Math.min(fila.length, porDia - jaHoje));
     const inicio = agora + 5 * 60000;
     const passo = hoje > 1 ? Math.max((longo ? 60 : 15) * 60000, (fimHoje - inicio) / (hoje - 1)) : 0;
