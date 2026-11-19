@@ -30,7 +30,16 @@
   .t { font-weight: 700; font-size: 15px; }
   .s { color: var(--muted); font-size: 13px; }
   .pill { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--card2); white-space: nowrap; }
-  .aguardando { color: var(--hi); } .aprovado { color: var(--ok); } .agendado, .entregue { color: var(--cy); } .postado { color: var(--ok); } .descartado { color: var(--no); }
+  .aguardando { color: var(--hi); } .aprovado { color: var(--ok); } .agendado, .entregue { color: var(--cy); } .postado { color: var(--ok); } .descartado { color: var(--no); } .ajuste { color: var(--cy); }
+  .rapida { display: grid; gap: 8px; background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .rapida .lin { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+  .rapida .lin > span { color: var(--muted); min-width: 64px; }
+  .rapida label { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
+  .rapida input[type=checkbox], .rapida input[type=radio] { width: auto; }
+  .chip { background: var(--card); border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+  .chip.on { border-color: var(--hi); color: var(--hi); }
+  .rapida input.selo { width: 110px; padding: 4px 8px; font-size: 13px; }
+  .ajustes { font-size: 13px; color: #bfefff; background: rgba(0,224,255,.07); border: 1px solid rgba(0,224,255,.25); border-radius: 10px; padding: 8px 10px; }
   .porque { font-size: 13px; background: rgba(255,230,0,.08); border: 1px solid rgba(255,230,0,.25); color: #f5e9a0; padding: 8px 10px; border-radius: 10px; }
   .porque.no { background: rgba(255,107,107,.08); border-color: rgba(255,107,107,.3); color: #ffc2c2; }
   details summary { cursor: pointer; color: var(--muted); font-size: 13px; list-style: none; }
@@ -68,7 +77,7 @@
 <main id="lista"><p class="vazio">Carregando...</p></main>
 <script>
 let filtro = 'aguardando', sessoes = [], linhas = [];
-const GRUPO = { aguardando: 'aguardando', aprovado: 'aprovado', agendado: 'agenda', entregue: 'agenda', postado: 'postado', descartado: 'descartado' };
+const GRUPO = { aguardando: 'aguardando', ajuste: 'aguardando', aprovado: 'aprovado', agendado: 'agenda', entregue: 'agenda', postado: 'postado', descartado: 'descartado' };
 const EXPLICA = {
   aguardando: 'Assista e decida. Aprovado entra sozinho no próximo horário livre (12:00, 18:30 ou 21:00). Nada sai sem passar por aqui ou pelo filtro automático.',
   aprovado: 'Aprovados que ainda estão indo para a agenda (leva até 5 minutos).',
@@ -76,7 +85,7 @@ const EXPLICA = {
   postado: 'Já foram ao ar.',
   descartado: 'Só você descarta. Mudou de ideia? Volte para a revisão.',
 };
-const ROTULO = { aguardando: 'para revisar', aprovado: 'aprovado', agendado: 'na agenda', entregue: 'na agenda', postado: 'postado', descartado: 'descartado' };
+const ROTULO = { aguardando: 'para revisar', ajuste: 'ajuste pedido', aprovado: 'aprovado', agendado: 'na agenda', entregue: 'na agenda', postado: 'postado', descartado: 'descartado' };
 const NOMES_FORMATO = { meio: 'Meio a meio', camtopo: 'Câmera em cima', jogo: 'Só o jogo', jogocheio: 'Jogo em tela cheia' };
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -99,7 +108,8 @@ function card(s, c) {
   const st = c.status || 'aguardando';
   const porque = st === 'aguardando' && c.filtro ? `<div class="porque">O filtro não aprovou sozinho: ${esc(c.filtro.join('; '))}. A decisão é sua.</div>`
     : c.aviso ? `<div class="porque no">⚠️ ${esc(c.aviso)}. Este nunca sai sozinho.</div>` : c.erroPost ? `<div class="porque no">Erro ao postar: ${esc(c.erroPost)}</div>` : '';
-  const botoes = st === 'aguardando' ? '<button class="b-no" data-st="descartado">Descartar</button><button class="b-ok" data-st="aprovado">Aprovar</button>'
+  const botoes = c.refazendo ? '<button class="b-sec" disabled>Refazendo... (alguns minutos)</button>'
+    : st === 'aguardando' || st === 'ajuste' ? '<button class="b-no" data-st="descartado">Descartar</button><button class="b-sec" data-ajuste>Pedir ajuste</button><button class="b-ok" data-st="aprovado">Aprovar</button>'
     : st === 'descartado' || st === 'aprovado' ? '<button class="b-sec" data-st="aguardando">Voltar para revisão</button>' : '';
   return `<article class="card${c.longo ? ' longo' : ''}" data-pasta="${esc(s.pasta)}" data-arquivo="${esc(c.arquivo)}">
     <video src="${midia(s.pasta, c.arquivo)}" ${c.capa ? `poster="${midia(s.pasta, c.capa)}"` : ''} controls playsinline preload="none"></video>
@@ -115,8 +125,30 @@ function card(s, c) {
         ${c.longo || linhas.length < 2 ? '' : `<select class="linha" aria-label="Canal">${linhas.map((l) => `<option value="${esc(l.id)}"${l.id === c.linha ? ' selected' : ''}>${esc(l.nome)}</option>`).join('')}</select>`}
         ${st === 'aguardando' ? '' : '<button class="b-sec" data-st="" style="border-radius:10px;padding:9px;font-weight:700">Salvar texto</button>'}
       </div></details>
+      ${(c.ajustes || []).length ? `<div class="ajustes">${c.ajustes.map((a) => `${a.feito ? '✓' : '•'} ${esc(a.texto)}`).join('<br>')}</div>` : ''}
+      ${c.erroRefazer ? `<div class="porque no">Não consegui refazer: ${esc(c.erroRefazer)}</div>` : ''}
+      ${!c.longo && (st === 'aguardando' || st === 'ajuste') && !c.refazendo ? rapida(s, c) : ''}
+      <div class="pedido" hidden><textarea class="txt-ajuste" placeholder="O que precisa mudar? Ex.: corta os 2 primeiros segundos, a legenda tampa o carro, som atrasado..."></textarea>
+        <div class="acoes"><button class="b-sec" data-cancelar>Cancelar</button><button class="b-ok" data-enviar-ajuste>Enviar pedido</button></div></div>
       ${botoes ? `<div class="acoes">${botoes}</div>` : ''}
     </div></article>`;
+}
+
+// quick edit: what the central redoes alone (a new version; the old file stays)
+function rapida(s, c) {
+  const e = c.edicao || {};
+  const comCam = s.camera && s.camera !== s.jogo || (c.variantes && Object.keys(c.variantes).some((f) => f !== 'jogo' && f !== 'jogocheio'));
+  const fmt = e.formato || c.formato;
+  const cam = fmt !== 'jogo' && fmt !== 'jogocheio';
+  const selo = e.selo ?? '';
+  return `<details class="rapida-box"><summary>Edição rápida ▾</summary><div class="rapida">
+    ${comCam ? `<div class="lin"><span>Câmera</span><button class="chip${cam ? ' on' : ''}" data-cam="meio">Com câmera</button><button class="chip${cam ? '' : ' on'}" data-cam="jogo">Só o jogo</button></div>` : ''}
+    <div class="lin"><span>Selo</span><input class="selo" maxlength="24" value="${esc(selo)}" placeholder="sem selo">${['GTA 6', 'EA FC 26'].map((t) => `<button class="chip" data-selo="${t}">${t}</button>`).join('')}</div>
+    <div class="lin"><span>Redes</span><label><input type="checkbox" class="o-arroba"${e.arroba === false ? '' : ' checked'}>@ na tela</label><label><input type="checkbox" class="o-chamada"${e.chamada === false ? '' : ' checked'}>"Segue" no fim</label></div>
+    <div class="lin"><span>Extras</span><label><input type="checkbox" class="o-legenda"${e.legenda === false ? '' : ' checked'}>Legenda</label><label><input type="checkbox" class="o-musica"${e.musica === false ? '' : ' checked'}>Música de fundo</label></div>
+    <button class="b-ok" data-refazer style="border:0;border-radius:10px;padding:9px;font-weight:700;cursor:pointer">Refazer com essas opções</button>
+    <div class="s">Sai uma versão nova para você comparar. A antiga fica guardada.</div>
+  </div></details>`;
 }
 
 function desenhar() {
@@ -148,7 +180,27 @@ document.addEventListener('change', (e) => {
   const c = s && s.cortes.find((x) => x.arquivo === art.dataset.arquivo);
   if (c && c.variantes[e.target.value]) { const vid = $('video', art); vid.removeAttribute('poster'); vid.src = midia(s.pasta, c.variantes[e.target.value]); }
 });
-document.addEventListener('click', (e) => {
+async function postar(url, body) {
+  const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { alert(j.erro || 'Não foi.'); return null; }
+  return j;
+}
+document.addEventListener('click', async (e) => {
+  const art = e.target.closest('.card');
+  const q = (s) => e.target.closest(s);
+  if (art && q('[data-ajuste]')) { $('.pedido', art).hidden = false; $('.txt-ajuste', art).focus(); return; }
+  if (art && q('[data-cancelar]')) { $('.pedido', art).hidden = true; return; }
+  if (art && q('[data-enviar-ajuste]')) { if (await postar('/api/ajuste', { pasta: art.dataset.pasta, arquivo: art.dataset.arquivo, texto: $('.txt-ajuste', art).value })) carregar(); return; }
+  if (art && q('[data-cam]')) { art.querySelectorAll('[data-cam]').forEach((b) => b.classList.toggle('on', b === q('[data-cam]'))); return; }
+  if (art && q('[data-selo]')) { const i = $('.selo', art); i.value = i.value === q('[data-selo]').dataset.selo ? '' : q('[data-selo]').dataset.selo; return; }
+  if (art && q('[data-refazer]')) {
+    const cam = $('[data-cam].on', art);
+    const edicao = { selo: $('.selo', art).value, arroba: $('.o-arroba', art).checked, chamada: $('.o-chamada', art).checked, legenda: $('.o-legenda', art).checked, musica: $('.o-musica', art).checked };
+    if (cam) edicao.formato = cam.dataset.cam;
+    if (await postar('/api/refazer', { pasta: art.dataset.pasta, arquivo: art.dataset.arquivo, edicao })) { carregar(); setTimeout(carregar, 60000); }
+    return;
+  }
   const b = e.target.closest('[data-st]');
   if (b) { salvar(b.closest('.card'), b.dataset.st); return; }
   const f = e.target.closest('#filtro button');

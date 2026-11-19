@@ -18,6 +18,7 @@ import { registrar } from './atividade.js';
 import { postarAgora, reagendarFila, redesConectadas } from './postador.js';
 import { proximoJobYoutube, registrarResultadoYoutube, arquivoDaCapa } from './youtubeChrome.js';
 import { limitesDe } from './canais.js';
+import { pedirAjuste, refazerCorte } from './refazer.js';
 import { salvarRitmo } from './config.js';
 import crypto from 'node:crypto';
 import { arquivoCredenciais, lerCredenciais, salvarCredenciais, statusApis, aplicarChaveIa } from './credenciais.js';
@@ -38,7 +39,7 @@ const novoEstado = (rede) => { const s = crypto.randomBytes(16).toString('hex');
 const usarEstado = (s, rede) => { const e = estadosOauth.get(s); estadosOauth.delete(s); return !!e && e.rede === rede && Date.now() - e.em < 600000; };
 const CAMPOS = { meta: ['appId', 'appSecret', 'configId'], youtube: ['clientId', 'clientSecret'], ia: ['apiKey'] };
 const local = (req) => /^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress || '');
-export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'entregue', 'postado'];
+export const STATUS = ['aguardando', 'ajuste', 'aprovado', 'descartado', 'agendado', 'entregue', 'postado'];
 
 // a name that came from the URL must be a plain file/folder name inside the output folder
 export const nomeSeguro = (s) => typeof s === 'string' && s.length > 0 && s === path.basename(s) && !s.startsWith('.');
@@ -271,6 +272,21 @@ export function criarPainel(config) {
         let body = '';
         req.on('data', (d) => { body += d; if (body.length > 1e5) req.destroy(); });
         req.on('end', () => { try { json(res, 200, editarCorte(config.pastaSaida, JSON.parse(body || '{}'), linhasDe(config))); } catch (e) { json(res, 400, { erro: e.message }); } });
+        return;
+      }
+      // "Pedir ajuste" (a note for the next look) and the quick edit (renders a new version, nothing is deleted)
+      if (req.method === 'POST' && (url.pathname === '/api/ajuste' || url.pathname === '/api/refazer')) {
+        let body = '';
+        req.on('data', (d) => { body += d; if (body.length > 1e4) req.destroy(); });
+        req.on('end', () => {
+          try {
+            const b = JSON.parse(body || '{}');
+            if (!nomeSeguro(b.pasta) || !caminhoSeguro(b.arquivo)) throw new Error('Corte inválido.');
+            if (url.pathname === '/api/ajuste') return json(res, 200, pedirAjuste(config.pastaSaida, b));
+            const r = refazerCorte(config, b);
+            json(res, 200, { ok: r.ok, refazendo: r.refazendo });
+          } catch (e) { json(res, 400, { erro: e.message }); }
+        });
         return;
       }
       // video and cover of a delivered post (the schedule shows them)
