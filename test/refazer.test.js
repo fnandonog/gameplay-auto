@@ -90,3 +90,12 @@ test('the YouTube daily limit is not a draft and does not use up a try', async (
   const d = registrarResultadoYoutube(base, { id: 'fnando/02-supino', ok: false, etapa: 'marcar Público', erro: 'não consegui marcar Público' });
   assert.equal(d.estado.rascunho, true);
 });
+
+test('a separate camera file is used whole: the scene corner (regiaoCamera) only applies to the scene', async () => {
+  const { argsCorte } = await import('../src/corte.js');
+  const reg = { x: 1440, y: 40, w: 440, h: 248 };
+  const sep = argsCorte({ jogo: 'j.mp4', camera: 'c.mp4', audio: 'cena.mp4', start: 0, end: 10, ass: 'a.ass', out: 'o.mp4', formato: 'meio', regiaoCamera: reg }).join(' ');
+  assert.ok(!sep.includes('crop=440:248:1440:40'));
+  const cena = argsCorte({ jogo: 'cena.mp4', camera: 'cena.mp4', audio: 'cena.mp4', start: 0, end: 10, ass: 'a.ass', out: 'o.mp4', formato: 'meio', regiaoCamera: reg }).join(' ');
+  assert.ok(cena.includes('crop=440:248:1440:40'));
+});

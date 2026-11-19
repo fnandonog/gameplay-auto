@@ -207,7 +207,7 @@ export function argsCorte(job) {
     jogoEnquadrado(vIn, H, 'st');
   } else {
     if (job.camera === job.jogo) g.push(`[${vIn}]split=2[src_c][src_g]`);
-    g.push(`[${job.camera === job.jogo ? 'src_c' : camIn}]${filtroCamera({ regiao: job.regiaoCamera, camH: L.camH })},fps=${fps}[cam]`,
+    g.push(`[${job.camera === job.jogo ? 'src_c' : camIn}]${filtroCamera({ regiao: job.camera === job.jogo ? job.regiaoCamera : null, camH: L.camH })},fps=${fps}[cam]`,
       `[${job.camera === job.jogo ? 'src_g' : vIn}]${filtroJogo({ gameH: L.gameH, zoom: job.zoom })},fps=${fps}[game]`,
       '[cam][game]vstack=inputs=2[st]');
   }
