@@ -15,7 +15,7 @@ import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberE
 import { arquivoToken, garantirToken, bearerOk, assinaturaOk, proximoJob, arquivoDoVideo, registrarResultado } from './tiktokChrome.js';
 import { registrar } from './atividade.js';
 import crypto from 'node:crypto';
-import { arquivoCredenciais, lerCredenciais, salvarCredenciais, statusApis } from './credenciais.js';
+import { arquivoCredenciais, lerCredenciais, salvarCredenciais, statusApis, aplicarChaveIa } from './credenciais.js';
 import * as metaApi from './postadores/meta.js';
 import * as ytApi from './postadores/youtube.js';
 
@@ -31,7 +31,7 @@ const CORS_TIKTOK = { 'access-control-allow-origin': 'https://www.tiktok.com', '
 const estadosOauth = new Map(); // state → { rede, em }, 10 min
 const novoEstado = (rede) => { const s = crypto.randomBytes(16).toString('hex'); estadosOauth.set(s, { rede, em: Date.now() }); return s; };
 const usarEstado = (s, rede) => { const e = estadosOauth.get(s); estadosOauth.delete(s); return !!e && e.rede === rede && Date.now() - e.em < 600000; };
-const CAMPOS = { meta: ['appId', 'appSecret', 'configId'], youtube: ['clientId', 'clientSecret'] };
+const CAMPOS = { meta: ['appId', 'appSecret', 'configId'], youtube: ['clientId', 'clientSecret'], ia: ['apiKey'] };
 const local = (req) => /^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress || '');
 export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'entregue', 'postado'];
 
@@ -56,7 +56,12 @@ export function editarCorte(pastaSaida, { pasta, arquivo, ...mud }, linhas = nul
   const s = JSON.parse(fs.readFileSync(file, 'utf8'));
   const c = s.cortes.find((x) => x.arquivo === arquivo || Object.values(x.variantes || {}).includes(arquivo)) || (s.longo?.arquivo === arquivo ? s.longo : null) || (s.missoes || []).find((x) => x.arquivo === arquivo);
   if (!c) throw new Error('Corte não encontrado.');
-  if (mud.status !== undefined) { if (!STATUS.includes(mud.status)) throw new Error('Status inválido.'); c.status = mud.status; }
+  if (mud.status !== undefined) {
+    if (!STATUS.includes(mud.status)) throw new Error('Status inválido.');
+    c.status = mud.status;
+    if (mud.status === 'aprovado') { delete c.filtro; delete c.barrado; c.aprovadoPor = 'dono'; }
+    if (mud.status === 'descartado') c.descartadoPor = 'dono';
+  }
   if (mud.linha !== undefined) { if (linhas && !linhas.some((l) => l.id === mud.linha)) throw new Error('Linha inválida.'); c.linha = String(mud.linha); }
   // another rendered format becomes the one that is posted
   if (mud.formato !== undefined && mud.formato !== c.formato) {
@@ -181,6 +186,7 @@ export function criarPainel(config) {
             for (const k of CAMPOS[rede]) if (typeof v[k] === 'string' && v[k].trim()) patch[k] = v[k].trim().slice(0, 300);
             if (!Object.keys(patch).length) throw new Error('Nada para salvar.');
             salvarCredenciais(arquivoCredenciais(config), rede, patch);
+            if (rede === 'ia') aplicarChaveIa(arquivoCredenciais(config), process.env, { trocar: true });
             json(res, 200, statusApis(lerCredenciais(arquivoCredenciais(config))));
           } catch (e) { json(res, 400, { erro: e.message }); }
         });

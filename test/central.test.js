@@ -148,3 +148,15 @@ import { subtrair } from '../src/longo.js';
 test('vídeo longo: os trechos descartados saem dos segmentos', () => {
   assert.deepEqual(subtrair([{ start: 0, end: 100 }, { start: 200, end: 300 }], [{ inicio: 50, fim: 250 }]), [{ start: 0, end: 50 }, { start: 250, end: 300 }]);
 });
+
+import { salvarCredenciais, aplicarChaveIa } from '../src/credenciais.js';
+test('chave da IA colada na central vai para o processo e recusa o que não é chave', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ia-'));
+  const f = path.join(dir, '.credenciais.json');
+  assert.throws(() => salvarCredenciais(f, 'ia', { apiKey: 'abc' }), /sk-ant-/);
+  salvarCredenciais(f, 'ia', { apiKey: 'sk-ant-api03-' + 'x'.repeat(30) });
+  const env = {};
+  assert.equal(aplicarChaveIa(f, env), true);
+  assert.match(env.ANTHROPIC_API_KEY, /^sk-ant-/);
+  assert.equal((fs.statSync(f).mode & 0o777).toString(8), '600');
+});

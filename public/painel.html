@@ -3,56 +3,85 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cortes</title>
+<title>Revisar cortes</title>
 <style>
-  :root { --bg: #0e0f13; --card: #181a21; --line: #2a2d38; --text: #f2f3f5; --muted: #9aa0ad; --hi: #ffe600; --ok: #2ecc71; --no: #ff5c5c; }
+  :root { --bg: #0e0f13; --card: #17191f; --card2: #20232c; --line: #2a2d38; --text: #f2f3f5; --muted: #9aa0ad; --hi: #ffe600; --ok: #2ecc71; --no: #ff6b6b; --cy: #00e0ff; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, system-ui, sans-serif; }
-  header { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); padding: 12px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  h1 { font-size: 18px; margin: 0 auto 0 0; }
-  .filtro button { background: var(--card); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font: inherit; }
-  .filtro button.on { color: var(--bg); background: var(--hi); border-color: var(--hi); }
-  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
-  h2 { font-size: 14px; color: var(--muted); font-weight: 600; margin: 24px 0 10px; }
-  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; background: rgba(14,15,19,.96); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .topo { display: flex; align-items: center; gap: 16px; padding: 12px 16px 0; max-width: 1080px; margin: 0 auto; }
+  .topo h1 { font-size: 18px; margin: 0 auto 0 0; display: flex; align-items: center; gap: 8px; }
+  .topo a { color: var(--muted); text-decoration: none; font-size: 14px; }
+  nav { display: flex; gap: 2px; overflow-x: auto; padding: 8px 12px 0; max-width: 1080px; margin: 0 auto; scrollbar-width: none; }
+  nav button { flex: none; background: none; color: var(--muted); border: 0; border-bottom: 2px solid transparent; padding: 8px 12px 10px; font: inherit; cursor: pointer; }
+  nav button.on { color: var(--text); border-bottom-color: var(--hi); font-weight: 600; }
+  nav .n { margin-left: 6px; font-size: 12px; color: var(--muted); }
+  nav button[data-f="aguardando"] .n { background: var(--hi); color: var(--bg); font-weight: 700; border-radius: 999px; padding: 1px 7px; }
+  nav .n:empty { display: none; }
+  main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
+  .explica { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 26px 0 10px; }
+  h2:first-of-type { margin-top: 0; }
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  video { width: 100%; aspect-ratio: 9/16; max-height: 62vh; object-fit: contain; background: #000; display: block; }
   .longo video { aspect-ratio: 16/9; }
-  video { width: 100%; aspect-ratio: 9/16; max-height: 70vh; object-fit: contain; background: #000; display: block; }
-  .corpo { padding: 10px 12px 12px; display: grid; gap: 8px; }
-  .meta { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 8px; }
-  .nota { color: var(--hi); font-weight: 700; }
-  input, textarea, select { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: inherit; }
-  textarea { min-height: 64px; resize: vertical; }
+  .corpo { padding: 12px; display: grid; gap: 10px; }
+  .t { font-weight: 700; font-size: 15px; }
+  .s { color: var(--muted); font-size: 13px; }
+  .pill { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--card2); white-space: nowrap; }
+  .aguardando { color: var(--hi); } .aprovado { color: var(--ok); } .agendado, .entregue { color: var(--cy); } .postado { color: var(--ok); } .descartado { color: var(--no); }
+  .porque { font-size: 13px; background: rgba(255,230,0,.08); border: 1px solid rgba(255,230,0,.25); color: #f5e9a0; padding: 8px 10px; border-radius: 10px; }
+  .porque.no { background: rgba(255,107,107,.08); border-color: rgba(255,107,107,.3); color: #ffc2c2; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 13px; list-style: none; }
+  details summary::-webkit-details-marker { display: none; }
+  details[open] summary { margin-bottom: 8px; }
+  .campos { display: grid; gap: 8px; }
+  input, textarea, select { width: 100%; background: var(--card2); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; font: inherit; font-size: 14px; }
+  textarea { min-height: 70px; resize: vertical; }
   .acoes { display: flex; gap: 8px; }
-  .acoes button { flex: 1; border: 0; border-radius: 8px; padding: 10px; font: inherit; font-weight: 600; }
-  .aprovar { background: var(--ok); color: #04210f; }
-  .descartar { background: transparent; color: var(--no); border: 1px solid var(--no) !important; }
-  .status { font-size: 12px; font-weight: 700; text-transform: uppercase; }
-  .status.aprovado { color: var(--ok); } .status.descartado { color: var(--no); } .status.postado, .status.agendado, .status.entregue { color: var(--hi); }
-  .vazio { color: var(--muted); text-align: center; padding: 48px 16px; }
+  .acoes button { flex: 1; border: 0; border-radius: 10px; padding: 11px; font: inherit; font-weight: 700; cursor: pointer; }
+  .b-ok { background: var(--hi); color: var(--bg); }
+  .b-sec { background: var(--card2); color: var(--text); border: 1px solid var(--line) !important; }
+  .b-no { background: none; color: var(--no); border: 1px solid var(--line) !important; }
+  .vazio { color: var(--muted); text-align: center; padding: 40px 16px; background: var(--card); border: 1px dashed var(--line); border-radius: 14px; }
+  #pausa { margin: 0; padding: 10px 16px; background: var(--no); color: #fff; font-weight: 600; text-align: center; }
+  #pausa button { margin-left: 8px; border: 0; border-radius: 8px; padding: 4px 10px; font-weight: 700; cursor: pointer; }
 </style>
 </head>
 <body>
 <header>
-  <h1><img src="/marca/fnando-simbolo.svg" alt="" width="28" height="28" style="vertical-align:-7px;margin-right:6px">Cortes</h1>
-  <a href="/" style="color:var(--muted);font-weight:600;text-decoration:none;margin-right:8px">← Central</a>
-  <a href="/escritorio" style="color:var(--hi);font-weight:600;text-decoration:none;margin-right:8px">Escritório →</a>
-  <div class="filtro" id="filtro">
-    <button data-f="aguardando" class="on">Aguardando</button>
-    <button data-f="aprovado">Aprovados</button>
-    <button data-f="agendado">Agendados</button>
-    <button data-f="entregue">Entregues</button>
-    <button data-f="todos">Todos</button>
+  <div class="topo">
+    <h1><img src="/marca/fnando-simbolo.svg" alt="" width="26" height="26">Revisar cortes</h1>
+    <a href="/">Central</a>
+    <a href="/escritorio">Escritório</a>
   </div>
+  <nav id="filtro">
+    <button data-f="aguardando" class="on">Para revisar<span class="n"></span></button>
+    <button data-f="aprovado">Aprovados<span class="n"></span></button>
+    <button data-f="agenda">Na agenda<span class="n"></span></button>
+    <button data-f="postado">Postados<span class="n"></span></button>
+    <button data-f="descartado">Descartados<span class="n"></span></button>
+  </nav>
 </header>
-<p id="pausa" hidden style="margin:0;padding:10px 16px;background:var(--no);color:#fff;font-weight:600">Postagem pausada: <span></span> <button style="margin-left:8px">Retomar</button></p>
+<p id="pausa" hidden>Postagem pausada: <span></span> <button>Retomar</button></p>
 <main id="lista"><p class="vazio">Carregando...</p></main>
 <script>
 let filtro = 'aguardando', sessoes = [], linhas = [];
+const GRUPO = { aguardando: 'aguardando', aprovado: 'aprovado', agendado: 'agenda', entregue: 'agenda', postado: 'postado', descartado: 'descartado' };
+const EXPLICA = {
+  aguardando: 'Assista e decida. Aprovado entra sozinho no próximo horário livre (12:00, 18:30 ou 21:00). Nada sai sem passar por aqui ou pelo filtro automático.',
+  aprovado: 'Aprovados que ainda estão indo para a agenda (leva até 5 minutos).',
+  agenda: 'Já têm horário marcado. Saem sozinhos no TikTok, Instagram, Página e YouTube.',
+  postado: 'Já foram ao ar.',
+  descartado: 'Só você descarta. Mudou de ideia? Volte para a revisão.',
+};
+const ROTULO = { aguardando: 'para revisar', aprovado: 'aprovado', agendado: 'na agenda', entregue: 'na agenda', postado: 'postado', descartado: 'descartado' };
 const NOMES_FORMATO = { meio: 'Meio a meio', camtopo: 'Câmera em cima', jogo: 'Só o jogo', jogocheio: 'Jogo em tela cheia' };
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${String(a).split('/').map(encodeURIComponent).join('/')}`;
+const dur = (s) => s >= 60 ? `${Math.floor(s / 60)} min ${String(Math.round(s % 60)).padStart(2, '0')} s` : `${Math.round(s)} s`;
 
 async function carregar() {
   try { sessoes = await (await fetch('/api/sessoes')).json(); } catch { sessoes = []; }
@@ -60,60 +89,70 @@ async function carregar() {
   desenhar();
 }
 
-function desenhar() {
-  const html = sessoes.map((s) => {
-    const cortes = [...(s.longo ? [{ ...s.longo, capa: s.longo.thumb, inicio: 0, fim: s.longo.duracao, nota: 10, motivo: 'vídeo completo do YouTube', longo: true }] : []), ...(s.missoes || []).map((m) => ({ ...m, capa: m.thumb, nota: 10, motivo: `missão: ${m.missao || ''}${m.aviso ? ' · ⚠️ ' + m.aviso : ''}`, longo: true })), ...s.cortes]
-      .filter((c) => filtro === 'todos' || c.status === filtro);
-    if (!cortes.length) return '';
-    return `<h2>${esc(s.sessao)} · ${cortes.length} corte(s)</h2><div class="grade">${cortes.map((c) => `
-      <article class="card${c.longo ? ' longo' : ''}" data-pasta="${esc(s.pasta)}" data-arquivo="${esc(c.arquivo)}">
-        <video src="${midia(s.pasta, c.arquivo)}" ${c.capa ? `poster="${midia(s.pasta, c.capa)}"` : ''} controls playsinline preload="none"></video>
-        <div class="corpo">
-          <div class="meta"><span class="nota">${c.longo ? 'YouTube' : 'nota ' + Number(c.nota).toFixed(1)}</span><span>${c.longo ? Math.round(c.duracao / 60) + ' min' : Math.round(c.fim - c.inicio) + ' s'} · ${esc(c.motivo)}</span></div>
-          <span class="status ${esc(c.status)}">${esc(c.status)}${c.agendadoPara ? ' · ' + new Date(c.agendadoPara).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}${c.erroPost ? ' · erro: ' + esc(c.erroPost) : ''}${c.filtro ? ' · filtro: ' + esc(c.filtro.join('; ')) : ''}</span>
-          <input class="titulo" value="${esc(c.titulo)}" aria-label="Título">
-          <textarea class="descricao" aria-label="Descrição">${esc(c.descricao)}</textarea>
-          ${c.longo ? '' : `<input class="hashtags" value="${esc((c.hashtags || []).map((h) => '#' + h).join(' '))}" aria-label="Hashtags">`}
-          ${c.variantes && Object.keys(c.variantes).length > 1 ? `<select class="formato" aria-label="Formato">${Object.keys(c.variantes).map((f) => `<option value="${esc(f)}"${f === c.formato ? ' selected' : ''}>${esc(NOMES_FORMATO[f] || f)}</option>`).join('')}</select>` : ''}
-          ${c.longo ? '' : `<select class="linha" aria-label="Canal">${linhas.map((l) => `<option value="${esc(l.id)}"${l.id === c.linha ? ' selected' : ''}>${esc(l.nome)} · ${esc(l.redes.join(', '))}</option>`).join('')}</select>`}
-          <div class="acoes"><button class="descartar">Descartar</button><button class="aprovar">Aprovar</button></div>
-        </div>
-      </article>`).join('')}</div>`;
-  }).join('');
-  $('#lista').innerHTML = html || '<p class="vazio">Nenhum corte aqui. Grave uma sessão no OBS e ele aparece sozinho.</p>';
+const itens = (s) => [
+  ...s.cortes.map((c) => ({ ...c, tipo: 'Short' })),
+  ...(s.missoes || []).map((m) => ({ ...m, capa: m.thumb, inicio: 0, fim: m.duracao, longo: true, tipo: `Missão: ${m.missao || ''}` })),
+  ...(s.longo ? [{ ...s.longo, capa: s.longo.thumb, inicio: 0, fim: s.longo.duracao, longo: true, tipo: 'Gravação inteira (YouTube)' }] : []),
+];
+
+function card(s, c) {
+  const st = c.status || 'aguardando';
+  const porque = st === 'aguardando' && c.filtro ? `<div class="porque">O filtro não aprovou sozinho: ${esc(c.filtro.join('; '))}. A decisão é sua.</div>`
+    : c.aviso ? `<div class="porque no">⚠️ ${esc(c.aviso)}. Este nunca sai sozinho.</div>` : c.erroPost ? `<div class="porque no">Erro ao postar: ${esc(c.erroPost)}</div>` : '';
+  const botoes = st === 'aguardando' ? '<button class="b-no" data-st="descartado">Descartar</button><button class="b-ok" data-st="aprovado">Aprovar</button>'
+    : st === 'descartado' || st === 'aprovado' ? '<button class="b-sec" data-st="aguardando">Voltar para revisão</button>' : '';
+  return `<article class="card${c.longo ? ' longo' : ''}" data-pasta="${esc(s.pasta)}" data-arquivo="${esc(c.arquivo)}">
+    <video src="${midia(s.pasta, c.arquivo)}" ${c.capa ? `poster="${midia(s.pasta, c.capa)}"` : ''} controls playsinline preload="none"></video>
+    <div class="corpo">
+      <div style="display:flex;gap:8px;align-items:flex-start"><div class="t" style="flex:1">${esc(c.titulo || c.missao)}</div><span class="pill ${esc(st)}">${esc(ROTULO[st] || st)}</span></div>
+      <div class="s">${esc(c.tipo)} · ${dur((c.fim || 0) - (c.inicio || 0))}${c.longo ? '' : ` · nota ${Number(c.nota || 0).toFixed(1)}`}</div>
+      ${porque}
+      <details${st === 'aguardando' && !c.longo ? '' : ''}><summary>Editar título, texto e formato ▾</summary><div class="campos">
+        <input class="titulo" value="${esc(c.titulo)}" aria-label="Título">
+        <textarea class="descricao" aria-label="Descrição">${esc(c.descricao)}</textarea>
+        ${c.longo ? '' : `<input class="hashtags" value="${esc((c.hashtags || []).map((h) => '#' + h).join(' '))}" aria-label="Hashtags">`}
+        ${c.variantes && Object.keys(c.variantes).length > 1 ? `<select class="formato" aria-label="Formato">${Object.keys(c.variantes).map((f) => `<option value="${esc(f)}"${f === c.formato ? ' selected' : ''}>${esc(NOMES_FORMATO[f] || f)}</option>`).join('')}</select>` : ''}
+        ${c.longo || linhas.length < 2 ? '' : `<select class="linha" aria-label="Canal">${linhas.map((l) => `<option value="${esc(l.id)}"${l.id === c.linha ? ' selected' : ''}>${esc(l.nome)}</option>`).join('')}</select>`}
+        ${st === 'aguardando' ? '' : '<button class="b-sec" data-st="" style="border-radius:10px;padding:9px;font-weight:700">Salvar texto</button>'}
+      </div></details>
+      ${botoes ? `<div class="acoes">${botoes}</div>` : ''}
+    </div></article>`;
 }
 
-async function salvar(card, status) {
-  const body = {
-    pasta: card.dataset.pasta, arquivo: card.dataset.arquivo, status,
-    titulo: $('.titulo', card).value, descricao: $('.descricao', card).value,
-    linha: $('.linha', card) ? $('.linha', card).value : undefined,
-    formato: $('.formato', card) ? $('.formato', card).value : undefined,
-    hashtags: $('.hashtags', card) ? $('.hashtags', card).value.split(/[\s,]+/).filter(Boolean) : undefined,
-  };
+function desenhar() {
+  const conta = {};
+  for (const s of sessoes) for (const c of itens(s)) { const g = GRUPO[c.status || 'aguardando'] || 'aguardando'; conta[g] = (conta[g] || 0) + 1; }
+  document.querySelectorAll('#filtro button').forEach((b) => { b.classList.toggle('on', b.dataset.f === filtro); $('.n', b).textContent = conta[b.dataset.f] || ''; });
+  const html = sessoes.map((s) => {
+    const l = itens(s).filter((c) => (GRUPO[c.status || 'aguardando'] || 'aguardando') === filtro);
+    return l.length ? `<h2>Gravação de ${esc(s.sessao)}</h2><div class="grade">${l.map((c) => card(s, c)).join('')}</div>` : '';
+  }).join('');
+  $('#lista').innerHTML = `<p class="explica">${EXPLICA[filtro]}</p>` + (html || '<p class="vazio">Nada aqui.</p>');
+}
+
+async function salvar(art, status) {
+  const v = (sel) => $(sel, art) ? $(sel, art).value : undefined;
+  const body = { pasta: art.dataset.pasta, arquivo: art.dataset.arquivo, titulo: v('.titulo'), descricao: v('.descricao'), linha: v('.linha'), formato: v('.formato'),
+    hashtags: $('.hashtags', art) ? $('.hashtags', art).value.split(/[\s,]+/).filter(Boolean) : undefined };
+  if (status) body.status = status;
   const r = await fetch('/api/corte', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const c = await r.json();
   if (!r.ok) return alert(c.erro || 'Não salvou.');
-  const s = sessoes.find((x) => x.pasta === body.pasta);
-  Object.assign(s.cortes.find((x) => x.arquivo === body.arquivo || Object.values(x.variantes || {}).includes(body.arquivo)) || (s.missoes || []).find((x) => x.arquivo === body.arquivo) || s.longo, c);
-  desenhar();
+  await carregar();
 }
 
-// picking a format plays that version right away; it is saved with Aprovar
 document.addEventListener('change', (e) => {
-  const card = e.target.closest('.card');
-  if (!card || !e.target.matches('.formato')) return;
-  const s = sessoes.find((x) => x.pasta === card.dataset.pasta);
-  const c = s && s.cortes.find((x) => x.arquivo === card.dataset.arquivo);
-  if (c && c.variantes[e.target.value]) { const v = $('video', card); v.removeAttribute('poster'); v.src = midia(s.pasta, c.variantes[e.target.value]); }
+  const art = e.target.closest('.card');
+  if (!art || !e.target.matches('.formato')) return;
+  const s = sessoes.find((x) => x.pasta === art.dataset.pasta);
+  const c = s && s.cortes.find((x) => x.arquivo === art.dataset.arquivo);
+  if (c && c.variantes[e.target.value]) { const vid = $('video', art); vid.removeAttribute('poster'); vid.src = midia(s.pasta, c.variantes[e.target.value]); }
 });
-
 document.addEventListener('click', (e) => {
-  const card = e.target.closest('.card');
-  if (card && e.target.matches('.aprovar')) salvar(card, 'aprovado');
-  if (card && e.target.matches('.descartar')) salvar(card, 'descartado');
+  const b = e.target.closest('[data-st]');
+  if (b) { salvar(b.closest('.card'), b.dataset.st); return; }
   const f = e.target.closest('#filtro button');
-  if (f) { filtro = f.dataset.f; document.querySelectorAll('#filtro button').forEach((b) => b.classList.toggle('on', b === f)); desenhar(); }
+  if (f) { filtro = f.dataset.f; desenhar(); scrollTo(0, 0); }
 });
 async function verPausa() {
   try { const { pausa } = await (await fetch('/api/pausa')).json(); $('#pausa').hidden = !pausa; if (pausa) $('#pausa span').textContent = pausa.motivo; } catch {}
@@ -122,7 +161,7 @@ $('#pausa button').onclick = async () => { await fetch('/api/retomar', { method:
 verPausa();
 carregar();
 setInterval(verPausa, 60000);
-setInterval(() => { if (!document.querySelector('input:focus, textarea:focus, video:not([paused])')) carregar(); }, 60000);
+setInterval(() => { if (!document.querySelector('input:focus, textarea:focus, details[open]') && ![...document.querySelectorAll('video')].some((v) => !v.paused)) carregar(); }, 60000);
 </script>
 </body>
 </html>

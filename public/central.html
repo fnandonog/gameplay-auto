@@ -5,256 +5,254 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Central FNANDO</title>
 <style>
-  :root { --bg: #0e0f13; --card: #181a21; --card2: #1f222b; --line: #2a2d38; --text: #f2f3f5; --muted: #9aa0ad; --hi: #ffe600; --ok: #2ecc71; --no: #ff5c5c; --cy: #00e0ff; }
+  :root { --bg: #0e0f13; --card: #17191f; --card2: #20232c; --line: #2a2d38; --text: #f2f3f5; --muted: #9aa0ad; --hi: #ffe600; --ok: #2ecc71; --no: #ff6b6b; --cy: #00e0ff; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, system-ui, sans-serif; }
-  header { position: sticky; top: 0; z-index: 3; background: var(--bg); border-bottom: 1px solid var(--line); }
-  .topo { display: flex; align-items: center; gap: 10px; padding: 12px 16px 6px; max-width: 1180px; margin: 0 auto; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, system-ui, sans-serif; }
+  a { color: var(--hi); }
+  header { position: sticky; top: 0; z-index: 3; background: rgba(14,15,19,.96); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .topo { display: flex; align-items: center; gap: 16px; padding: 12px 16px 0; max-width: 1080px; margin: 0 auto; }
   .topo h1 { font-size: 18px; margin: 0 auto 0 0; display: flex; align-items: center; gap: 8px; }
-  .topo a { color: var(--hi); font-weight: 600; text-decoration: none; font-size: 14px; }
-  nav { display: flex; gap: 6px; overflow-x: auto; padding: 6px 16px 10px; max-width: 1180px; margin: 0 auto; scrollbar-width: none; }
-  nav button { flex: none; background: var(--card); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; font: inherit; font-size: 14px; cursor: pointer; }
-  nav button.on { color: var(--bg); background: var(--hi); border-color: var(--hi); font-weight: 600; }
-  nav .n { margin-left: 6px; font-size: 12px; opacity: .8; }
-  main { max-width: 1180px; margin: 0 auto; padding: 16px; }
-  h2 { font-size: 15px; margin: 22px 0 10px; }
-  h2 small { color: var(--muted); font-weight: 400; }
-  p.dica { color: var(--muted); margin: 4px 0 14px; font-size: 14px; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; }
-  .kpi b { display: block; font-size: 26px; font-variant-numeric: tabular-nums; }
-  .kpi span { color: var(--muted); font-size: 13px; }
-  .kpi.forte { border-color: var(--hi); }
-  .lista { display: grid; gap: 8px; }
-  .linha { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  .linha .nome { font-weight: 600; flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
-  .linha .sub { color: var(--muted); font-size: 13px; }
-  .tag { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--card2); color: var(--muted); white-space: nowrap; }
-  .tag.ok { color: var(--ok); } .tag.hi { color: var(--hi); } .tag.no { color: var(--no); } .tag.cy { color: var(--cy); }
-  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-  .corte { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .topo a { color: var(--muted); text-decoration: none; font-size: 14px; }
+  nav { display: flex; gap: 2px; overflow-x: auto; padding: 8px 12px 0; max-width: 1080px; margin: 0 auto; scrollbar-width: none; }
+  nav button { flex: none; background: none; color: var(--muted); border: 0; border-bottom: 2px solid transparent; padding: 8px 12px 10px; font: inherit; font-size: 15px; cursor: pointer; }
+  nav button.on { color: var(--text); border-bottom-color: var(--hi); font-weight: 600; }
+  nav .n { margin-left: 6px; font-size: 12px; font-weight: 700; background: var(--hi); color: var(--bg); border-radius: 999px; padding: 1px 7px; }
+  nav .n:empty { display: none; }
+  main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 28px 0 10px; font-weight: 700; }
+  h2:first-child { margin-top: 0; }
+  .dica { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
+  .caixa { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+  .lista { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .item { background: var(--card); padding: 12px 14px; display: flex; gap: 12px; align-items: center; }
+  .item .txt { flex: 1; min-width: 0; }
+  .item .t { font-weight: 600; overflow-wrap: anywhere; }
+  .item .s { color: var(--muted); font-size: 13px; }
+  .pill { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--card2); color: var(--muted); white-space: nowrap; }
+  .pill.ok { color: var(--ok); } .pill.hi { color: var(--hi); } .pill.no { color: var(--no); } .pill.cy { color: var(--cy); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--muted); }
+  .dot.ok { background: var(--ok); } .dot.no { background: var(--no); } .dot.hi { background: var(--hi); }
+  .btn { display: inline-block; background: var(--hi); color: var(--bg); font-weight: 700; text-decoration: none; padding: 8px 14px; border-radius: 9px; border: 0; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .btn.sec { background: var(--card2); color: var(--text); border: 1px solid var(--line); }
+  .num { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .num div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+  .num b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+  .num span { color: var(--muted); font-size: 13px; }
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+  .corte { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
   .corte video { width: 100%; aspect-ratio: 9/16; object-fit: contain; background: #000; display: block; }
   .corte.longo video { aspect-ratio: 16/9; }
-  .corte .corpo { padding: 9px 11px 11px; display: grid; gap: 5px; }
+  .corte .c { padding: 10px 12px 12px; display: grid; gap: 6px; }
   .corte .t { font-weight: 600; font-size: 14px; }
-  .corte .sub { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 6px; }
-  .roteiro { background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
-  .roteiro summary { padding: 11px 12px; cursor: pointer; display: flex; gap: 10px; align-items: center; list-style: none; }
-  .roteiro summary::-webkit-details-marker { display: none; }
-  .roteiro summary .nome { flex: 1; font-weight: 600; }
-  .roteiro pre { margin: 0; padding: 0 12px 12px; white-space: pre-wrap; font: 14px/1.5 -apple-system, system-ui, sans-serif; color: #d9dbe0; }
-  .envio { border: 2px dashed var(--line); border-radius: 12px; padding: 22px 16px; text-align: center; color: var(--muted); margin-bottom: 14px; }
+  .corte .s { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+  .corte .por { font-size: 12px; color: var(--hi); }
+  .rede { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+  .rede .cab { display: flex; gap: 12px; align-items: center; }
+  .rede .ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; background: var(--card2); flex: none; }
+  .rede .cab .txt { flex: 1; min-width: 0; }
+  .rede .estado { font-size: 14px; }
+  .rede details summary { cursor: pointer; color: var(--muted); font-size: 13px; list-style: none; }
+  .rede details summary::-webkit-details-marker { display: none; }
+  .rede details[open] summary { margin-bottom: 8px; }
+  .redes { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .campo { background: var(--card2); border: 1px solid var(--line); color: var(--text); border-radius: 9px; padding: 8px 10px; font: inherit; font-size: 14px; min-width: 0; width: 100%; }
+  .linha2 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .passo { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; padding: 3px 0; }
+  .passo input { margin-top: 4px; accent-color: var(--hi); }
+  .passo.feito span { color: var(--muted); text-decoration: line-through; }
+  .anon { font-size: 11px; color: var(--cy); font-weight: 700; margin-left: 4px; }
+  .dia { font-weight: 700; margin: 18px 0 8px; }
+  .vazio { color: var(--muted); text-align: center; padding: 30px 16px; background: var(--card); border: 1px dashed var(--line); border-radius: 14px; }
+  .envio { border: 2px dashed var(--line); border-radius: 14px; padding: 22px 16px; text-align: center; color: var(--muted); }
   .envio.sobre { border-color: var(--hi); color: var(--text); }
   .envio label { color: var(--hi); font-weight: 600; cursor: pointer; }
   .barra { height: 6px; background: var(--card2); border-radius: 3px; overflow: hidden; margin-top: 10px; }
   .barra i { display: block; height: 100%; width: 0; background: var(--hi); transition: width .2s; }
-  .vazio { color: var(--muted); text-align: center; padding: 36px 16px; background: var(--card); border: 1px dashed var(--line); border-radius: 12px; }
-  .redes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-  .conta { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
-  .conta .r { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
-  .conta b { font-size: 22px; font-variant-numeric: tabular-nums; }
-  .conta.off { opacity: .6; border-style: dashed; }
+  details.ideia { background: var(--card); }
+  details.ideia summary { padding: 12px 14px; cursor: pointer; display: flex; gap: 10px; align-items: center; list-style: none; }
+  details.ideia summary::-webkit-details-marker { display: none; }
+  details.ideia summary .t { flex: 1; font-weight: 600; }
+  details.ideia .corpo { padding: 0 14px 14px; color: #d9dbe0; font-size: 14px; white-space: pre-wrap; }
   code { background: var(--card2); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
-  a.btn { display: inline-block; background: var(--hi); color: var(--bg); font-weight: 700; text-decoration: none; padding: 8px 14px; border-radius: 8px; }
-  .gerir { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
-  .gerir .conta { gap: 8px; }
-  .gerir .topo2 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .gerir .topo2 .r { margin-right: auto; }
-  .passo { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
-  .passo input { margin-top: 3px; accent-color: var(--hi); }
-  .passo.feito span { color: var(--muted); text-decoration: line-through; }
-  .anon { font-size: 11px; color: var(--cy); font-weight: 700; margin-left: 4px; white-space: nowrap; }
-  .campo { background: var(--card2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 6px 9px; font: inherit; font-size: 14px; min-width: 0; }
-  .aviso { font-size: 13px; color: var(--hi); }
-  .prog { height: 4px; background: var(--card2); border-radius: 2px; overflow: hidden; } .prog i { display: block; height: 100%; background: var(--hi); }
-  svg.graf { width: 100%; height: 120px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+  @media (max-width: 520px) { .item { flex-wrap: wrap; } .redes { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 <header>
   <div class="topo">
-    <h1><img src="/marca/fnando-simbolo.svg" alt="" width="26" height="26">Central</h1>
-    <a href="/cortes">Aprovar cortes →</a>
-    <a href="/escritorio">Escritório →</a>
+    <h1><img src="/marca/fnando-simbolo.svg" alt="" width="26" height="26">Central FNANDO</h1>
+    <a href="/cortes">Editar cortes</a>
+    <a href="/escritorio">Escritório</a>
   </div>
   <nav id="abas">
-    <button data-a="inicio" class="on">Início</button>
-    <button data-a="brutos">Vídeos brutos<span class="n" data-n="brutos"></span></button>
+    <button data-a="hoje" class="on">Hoje<span class="n" data-n="hoje"></span></button>
     <button data-a="cortes">Cortes<span class="n" data-n="cortes"></span></button>
-    <button data-a="longos">Vídeo longo<span class="n" data-n="longos"></span></button>
-    <button data-a="radar">Radar da gringa<span class="n" data-n="radar"></span></button>
-    <button data-a="roteiros">Roteiros<span class="n" data-n="roteiros"></span></button>
-    <button data-a="prontos">Prontos p/ postar<span class="n" data-n="prontos"></span></button>
-    <button data-a="redes">Redes</button>
-    <button data-a="contas">Contas<span class="n" data-n="contas"></span></button>
-    <button data-a="checklist">Checklist<span class="n" data-n="checklist"></span></button>
+    <button data-a="agenda">Agenda</button>
+    <button data-a="redes">Redes<span class="n" data-n="redes"></span></button>
+    <button data-a="ideias">Ideias</button>
+    <button data-a="gravacoes">Gravações</button>
   </nav>
 </header>
 <main id="tela"><p class="vazio">Carregando...</p></main>
 <script>
-let D = null, P = null, C = null, A = null, aba = (location.hash || '#inicio').slice(1);
+let D = null, P = null, C = null, A = null;
+const ANTIGAS = { inicio: 'hoje', checklist: 'hoje', longos: 'cortes', prontos: 'agenda', contas: 'redes', radar: 'ideias', roteiros: 'ideias', brutos: 'gravacoes' };
+let aba = (location.hash || '#hoje').slice(1); aba = ANTIGAS[aba] || aba;
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${String(a).split('/').map(encodeURIComponent).join('/')}`;
 const num = (n) => Number(n || 0).toLocaleString('pt-BR');
 const mb = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : Math.round(b / 1e6) + ' MB';
+const hora = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const quando = (iso) => iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+const diaDe = (iso) => { const d = new Date(iso), h = new Date(); const amanha = new Date(h.getTime() + 864e5);
+  if (d.toDateString() === h.toDateString()) return 'Hoje'; if (d.toDateString() === amanha.toDateString()) return 'Amanhã';
+  return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' }); };
 const dur = (s) => s ? (s >= 60 ? `${Math.floor(s / 60)} min ${String(Math.round(s % 60)).padStart(2, '0')} s` : `${Math.round(s)} s`) : '';
-const COR = { 'a criar': 'no', criando: 'hi', criada: 'cy', conectada: 'ok', reconectar: 'no',  aguardando: 'hi', aprovado: 'ok', entregue: 'cy', postado: 'ok', agendado: 'cy', descartado: 'no', 'na fila': 'hi', gravando: 'no', processando: 'cy', processado: 'ok', 'esperando a postagem': 'hi' };
-const tag = (s) => `<span class="tag ${COR[s] || ''}">${esc(s)}</span>`;
-const LINK_REDE = { youtube: 'https://studio.youtube.com', facebook: 'https://www.facebook.com/pages/create', instagram: 'https://www.instagram.com/accounts/emailsignup/', tiktok: 'https://www.tiktok.com/login', twitch: 'https://www.twitch.tv/signup' };
-const NOME_REDE = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook', twitch: 'Twitch' };
+const NOME = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Página do Facebook', twitch: 'Twitch' };
+const ICO = { youtube: ['YT', '#ff3b3b'], tiktok: ['TT', '#00e0ff'], instagram: ['IG', '#e1306c'], facebook: ['FB', '#4c8bf5'], twitch: ['TW', '#9146ff'] };
+const ROTULO = { aguardando: ['esperando você', 'hi'], aprovado: ['aprovado', 'ok'], agendado: ['agendado', 'cy'], entregue: ['na agenda', 'cy'], postado: ['postado', 'ok'], descartado: ['descartado', 'no'], 'esperando a postagem': ['na agenda', 'cy'] };
+const pill = (s) => { const [t, c] = ROTULO[s] || [s, '']; return `<span class="pill ${c}">${esc(t)}</span>`; };
 
 async function carregar() {
-  try { D = await (await fetch('/api/central')).json(); } catch { D = null; }
-  try { P = await (await fetch('/api/prontidao')).json(); } catch { P = null; }
-  try { C = await (await fetch('/api/contas')).json(); } catch { C = null; }
-  try { A = await (await fetch('/api/apis')).json(); } catch { A = null; }
+  const pega = (u) => fetch(u).then((r) => r.json()).catch(() => null);
+  [D, P, C, A] = await Promise.all([pega('/api/central'), pega('/api/prontidao'), pega('/api/contas'), pega('/api/apis')]);
   desenhar();
 }
 
-function contadores() {
-  const r = D.resumo;
-  const fc = C ? C.contas.filter((c) => c.status !== 'conectada').length : 0;
-  const rn = D.radar ? D.radar.itens.filter((i) => !i.cortes.length).length : 0;
-  const n = { radar: rn ? `${rn} p/ gravar` : '', contas: fc ? `${fc} a fazer` : '', checklist: P?.faltam ? `faltam ${P.faltam}` : '', brutos: r.brutos, cortes: r.aguardando ? `${r.aguardando} p/ aprovar` : r.cortes, longos: r.longos, roteiros: r.roteiros, prontos: r.prontos };
-  document.querySelectorAll('[data-n]').forEach((el) => { const v = n[el.dataset.n]; el.textContent = v ? v : ''; });
+// ---------- the 4 networks in one place: status from the APIs/extension + the account checklist ----------
+function redes() {
+  const conta = (rede) => (C?.contas || []).find((c) => c.rede === rede && !c.soPara) || (C?.contas || []).find((c) => c.rede === rede);
+  const met = (rede) => (D?.redes?.contas || []).find((c) => c.rede === rede && c.conectada);
+  return ['tiktok', 'instagram', 'facebook', 'youtube'].map((rede) => {
+    const c = conta(rede), m = met(rede);
+    let estado, cor, acao;
+    if (rede === 'tiktok') { estado = 'Posta pela extensão do Chrome'; cor = 'ok'; }
+    else {
+      const st = A?.[rede] || { status: 'falta credencial' };
+      if (st.status === 'conectada') { estado = rede === 'youtube' && st.privado ? 'Conectado, mas os vídeos sobem privados (falta a auditoria do Google)' : 'Conectado: posta sozinho'; cor = rede === 'youtube' && st.privado ? 'hi' : 'ok'; }
+      else if (st.status === 'erro') { estado = `Parou: ${st.motivo}`; cor = 'no'; acao = 'Conectar de novo'; }
+      else if (st.status === 'falta conectar') { estado = 'Falta conectar'; cor = 'no'; acao = 'Conectar'; }
+      else { estado = 'Falta colar a chave do app'; cor = 'no'; }
+    }
+    return { rede, c, m, estado, cor, acao, conta: (rede !== 'tiktok' && A?.[rede]?.conta) || c?.arroba || '' };
+  });
 }
 
 const TELAS = {
-  inicio() {
+  hoje() {
+    const R = redes();
+    const precisa = [];
+    const esperando = D.sessoes.flatMap((s) => s.cortes).filter((c) => c.status === 'aguardando').length;
+    if (esperando) precisa.push([`${esperando} corte(s) esperando você aprovar`, 'Os que o filtro deixou de fora também estão lá, com o motivo.', '<a class="btn" href="/cortes">Revisar</a>']);
+    for (const r of R.filter((x) => x.cor !== 'ok')) precisa.push([`${NOME[r.rede]}: ${r.estado}`, '', '<a class="btn sec" href="#redes" data-ir="redes">Resolver</a>']);
+    if (A?.postador?.pausa) precisa.push(['A postagem está pausada', A.postador.pausa.motivo || '', '<a class="btn sec" href="/escritorio">Ver</a>']);
+    for (const i of (P?.itens || []).filter((i) => !i.ok && !/^conta-/.test(i.id) && i.id !== 'postagem')) precisa.push([i.titulo, i.comoFazer, i.id === 'ia' ? '<a class="btn" href="#redes" data-ir="redes">Colar a chave</a>' : '']);
+    const prox = D.prontos.filter((p) => !p.postadoEm && p.agendarPara).slice(0, 5);
     const r = D.resumo;
-    const k = (n, t, a, forte) => `<div class="kpi${forte ? ' forte' : ''}" data-ir="${a}"><b>${n}</b><span>${t}</span></div>`;
-    const ultimos = D.sessoes.flatMap((s) => s.cortes.map((c) => ({ ...c, pasta: s.pasta }))).slice(0, 6);
-    const aviso = P?.faltam ? `<p class="vazio" style="text-align:left;padding:14px 16px;margin:0 0 14px;border-color:var(--hi)">Faltam <b style="color:var(--hi)">${P.faltam}</b> coisa(s) para ligar as redes. <a href="#checklist" style="color:var(--hi);font-weight:600">Ver o checklist →</a></p>` : '';
-    return `${aviso}<div class="kpis">
-      ${k(r.brutosNaFila, 'vídeos brutos na fila', 'brutos')}
-      ${k(r.aguardando, 'cortes esperando você', 'cortes', r.aguardando > 0)}
-      ${k(r.longos, 'vídeos longos', 'longos')}
-      ${k(r.roteiros, 'roteiros e ideias', 'roteiros')}
-      ${k(r.prontos, 'prontos para postar', 'prontos')}
-      ${k(r.postados, 'já postados', 'prontos')}
-      ${k(num(r.seguidores), 'seguidores (todas as redes)', 'redes')}
-      ${k(num(r.views7d), 'visualizações em 7 dias', 'redes')}
-    </div>
-    <h2>Como o vídeo entra</h2>
-    <p class="dica">Grave no OBS: a gravação cai em <code>${esc(D.pastas.entrada)}</code> e a plataforma pega sozinha. Ou arraste um vídeo na aba <a href="#brutos" style="color:var(--hi)">Vídeos brutos</a>.</p>
-    <h2>Últimos cortes</h2>
-    ${ultimos.length ? `<div class="grade">${ultimos.map(cardCorte).join('')}</div>` : '<p class="vazio">Ainda não tem corte. Grave uma sessão e ele aparece aqui.</p>'}`;
-  },
-  brutos() {
-    return `<div class="envio" id="envio">Arraste um vídeo aqui ou <label>escolha no computador<input type="file" accept="video/*" hidden id="arquivo"></label>.<br>Ele vai para a pasta do OBS e vira cortes sozinho.<div class="barra" hidden><i></i></div><div id="envioMsg"></div></div>
-    ${D.brutos.length ? `<div class="lista">${D.brutos.map((b) => `<div class="linha">
-        <div class="nome">${esc(b.nome)}<div class="sub">${mb(b.bytes)} · ${quando(b.modificadoEm)}${b.duracao ? ' · ' + dur(b.duracao) : ''}${b.sessao ? ` · ${b.cortes} corte(s)${b.longo ? ' + vídeo longo' : ''}` : ''}</div></div>
-        ${tag(b.status)}</div>`).join('')}</div>` : '<p class="vazio">Nenhuma gravação ainda.</p>'}`;
+    return `<h2>Precisa de você</h2>
+    ${precisa.length ? `<div class="lista">${precisa.map(([t, s, b]) => `<div class="item"><span class="dot hi"></span><div class="txt"><div class="t">${esc(t)}</div>${s ? `<div class="s">${esc(s)}</div>` : ''}</div>${b}</div>`).join('')}</div>` : '<div class="vazio">Nada. Pode jogar tranquilo: o que você gravar vira corte e entra na agenda sozinho.</div>'}
+    <h2>Próximos posts</h2>
+    ${prox.length ? `<div class="lista">${prox.map(itemAgenda).join('')}</div>` : '<div class="vazio">Nada agendado ainda.</div>'}
+    <h2>Números</h2>
+    <div class="num"><div><b>${num(r.seguidores)}</b><span>seguidores</span></div><div><b>${num(r.views7d)}</b><span>views em 7 dias</span></div><div><b>${num(r.postados)}</b><span>vídeos postados</span></div><div><b>${num(r.prontos)}</b><span>na agenda</span></div></div>`;
   },
   cortes() {
-    const html = D.sessoes.filter((s) => s.cortes.length).map((s) => `<h2>${esc(s.sessao)} <small>· ${s.cortes.length} corte(s)</small></h2>
-      <div class="grade">${s.cortes.map((c) => cardCorte({ ...c, pasta: s.pasta })).join('')}</div>`).join('');
-    return `<p class="dica">Para editar título, trocar o formato e aprovar, use <a href="/cortes" style="color:var(--hi)">Aprovar cortes</a>. Aprovado vai para a pasta da sua skill de postagem.</p>${html || '<p class="vazio">Nenhum corte ainda.</p>'}`;
-  },
-  longos() {
-    const l = D.sessoes.flatMap((s) => [...(s.longo ? [{ ...s.longo, pasta: s.pasta, tipo: 'Sessão inteira' }] : []), ...(s.missoes || []).map((m) => ({ ...m, pasta: s.pasta, tipo: `Missão: ${m.missao || ''}` }))]);
-    return l.length ? `<p class="dica">Vídeos do YouTube: a sessão inteira e uma por missão. Para editar e aprovar, use <a href="/cortes" style="color:var(--hi)">Aprovar cortes</a>.</p><div class="grade" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">${l.map((v) => `<div class="corte longo">
+    const todos = D.sessoes.flatMap((s) => s.cortes.map((c) => ({ ...c, pasta: s.pasta, sessao: s.sessao })));
+    const esp = todos.filter((c) => c.status === 'aguardando'), ok = todos.filter((c) => !['aguardando', 'descartado'].includes(c.status));
+    const longos = D.sessoes.flatMap((s) => [...(s.longo ? [{ ...s.longo, pasta: s.pasta, tipo: 'Gravação inteira' }] : []), ...(s.missoes || []).map((m) => ({ ...m, pasta: s.pasta, tipo: 'Missão' }))]);
+    return `<p class="dica">Para aprovar, trocar título ou descartar, abra <a href="/cortes">Editar cortes</a>. Nada é descartado sem você.</p>
+    <h2>Esperando você · ${esp.length}</h2>${esp.length ? `<div class="grade">${esp.map(cardCorte).join('')}</div>` : '<div class="vazio">Nenhum corte esperando.</div>'}
+    <h2>Aprovados · ${ok.length}</h2>${ok.length ? `<div class="grade">${ok.map(cardCorte).join('')}</div>` : '<div class="vazio">Nenhum aprovado ainda.</div>'}
+    <h2>Vídeos longos e missões · ${longos.length}</h2>${longos.length ? `<div class="grade" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${longos.map((v) => `<div class="corte longo">
       <video src="${midia(v.pasta, v.arquivo)}" ${v.thumb ? `poster="${midia(v.pasta, v.thumb)}"` : ''} controls playsinline preload="none"></video>
-      <div class="corpo"><div class="t">${esc(v.titulo || v.missao)}</div><div class="sub"><span>${esc(v.tipo)} · ${dur(v.duracao)}</span>${tag(v.status || 'aguardando')}</div></div></div>`).join('')}</div>`
-      : '<p class="vazio">Os vídeos longos do YouTube aparecem aqui depois que uma sessão é processada.</p>';
+      <div class="c"><div class="t">${esc(v.titulo || v.missao)}</div><div class="s"><span>${esc(v.tipo)} · ${dur(v.duracao)}</span>${pill(v.status || 'aguardando')}</div>${v.aviso ? `<div class="por">${esc(v.aviso)}</div>` : ''}</div></div>`).join('')}</div>` : '<div class="vazio">Aparecem aqui depois que uma gravação é processada.</div>'}`;
   },
-  radar() {
-    const R = D.radar || { itens: [] };
-    const it = [...R.itens].sort((a, b) => (a.cortes.length > 0) - (b.cortes.length > 0) || a.prioridade - b.prioridade);
-    return `<p class="dica">O que bombou lá fora${R.jogo ? ' em ' + esc(R.jogo) : ''}${R.atualizadoEm ? ` (lista de ${quando(R.atualizadoEm)})` : ''}. Quando você fala desses assuntos numa gravação, o trecho vira corte com prioridade e com o título sugerido. Os de cima ainda não têm corte: são os que valem gravar.</p>
-    ${it.length ? `<div class="lista">${it.map((i) => `<details class="roteiro"><summary><span class="nome">${esc(i.titulo)}</span>${i.prioridade <= 1 ? '<span class="tag hi">prioridade</span>' : ''}${i.confirmado ? '' : '<span class="tag">não confirmado</span>'}${i.coberto_no_br ? '<span class="tag">já tem no BR</span>' : ''}${i.cortes.length ? `<span class="tag ok">${i.cortes.length} corte(s)</span>` : '<span class="tag no">falta gravar</span>'}</summary>
-      <pre>${esc([i.o_que_e || i.resumo, i.como_achar ? 'Como achar: ' + i.como_achar : '', i.tituloSugerido ? 'Título: ' + i.tituloSugerido : '', i.gancho ? 'Gancho: ' + i.gancho : '', 'Palavras que a central procura na sua fala: ' + [...i.palavras, ...i.frases].join(', '), ...i.cortes.map((c) => `Corte: ${c.titulo} (${c.status})`)].filter(Boolean).join('\n'))}</pre>
-      ${/^https:\/\//.test(i.fonte || '') ? `<p class="dica" style="padding:0 12px 10px;margin:0"><a href="${esc(i.fonte)}" target="_blank" rel="noopener" style="color:var(--cy)">fonte</a></p>` : ''}</details>`).join('')}</div>` : '<p class="vazio">O radar ainda não mandou nada.</p>'}`;
-  },
-  roteiros() {
-    return `<p class="dica">Ideias de vídeo, roteiros de short e de live. Ficam em <code>${esc(D.pastas.roteiros)}</code> (arquivos .md ou .json).</p>
-    ${D.roteiros.length ? `<div class="lista">${D.roteiros.map((r, i) => `<details class="roteiro"${i === 0 ? ' open' : ''}><summary><span class="nome">${esc(r.titulo || r.arquivo)}</span><span class="tag">${esc(r.tipo)}</span>${tag(r.status)}</summary><pre>${esc(r.texto)}</pre></details>`).join('')}</div>` : '<p class="vazio">Nenhum roteiro ainda.</p>'}`;
-  },
-  prontos() {
-    return `<p class="dica">O que foi aprovado e entregue para a sua skill de postagem, em <code>${esc(D.pastas.entrega)}</code>. Quando a skill posta, ela grava <code>postado.json</code> na pasta e o corte vira "postado" aqui.</p>
-    ${D.prontos.length ? `<div class="lista">${D.prontos.map((p) => `<div class="linha"><div class="nome">${esc(p.titulo)}<div class="sub">${esc(p.linha)} · ${esc((p.redes || []).map((r) => NOME_REDE[r] || r).join(', '))} · ${p.postadoEm ? 'postado ' + quando(p.postadoEm) : p.agendarPara ? 'vai ao ar ' + quando(p.agendarPara) : quando(p.criadoEm)}</div></div>
-      ${Object.entries(p.links || {}).map(([r, u]) => /^https:\/\//.test(u) ? `<a class="tag cy" href="${esc(u)}" target="_blank" rel="noopener">${esc(NOME_REDE[r] || r)}</a>` : '').join('')}${tag(p.status)}</div>`).join('')}</div>` : '<p class="vazio">Nada entregue ainda. Aprove um corte e ele vem para cá.</p>'}`;
-  },
-  checklist() {
-    if (!P) return '<p class="vazio">Carregando...</p>';
-    const item = (i) => `<div class="linha"><span class="tag ${i.ok ? 'ok' : 'no'}">${i.ok ? 'pronto' : 'falta'}</span><div class="nome">${esc(i.titulo)}${i.ok ? '' : `<div class="sub">${esc(i.comoFazer)}</div>`}</div><span class="tag">${i.dono === 'voce' ? 'com você' : 'plataforma'}</span></div>`;
-    return `<p class="dica">${P.faltam ? `Faltam ${P.faltam} item(ns).` : 'Tudo pronto.'} Com as contas de hoje, o limite seguro é de <b>${P.capacidadeDia}</b> post(s) por dia. Para postar mais, crie mais contas, nunca mais posts por conta.</p>
-    <div class="lista">${[...P.itens].sort((a, b) => a.ok - b.ok).map(item).join('')}</div>`;
-  },
-  contas() {
-    if (!C) return '<p class="vazio">Carregando...</p>';
-    const porChave = Object.fromEntries(C.contas.map((c) => [c.chave, c]));
-    const card = (c) => {
-      const g = porChave[c.precisa];
-      const falta = g && g.status === 'a criar' ? `<div class="aviso">Crie antes a Página do Facebook desta linha: o Instagram só posta pela skill ligado a uma Página.</div>` : '';
-      const acao = c.status === 'reconectar' ? `<div class="aviso">${esc(c.motivo)}. Entre na sua skill de autopost e conecte esta conta de novo.</div>` : '';
-      return `<div class="conta" data-chave="${esc(c.chave)}">
-        <div class="topo2"><span class="r">${esc(NOME_REDE[c.rede] || c.rede)} · ${esc(c.nome)}${c.soPara ? ' · para o Instagram' : ''}</span>${tag(c.status)}</div>
-        <div class="prog"><i style="width:${(c.feitos / c.total) * 100}%"></i></div>
-        ${falta}${acao}
-        ${c.rede === 'tiktok' ? `<div class="aviso" style="color:var(--muted)">Postagem pela extensão <b>FNANDO: TikTok pelo Chrome</b> (pasta <code>extensao-tiktok</code>): carregue no Chrome logado neste TikTok e cole o código. <a class="btn" href="#" data-codigo-tiktok>Mostrar código</a> <code data-codigo-saida style="user-select:all;word-break:break-all"></code></div>` : ''}
-        ${c.passos.map((p) => `<label class="passo${p.feito ? ' feito' : ''}"><input type="checkbox" data-passo="${p.id}"${p.feito ? ' checked' : ''}><span>${esc(p.t)}${p.anonimo ? '<span class="anon">anonimato</span>' : ''}</span></label>`).join('')}
-        <div class="topo2"><input class="campo" data-arroba placeholder="@ da conta" value="${esc(c.arroba)}" style="flex:1 1 120px"><a class="btn" href="${esc(LINK_REDE[c.rede])}" target="_blank" rel="noopener">${c.status === 'reconectar' ? 'Reconectar' : 'Abrir'} ${esc(NOME_REDE[c.rede] || c.rede)}</a></div>
-        <input class="campo" data-nota placeholder="Anotação (nunca senha ou código)" value="${esc(c.nota)}">
-        ${c.seguidores != null ? `<span class="sub" style="color:var(--muted);font-size:13px">${num(c.seguidores)} seguidores${c.link ? ` · <a href="${esc(c.link)}" target="_blank" rel="noopener" style="color:var(--cy)">ver perfil</a>` : ''}</span>` : ''}
-      </div>`;
-    };
-    const ordem = { youtube: 0, facebook: 1, instagram: 2, tiktok: 3, twitch: 4 };
-    const linhas = [...new Set(C.contas.map((c) => c.linha))];
-    const api = (nome, st, extra = '') => `<div class="linha"><span class="tag ${st.status === 'conectada' ? 'ok' : 'no'}">${esc(st.status)}</span><div class="nome">${esc(nome)}${st.conta ? ` · ${esc(st.conta)}` : ''}<div class="sub">${esc(st.motivo || '')}${extra}</div></div></div>`;
-    const apis = !A ? '' : `<h2>Postagem automática</h2>
-    <p class="dica">${A.postador.pausa ? `<b>Freio puxado:</b> ${esc(A.postador.pausa.motivo || '')} (retome na aba Início). ` : ''}Postador das APIs: <b>${A.postador.ligado ? 'ligado' : 'desligado'}</b> · aprovação automática: <b>${A.postador.automatico ? 'ligada (filtro de qualidade)' : 'desligada'}</b>. Um envio por vez, só no horário agendado e dentro do limite seguro de cada conta. TikTok vai pela extensão do Chrome.</p>
-    <div class="lista">${api('Instagram (API oficial)', A.instagram)}${api('Página do Facebook (API oficial)', A.facebook)}${api('YouTube (API oficial)', A.youtube, A.youtube.privado ? ' <b>O YouTube está travando os envios como privados: falta a auditoria do projeto no Google Cloud.</b>' : '')}</div>
-    <div class="gerir">
-      <div class="conta"><div class="topo2"><span class="r">Meta · app ${esc(A.meta.appId)}</span>${tag(A.instagram.status === 'conectada' ? 'conectada' : 'a criar')}</div>
-        <input class="campo" type="password" autocomplete="off" data-cred="meta" data-campo="appSecret" placeholder="${A.meta.temSegredo ? 'Chave secreta guardada (cole só para trocar)' : 'Chave secreta do app (Configurações > Básico)'}">
-        <div class="topo2"><a class="btn" href="#" data-salvar-cred="meta">Salvar chave</a><a class="btn" href="/oauth/meta/iniciar">Conectar Instagram e Página</a></div></div>
-      <div class="conta"><div class="topo2"><span class="r">Google · YouTube</span>${tag(A.youtube.status === 'conectada' ? 'conectada' : 'a criar')}</div>
-        <input class="campo" type="password" autocomplete="off" data-cred="youtube" data-campo="clientSecret" placeholder="${A.google.temSegredo ? 'Chave secreta guardada (cole só para trocar)' : 'Chave secreta do cliente OAuth do Google'}">
-        <div class="topo2"><a class="btn" href="#" data-salvar-cred="youtube">Salvar chave</a><a class="btn" href="/oauth/youtube/iniciar">Conectar YouTube</a></div></div>
-    </div>
-    <p class="dica">As chaves ficam só em <code>~/Gameplay/.credenciais.json</code> neste Mac e nunca voltam para a página. Conectar só funciona abrindo a central em http://localhost:4322 no próprio Mac.</p>`;
-    return `${apis}<p class="dica">Ordem para hoje: 1) um e-mail novo só para o canal, 2) YouTube, 3) a Página do Facebook, 4) Instagram ligado a ela, 5) TikTok. Os passos marcados <span class="anon">anonimato</span> evitam que a conta seja sugerida aos seus contatos e conhecidos. O progresso fica em <code>${esc(C.arquivo)}</code>. <b>Senhas e códigos ficam só no seu gerenciador de senhas, nunca aqui.</b></p>
-    ${linhas.map((l) => `<h2>${esc(C.contas.find((c) => c.linha === l).nome)}</h2><div class="gerir">${C.contas.filter((c) => c.linha === l).sort((a, b) => ordem[a.rede] - ordem[b.rede]).map(card).join('')}</div>`).join('')}
-    <h2>Onde dá para fazer live</h2>
-    <div class="lista">${C.live.map((v) => `<div class="linha"><span class="tag ${v.pode ? 'ok' : 'no'}">${v.pode ? 'dá hoje' : 'ainda não'}</span><div class="nome">${esc(v.nome)}<div class="sub">${esc(v.resumo)} ${esc(v.requisito)}${v.seguidores != null && !v.pode ? ` Hoje: ${num(v.seguidores)} seguidores.` : ''}</div></div></div>`).join('')}</div>
-    <p class="dica">As regras de live mudam. Se o app disser outra coisa, vale o app.</p>
-    <h2>Adicionar outra conta</h2>
-    <div class="topo2" style="display:flex;gap:8px;flex-wrap:wrap"><input class="campo" id="novaNome" placeholder="Nome da linha (ex.: Dicas)"><select class="campo" id="novaRede">${Object.keys(LINK_REDE).map((r) => `<option value="${r}">${NOME_REDE[r]}</option>`).join('')}</select><a class="btn" href="#" id="novaConta">Adicionar</a><span id="contaMsg" class="aviso"></span></div>`;
+  agenda() {
+    const ps = [...D.prontos].sort((a, b) => String(a.postadoEm || a.agendarPara || '').localeCompare(String(b.postadoEm || b.agendarPara || '')));
+    const futuro = ps.filter((p) => !p.postadoEm), feito = ps.filter((p) => p.postadoEm).reverse();
+    const porDia = {};
+    for (const p of futuro) (porDia[p.agendarPara ? diaDe(p.agendarPara) : 'Sem horário'] ||= []).push(p);
+    return `<p class="dica">Um post por horário (12:00, 18:30 e 21:00), dentro do limite seguro de cada conta.</p>
+    ${futuro.length ? Object.entries(porDia).map(([d, l]) => `<div class="dia">${esc(d)}</div><div class="lista">${l.map(itemAgenda).join('')}</div>`).join('') : '<div class="vazio">Nada agendado.</div>'}
+    ${feito.length ? `<h2>Já postados</h2><div class="lista">${feito.slice(0, 30).map(itemAgenda).join('')}</div>` : ''}`;
   },
   redes() {
-    const R = D.redes;
-    const h = R.historico || [];
-    let graf = '';
-    if (h.length > 1) {
-      const max = Math.max(...h.map((x) => x.seguidores || 0), 1);
-      const pts = h.map((x, i) => `${(i / (h.length - 1)) * 100},${100 - ((x.seguidores || 0) / max) * 90}`).join(' ');
-      graf = `<h2>Seguidores <small>· últimos ${h.length} dias</small></h2><svg class="graf" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="var(--hi)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
-    }
-    return `<p class="dica">${R.atualizadoEm ? `Números de ${quando(R.atualizadoEm)}.` : 'Nenhuma conta conectada ainda.'} Os números vêm de <code>${esc(D.pastas.metricas)}</code>, que a sua skill de redes escreve.</p>
-    <div class="kpis"><div class="kpi"><b>${num(R.total.seguidores)}</b><span>seguidores</span></div><div class="kpi"><b>${num(R.total.views7d)}</b><span>views em 7 dias</span></div><div class="kpi"><b>${num(R.total.curtidas7d)}</b><span>curtidas em 7 dias</span></div><div class="kpi"><b>${num(R.total.posts)}</b><span>posts</span></div></div>
-    ${graf}
-    <h2>Contas</h2><div class="redes">${R.contas.map((c) => `<div class="conta${c.conectada ? '' : ' off'}">
-      <span class="r">${esc(NOME_REDE[c.rede] || c.rede)} · ${esc(c.nome || '')}</span>
-      ${c.conectada ? `<b>${num(c.seguidores)}</b><span class="sub" style="color:var(--muted);font-size:13px">seguidores · ${num(c.views7d)} views/7d${c.arroba ? ' · ' + esc(c.arroba) : ''}</span>` : '<span style="color:var(--muted);font-size:13px">ainda não conectada</span>'}
-    </div>`).join('')}</div>`;
+    const R = redes();
+    const card = (r) => {
+      const c = r.c;
+      const ajustes = r.rede === 'tiktok' ? `<div class="s" style="color:var(--muted);font-size:13px">A extensão <b>FNANDO: TikTok pelo Chrome</b> posta no horário, no Chrome logado no TikTok.</div><div class="linha2"><button class="btn sec" data-codigo-tiktok>Mostrar o código da extensão</button><code data-codigo-saida style="user-select:all;word-break:break-all"></code></div>`
+        : r.rede === 'youtube' ? `<input class="campo" data-cred="youtube" data-campo="clientId" placeholder="${A?.google?.clientId ? 'ID do cliente guardado: ' + esc(A.google.clientId.slice(0, 18)) + '…' : 'ID do cliente OAuth do Google'}">
+          <input class="campo" type="password" autocomplete="off" data-cred="youtube" data-campo="clientSecret" placeholder="${A?.google?.temSegredo ? 'Chave secreta guardada (cole só para trocar)' : 'Chave secreta do cliente OAuth'}">
+          <div class="linha2"><button class="btn sec" data-salvar-cred="youtube">Salvar</button><a class="btn" href="/oauth/youtube/iniciar">${r.acao || 'Conectar'}</a></div>`
+        : `<input class="campo" type="password" autocomplete="off" data-cred="meta" data-campo="appSecret" placeholder="${A?.meta?.temSegredo ? 'Chave secreta do app guardada (cole só para trocar)' : 'Chave secreta do app da Meta'}">
+          <div class="linha2"><button class="btn sec" data-salvar-cred="meta">Salvar</button><a class="btn" href="/oauth/meta/iniciar">${r.acao || 'Conectar'}</a></div><div class="s" style="color:var(--muted);font-size:13px">Instagram e Página conectam juntos.</div>`;
+      const passos = c ? `<details><summary>Configuração da conta · ${c.feitos} de ${c.total} ▾</summary><div data-chave="${esc(c.chave)}">
+          ${c.passos.map((p) => `<label class="passo${p.feito ? ' feito' : ''}"><input type="checkbox" data-passo="${p.id}"${p.feito ? ' checked' : ''}><span>${esc(p.t)}${p.anonimo ? '<span class="anon">anonimato</span>' : ''}</span></label>`).join('')}
+          <input class="campo" data-arroba placeholder="@ da conta" value="${esc(c.arroba)}" style="margin-top:6px"></div></details>` : '';
+      return `<div class="rede">
+        <div class="cab"><div class="ico" style="color:${ICO[r.rede][1]}">${ICO[r.rede][0]}</div>
+          <div class="txt"><div class="t" style="font-weight:700">${esc(NOME[r.rede])}${r.conta ? ` <span style="color:var(--muted);font-weight:400">${esc(r.conta)}</span>` : ''}</div>
+          <div class="estado" style="color:var(--${r.cor === 'ok' ? 'ok' : r.cor === 'hi' ? 'hi' : 'no'})">${esc(r.estado)}</div></div>
+          ${r.m ? `<div style="text-align:right"><b>${num(r.m.seguidores)}</b><div class="s" style="color:var(--muted);font-size:12px">seguidores</div></div>` : ''}</div>
+        ${r.acao && r.rede !== 'tiktok' ? `<a class="btn" href="/oauth/${r.rede === 'youtube' ? 'youtube' : 'meta'}/iniciar">${esc(r.acao)}</a>` : ''}
+        <details${r.cor !== 'ok' && !r.acao ? ' open' : ''}><summary>Ajustes de conexão ▾</summary><div style="display:grid;gap:8px">${ajustes}</div></details>
+        ${passos}
+      </div>`;
+    };
+    const live = C?.live || [];
+    const ia = `<div class="rede"><div class="cab"><div class="ico" style="color:var(--hi)">IA</div><div class="txt"><div class="t" style="font-weight:700">Chave da IA</div>
+      <div class="estado" style="color:var(--${A?.ia?.temChave ? 'ok' : 'no'})">${A?.ia?.temChave ? 'Guardada: títulos e escolha dos cortes pela IA' : 'Falta: sem ela os títulos saem genéricos'}</div></div></div>
+      ${A?.ia?.temChave ? '' : '<div class="s" style="color:var(--muted);font-size:13px">Crie em <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> > API Keys > Create Key e cole aqui.</div>'}
+      <div class="linha2"><input class="campo" type="password" autocomplete="off" data-cred="ia" data-campo="apiKey" placeholder="${A?.ia?.temChave ? 'Cole só para trocar' : 'sk-ant-...'}" style="flex:1"><button class="btn${A?.ia?.temChave ? ' sec' : ''}" data-salvar-cred="ia">Salvar</button></div></div>`;
+    return `<div class="redes">${R.map(card).join('')}${ia}</div>
+    <p class="dica" style="margin-top:12px">As chaves ficam só neste Mac (<code>~/Gameplay/.credenciais.json</code>) e nunca aparecem de novo na página. Conectar só funciona abrindo a central no próprio Mac.</p>
+    <h2>Onde dá para fazer live</h2>
+    <div class="lista">${live.map((v) => `<div class="item"><span class="dot ${v.pode ? 'ok' : 'no'}"></span><div class="txt"><div class="t">${esc(v.nome)} · ${v.pode ? 'dá hoje' : 'ainda não'}</div><div class="s">${esc(v.resumo)}</div></div></div>`).join('')}</div>`;
+  },
+  ideias() {
+    const R = D.radar || { itens: [] };
+    const it = [...R.itens].sort((a, b) => (a.cortes.length > 0) - (b.cortes.length > 0) || a.prioridade - b.prioridade);
+    return `<h2>Bombando lá fora${R.atualizadoEm ? ` · ${quando(R.atualizadoEm)}` : ''}</h2>
+    <p class="dica">Se você falar desses assuntos enquanto grava, o trecho vira corte com prioridade e com este título.</p>
+    ${it.length ? `<div class="lista">${it.map((i) => `<details class="ideia"><summary><span class="t">${esc(i.titulo)}</span>${i.cortes.length ? '<span class="pill ok">já tem corte</span>' : i.prioridade <= 1 ? '<span class="pill hi">grave isso</span>' : ''}</summary>
+      <div class="corpo">${esc([i.o_que_e || i.resumo, i.como_achar ? 'Como achar: ' + i.como_achar : '', i.tituloSugerido ? 'Título: ' + i.tituloSugerido : '', i.confirmado ? '' : 'Ainda não confirmado: confira no jogo antes.'].filter(Boolean).join('\n'))}</div></details>`).join('')}</div>` : '<div class="vazio">O radar ainda não mandou nada.</div>'}
+    <h2>Roteiros</h2>
+    ${D.roteiros.length ? `<div class="lista">${D.roteiros.map((r) => `<details class="ideia"><summary><span class="t">${esc(r.titulo || r.arquivo)}</span><span class="pill">${esc(r.tipo)}</span></summary><div class="corpo">${esc(r.texto)}</div></details>`).join('')}</div>` : '<div class="vazio">Nenhum roteiro.</div>'}`;
+  },
+  gravacoes() {
+    return `<div class="envio" id="envio">Grave no OBS que a gravação entra sozinha. Para mandar outro vídeo, arraste aqui ou <label>escolha no computador<input type="file" accept="video/*" hidden id="arquivo"></label>.<div class="barra" hidden><i></i></div><div id="envioMsg"></div></div>
+    <h2>Gravações</h2>
+    ${D.brutos.length ? `<div class="lista">${D.brutos.map((b) => `<div class="item"><div class="txt"><div class="t">${esc(b.nome)}</div><div class="s">${quando(b.modificadoEm)}${b.duracao ? ' · ' + dur(b.duracao) : ''} · ${mb(b.bytes)}${b.sessao ? ` · ${b.cortes} corte(s)${b.longo ? ' + vídeo longo' : ''}` : ''}</div></div><span class="pill ${b.status === 'processado' ? 'ok' : b.status === 'processando' ? 'cy' : 'hi'}">${esc(b.status)}</span></div>`).join('')}</div>` : '<div class="vazio">Nenhuma gravação ainda.</div>'}`;
   },
 };
 
+function itemAgenda(p) {
+  const links = Object.entries(p.links || {}).filter(([, u]) => /^https:\/\//.test(u)).map(([r, u]) => `<a class="pill cy" href="${esc(u)}" target="_blank" rel="noopener">${esc(NOME[r] || r)}</a>`).join(' ');
+  return `<div class="item"><div style="min-width:52px;font-weight:700;font-variant-numeric:tabular-nums">${p.postadoEm ? hora(p.postadoEm) : p.agendarPara ? hora(p.agendarPara) : '--:--'}</div>
+    <div class="txt"><div class="t">${esc(p.titulo)}</div><div class="s">${esc((p.redes || []).map((r) => NOME[r] || r).join(' · '))}${p.postadoEm ? ' · ' + diaDe(p.postadoEm) : ''}</div></div>${links || pill(p.status)}</div>`;
+}
+
 function cardCorte(c) {
   return `<div class="corte"><video src="${midia(c.pasta, c.arquivo)}" ${c.capa ? `poster="${midia(c.pasta, c.capa)}"` : ''} controls playsinline preload="none"></video>
-    <div class="corpo"><div class="t">${esc(c.titulo)}</div><div class="sub"><span>${Math.round((c.fim || 0) - (c.inicio || 0))} s · nota ${Number(c.nota || 0).toFixed(1)}</span>${tag(c.status)}</div></div></div>`;
+    <div class="c"><div class="t">${esc(c.titulo)}</div><div class="s"><span>${dur((c.fim || 0) - (c.inicio || 0))}</span>${pill(c.status)}</div>
+    ${c.status === 'aguardando' && c.filtro ? `<div class="por">O filtro achou: ${esc(c.filtro.join('; '))}</div>` : ''}</div></div>`;
+}
+
+function contadores() {
+  const esp = D.sessoes.flatMap((s) => s.cortes).filter((c) => c.status === 'aguardando').length;
+  const rr = redes().filter((r) => r.cor !== 'ok').length;
+  const n = { cortes: esp || '', redes: rr || '', hoje: '' };
+  document.querySelectorAll('[data-n]').forEach((el) => { el.textContent = n[el.dataset.n] ?? ''; });
 }
 
 function desenhar() {
-  if (!D) { $('#tela').innerHTML = '<p class="vazio">Não consegui ler a central. A plataforma está rodando no Mac?</p>'; return; }
-  if (!TELAS[aba]) aba = 'inicio';
+  if (!D) { $('#tela').innerHTML = '<p class="vazio">Não consegui ler a central. Ela está rodando no Mac?</p>'; return; }
+  if (!TELAS[aba]) aba = 'hoje';
   document.querySelectorAll('#abas button').forEach((b) => b.classList.toggle('on', b.dataset.a === aba));
   contadores();
   $('#tela').innerHTML = TELAS[aba]();
-  if (aba === 'brutos') prepararEnvio();
+  if (aba === 'gravacoes') prepararEnvio();
 }
 
 function prepararEnvio() {
@@ -276,52 +274,48 @@ function prepararEnvio() {
   box.ondrop = (e) => { e.preventDefault(); box.classList.remove('sobre'); enviar(e.dataTransfer.files[0]); };
 }
 
-document.addEventListener('click', async (e) => {
-  const sc = e.target.closest('[data-salvar-cred]');
-  if (sc) {
-    e.preventDefault();
-    const rede = sc.dataset.salvarCred, inp = document.querySelector(`[data-cred="${rede}"]`);
-    const r = await fetch('/api/credenciais', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rede, [inp.dataset.campo]: inp.value }) });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) { alert(j.erro || 'Não salvou.'); return; }
-    inp.value = ''; carregar();
-    return;
-  }
-  const cod = e.target.closest('[data-codigo-tiktok]');
-  if (cod) {
-    e.preventDefault();
-    const r = await fetch('/api/tiktok-chrome/codigo');
-    const j = await r.json().catch(() => ({}));
-    cod.parentElement.querySelector('[data-codigo-saida]').textContent = j.codigo || j.erro || 'Não abriu.';
-    return;
-  }
-  const b = e.target.closest('#abas button, [data-ir]');
-  if (b) { aba = b.dataset.a || b.dataset.ir; history.replaceState(null, '', '#' + aba); desenhar(); scrollTo(0, 0); }
-});
 async function salvarConta(dados) {
   const r = await fetch('/api/contas', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(dados) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) { alert(j.erro || 'Não salvou.'); return false; }
   C = j; return true;
 }
-document.addEventListener('change', async (e) => {
-  const card = e.target.closest('[data-chave]');
-  if (!card) return;
-  const chave = card.dataset.chave;
-  let ok = true;
-  if (e.target.dataset.passo) ok = await salvarConta({ chave, passo: e.target.dataset.passo, feito: e.target.checked });
-  else if (e.target.hasAttribute('data-arroba')) ok = await salvarConta({ chave, arroba: e.target.value });
-  else if (e.target.hasAttribute('data-nota')) ok = await salvarConta({ chave, nota: e.target.value });
-  if (!ok || e.target.dataset.passo) desenhar();
-});
+
 document.addEventListener('click', async (e) => {
-  if (e.target.id !== 'novaConta') return;
-  e.preventDefault();
-  if (await salvarConta({ nova: { nome: $('#novaNome').value, rede: $('#novaRede').value } })) desenhar();
+  const sc = e.target.closest('[data-salvar-cred]');
+  if (sc) {
+    e.preventDefault();
+    const rede = sc.dataset.salvarCred, dados = { rede };
+    document.querySelectorAll(`[data-cred="${rede}"]`).forEach((i) => { if (i.value.trim()) dados[i.dataset.campo] = i.value.trim(); });
+    const r = await fetch('/api/credenciais', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(dados) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { alert(j.erro || 'Não salvou.'); return; }
+    carregar();
+    return;
+  }
+  const cod = e.target.closest('[data-codigo-tiktok]');
+  if (cod) {
+    const j = await fetch('/api/tiktok-chrome/codigo').then((r) => r.json()).catch(() => ({}));
+    cod.parentElement.querySelector('[data-codigo-saida]').textContent = j.codigo || j.erro || 'Não abriu.';
+    return;
+  }
+  const b = e.target.closest('#abas button, [data-ir]');
+  if (b) { e.preventDefault(); aba = b.dataset.a || b.dataset.ir; history.replaceState(null, '', '#' + aba); desenhar(); scrollTo(0, 0); }
 });
-addEventListener('hashchange', () => { aba = location.hash.slice(1); desenhar(); });
+document.addEventListener('change', async (e) => {
+  const box = e.target.closest('[data-chave]');
+  if (!box) return;
+  const chave = box.dataset.chave;
+  if (e.target.dataset.passo) { if (await salvarConta({ chave, passo: e.target.dataset.passo, feito: e.target.checked })) e.target.closest('.passo').classList.toggle('feito', e.target.checked); }
+  else if (e.target.hasAttribute('data-arroba')) await salvarConta({ chave, arroba: e.target.value });
+});
+addEventListener('hashchange', () => { const a = location.hash.slice(1); aba = ANTIGAS[a] || a; desenhar(); });
 carregar();
-setInterval(() => { if (!document.querySelector('video:not([paused])') && aba !== 'brutos' && aba !== 'contas') carregar(); }, 30000);
+// refresh every 30 s, but never while he is typing, watching or has a section open
+setInterval(() => {
+  const ocupado = document.activeElement?.matches('input, textarea') || [...document.querySelectorAll('video')].some((v) => !v.paused) || document.querySelector('.rede details[open]');
+  if (!ocupado && aba !== 'gravacoes') carregar();
+}, 30000);
 </script>
 </body>
 </html>

@@ -10,6 +10,7 @@ import { processarSessao } from '../src/sessao.js';
 import { observar } from '../src/observador.js';
 import { arquivoToken, garantirToken } from '../src/tiktokChrome.js';
 import { iniciarPostador } from '../src/postador.js';
+import { arquivoCredenciais, aplicarChaveIa } from '../src/credenciais.js';
 import { temFfmpeg } from '../src/run.js';
 import { criarPainel, enderecosLocais } from '../src/painel.js';
 import { postarAprovados } from '../src/postagem.js';
@@ -23,6 +24,7 @@ const flags = new Set(resto.filter((a) => a.startsWith('--')));
 const args = resto.filter((a) => !a.startsWith('--'));
 const config = carregarConfig();
 if (flags.has('--sem-ia')) config.semIa = true;
+aplicarChaveIa(arquivoCredenciais(config)); // the AI key pasted in the central, when the shell has none
 
 if (!(await temFfmpeg())) { console.error('Falta o ffmpeg. No Mac: brew install ffmpeg'); process.exit(1); }
 
