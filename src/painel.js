@@ -11,7 +11,7 @@ import { linhasDe } from './canais.js';
 import { lerPausa, retomar } from './qualidade.js';
 import { lerContas, salvarConta } from './contas.js';
 import { coletarMetricas, salvarTiktok } from './metricas.js';
-import { lerRadar, sincronizarRadar } from './radar.js';
+import { lerRadar, sincronizarRadar, lerEstadoRadar, salvarEstadoRadar, statusDaIdeia, pastaImagensRadar, imagemRadarSegura } from './radar.js';
 import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
 import { arquivoToken, garantirToken, bearerOk, assinaturaOk, proximoJob, arquivoDoVideo, registrarResultado } from './tiktokChrome.js';
 import { registrar } from './atividade.js';
@@ -82,7 +82,7 @@ export function editarCorte(pastaSaida, { pasta, arquivo, ...mud }, linhas = nul
 
 function servirArquivo(req, res, file, extra = {}) {
   const stat = fs.statSync(file);
-  const type = MIME[path.extname(file)] || 'application/octet-stream';
+  const type = extra['content-type'] || MIME[path.extname(file)] || 'application/octet-stream';
   const m = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
   if (!m) { res.writeHead(200, { ...extra, 'content-type': type, 'content-length': stat.size, 'accept-ranges': 'bytes' }); return fs.createReadStream(file).pipe(res); }
   const start = m[1] ? Number(m[1]) : Math.max(0, stat.size - Number(m[2]));
@@ -149,7 +149,11 @@ export function criarPainel(config) {
         const sessoes = listarSessoes(config.pastaSaida);
         sincronizarRadar(config).catch(() => {});
         const radar = lerRadar(config);
-        radar.itens = radar.itens.map((i) => ({ ...i, cortes: sessoes.flatMap((s) => (s.cortes || []).filter((c) => c.radar === i.id).map((c) => ({ pasta: s.pasta, titulo: c.titulo, status: c.status }))) }));
+        const marcado = lerEstadoRadar(config);
+        radar.itens = radar.itens.map((i) => {
+          const cortes = sessoes.flatMap((s) => (s.cortes || []).filter((c) => c.radar === i.id).map((c) => ({ pasta: s.pasta, titulo: c.titulo, status: c.status, arquivo: c.arquivo, capa: c.capa })));
+          return { ...i, cortes, marcado: marcado[i.id] || null, status: statusDaIdeia(cortes, marcado[i.id]) };
+        });
         const dados = { brutos: listarBrutos(config), sessoes, roteiros: listarRoteiros(config), prontos: listarProntos(config), redes: lerRedes(config), radar };
         return json(res, 200, { ...dados, resumo: resumo(dados), pastas: { entrada: config.pastaEntrada, saida: config.pastaSaida, entrega: config.pastaEntrega, roteiros: config.pastaRoteiros, metricas: config.arquivoMetricas } });
       }
@@ -244,6 +248,18 @@ export function criarPainel(config) {
         const file = path.join(config.pastaEntrega || '', l, p, f);
         if (!nomeSeguro(l) || !nomeSeguro(p) || !config.pastaEntrega || !fs.existsSync(file)) return json(res, 404, { erro: 'Não encontrado.' });
         return servirArquivo(req, res, file);
+      }
+      const ri = /^\/radar\/img\/([^/]+)$/.exec(url.pathname);
+      if (req.method === 'GET' && ri) {
+        const nome = decodeURIComponent(ri[1]), file = path.join(pastaImagensRadar(config), nome);
+        if (!imagemRadarSegura(nome) || !fs.existsSync(file)) return json(res, 404, { erro: 'Não encontrado.' });
+        return servirArquivo(req, res, file, { 'content-type': /\.png$/i.test(nome) ? 'image/png' : /\.webp$/i.test(nome) ? 'image/webp' : 'image/jpeg' });
+      }
+      if (req.method === 'POST' && url.pathname === '/api/radar/estado') {
+        let body = '';
+        req.on('data', (d) => { body += d; if (body.length > 1e4) req.destroy(); });
+        req.on('end', () => { try { const { id, estado } = JSON.parse(body || '{}'); json(res, 200, salvarEstadoRadar(config, id, estado || null)); } catch (e) { json(res, 400, { erro: e.message }); } });
+        return;
       }
       if (req.method === 'POST' && url.pathname === '/api/metricas/atualizar') {
         coletarMetricas(config).then((m) => json(res, 200, { atualizadoEm: m.atualizadoEm, erros: m.erros }), (e) => json(res, 500, { erro: e.message }));

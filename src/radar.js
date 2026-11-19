@@ -27,10 +27,50 @@ export function normalizarItem(i) {
   };
 }
 
+// images the radar thread commits to radar/img/ on the `radar` branch; served at /radar/img/<file>
+export const pastaImagensRadar = (config) => path.join(path.dirname(arquivoRadar(config)), 'radar', 'img');
+const IMAGEM = /^[\w.-]+\.(jpe?g|png|webp)$/i;
+export const imagemRadarSegura = (nome) => typeof nome === 'string' && IMAGEM.test(nome) && !nome.startsWith('.');
+// "radar/img/x.jpg" or "img/x.jpg" or "x.jpg" -> "x.jpg"; anything else (another folder, a URL) -> null
+export function nomeImagemRadar(ref) {
+  const m = /^(?:radar\/)?(?:img\/)?([^/]+)$/.exec(String(ref || ''));
+  return m && imagemRadarSegura(m[1]) ? m[1] : null;
+}
+
+// what the owner marked on the radar tab: { id: 'salvo' | 'gravado' | 'ignorado' }
+export const ESTADOS_RADAR = ['salvo', 'gravado', 'ignorado'];
+const arquivoEstadoRadar = (config) => path.join(path.dirname(arquivoRadar(config)), 'radar-estado.json');
+export const lerEstadoRadar = (config) => lerJson(arquivoEstadoRadar(config), {}) || {};
+export function salvarEstadoRadar(config, id, estado) {
+  if (!/^[\w-]{1,80}$/.test(String(id || ''))) throw new Error('Item inválido.');
+  if (estado && !ESTADOS_RADAR.includes(estado)) throw new Error('Estado inválido.');
+  const e = lerEstadoRadar(config);
+  if (estado) e[id] = estado; else delete e[id];
+  fs.mkdirSync(path.dirname(arquivoEstadoRadar(config)), { recursive: true });
+  fs.writeFileSync(arquivoEstadoRadar(config), JSON.stringify(e, null, 2));
+  return e;
+}
+
+// pure: where an idea stands. Cuts that came from it decide first; then what the owner marked.
+export function statusDaIdeia(cortes = [], marcado) {
+  const vivos = cortes.filter((c) => c.status !== 'descartado');
+  if (vivos.some((c) => c.status === 'postado' || c.postado)) return 'postado';
+  if (vivos.length) return 'tem corte';
+  if (marcado === 'gravado') return 'gravado';
+  if (marcado === 'ignorado') return 'ignorado';
+  if (marcado === 'salvo') return 'quero gravar';
+  return 'nova';
+}
+
 export function lerRadar(config) {
   const r = lerJson(arquivoRadar(config), null);
-  const itens = (Array.isArray(r?.itens) ? r.itens : []).filter((i) => i && i.id && i.titulo).map(normalizarItem);
-  return { atualizadoEm: r?.atualizadoEm || r?.atualizado_em || null, jogo: r?.jogo || '', itens };
+  const dirImg = pastaImagensRadar(config);
+  const temImg = (n) => n && fs.existsSync(path.join(dirImg, n));
+  const imagens = (i) => [...(i.local?.imagens || []), ...(i.imagens || []), i.imagem].filter(Boolean).map(nomeImagemRadar).filter(temImg).map((n) => `/radar/img/${encodeURIComponent(n)}`);
+  const itens = (Array.isArray(r?.itens) ? r.itens : []).filter((i) => i && i.id && i.titulo).map(normalizarItem)
+    .map((i) => ({ ...i, fotos: [...imagens(i), ...[i.imagem_url, ...(i.local?.imagem_urls || [])].filter((u) => /^https:\/\//.test(u || ''))] }));
+  const mapa = ['mapa-leonida.jpg', 'mapa-leonida.png', 'mapa-leonida.webp'].find(temImg);
+  return { atualizadoEm: r?.atualizadoEm || r?.atualizado_em || null, jogo: r?.jogo || '', itens, mapa: mapa ? `/radar/img/${mapa}` : null };
 }
 
 // pure: windows where a radar item is talked about. A phrase counts alone; single words need `minPalavras`
@@ -79,6 +119,8 @@ export async function sincronizarRadar(config, { forcar = false } = {}) {
     JSON.parse(out);
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.writeFileSync(f, out);
+    // the photos and the base map (radar/img/ on the branch), when there are any
+    await run('sh', ['-c', 'git -C "$1" archive origin/radar radar/img | tar -x -C "$2"', 'sh', ROOT, path.dirname(f)], { timeoutMs: 60000 }).catch(() => {});
     return true;
   } catch { return false; }
 }
