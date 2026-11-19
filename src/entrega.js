@@ -28,7 +28,7 @@ export function postDoCorte(c, { sessao, linha, duracao, agendarPara = null } = 
     linha: linha ? { id: linha.id, nome: linha.nome, perfil: linha.perfil, redes: linha.redes, horarios: linha.horarios } : null,
     arroba: c.arroba || linha?.arroba || '', formato: c.formato || null, outrosFormatos: Object.keys(c.variantes || {}).filter((f) => f !== c.formato),
     nota: c.nota ?? null, duracao: duracao ?? (c.fim != null && c.inicio != null ? +(c.fim - c.inicio).toFixed(2) : null),
-    credito: c.credito || null, sessao, criadoEm: new Date().toISOString(),
+    credito: c.credito || null, aviso: c.aviso || null, sessao, criadoEm: new Date().toISOString(),
     // when the posting skill should publish it: the line's next free peak hour, within the safe daily limit
     agendarPara,
   };
@@ -40,7 +40,7 @@ export function postDoLongo(v, { sessao, agendarPara = null } = {}) {
     tipo: v.missao ? 'missao' : 'longo', missao: v.missao || null, titulo: String(v.titulo || '').slice(0, 100), descricao: String(v.descricao || '').slice(0, 4900),
     hashtags: v.tags || v.hashtags || [], legendas: { youtube: { titulo: String(v.titulo || '').slice(0, 100), descricao: String(v.descricao || '').slice(0, 4900) } },
     linha: { id: 'youtube-longo', nome: 'YouTube (vídeo longo)', redes: ['youtube'] }, formato: 'horizontal',
-    duracao: v.duracao ?? null, sessao, criadoEm: new Date().toISOString(), agendarPara,
+    duracao: v.duracao ?? null, aviso: v.aviso || null, sessao, criadoEm: new Date().toISOString(), agendarPara,
   };
 }
 
@@ -59,7 +59,7 @@ export function entregarAprovados(config, { log = console.log } = {}) {
     const file = path.join(config.pastaSaida, pasta, 'sessao.json');
     const antes = JSON.stringify(dados.cortes.map((c) => [c.linha, c.status]));
     distribuirLinhas(dados.cortes, linhas);
-    if (config.postarAutomatico) autoAprovar(dados.cortes, config, linhas);
+    if (config.postarAutomatico) autoAprovar(dados.cortes, config, linhas, pasta);
     let mudou = JSON.stringify(dados.cortes.map((c) => [c.linha, c.status])) !== antes;
     for (const c of dados.cortes.filter((x) => x.status === 'aprovado')) {
       const linha = linhaDoCorte(c, linhas);

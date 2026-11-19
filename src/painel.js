@@ -14,6 +14,10 @@ import { lerRadar, sincronizarRadar } from './radar.js';
 import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
 import { arquivoToken, garantirToken, bearerOk, assinaturaOk, proximoJob, arquivoDoVideo, registrarResultado } from './tiktokChrome.js';
 import { registrar } from './atividade.js';
+import crypto from 'node:crypto';
+import { arquivoCredenciais, lerCredenciais, salvarCredenciais, statusApis } from './credenciais.js';
+import * as metaApi from './postadores/meta.js';
+import * as ytApi from './postadores/youtube.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGINA = path.join(ROOT, 'public', 'painel.html');
@@ -24,6 +28,10 @@ const MIME = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg' }; // only the cuts and
 const EXTENSAO = path.join(ROOT, 'extensao-tiktok', 'manifest.json');
 // the TikTok Studio page downloads the video (CORS + Chrome's private network access preflight)
 const CORS_TIKTOK = { 'access-control-allow-origin': 'https://www.tiktok.com', 'access-control-allow-private-network': 'true', 'access-control-allow-headers': 'range', 'vary': 'origin' };
+const estadosOauth = new Map(); // state → { rede, em }, 10 min
+const novoEstado = (rede) => { const s = crypto.randomBytes(16).toString('hex'); estadosOauth.set(s, { rede, em: Date.now() }); return s; };
+const usarEstado = (s, rede) => { const e = estadosOauth.get(s); estadosOauth.delete(s); return !!e && e.rede === rede && Date.now() - e.em < 600000; };
+const CAMPOS = { meta: ['appId', 'appSecret', 'configId'], youtube: ['clientId', 'clientSecret'] };
 const local = (req) => /^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress || '');
 export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'entregue', 'postado'];
 
@@ -109,7 +117,7 @@ export function criarPainel(config) {
         }
         if (!bearerOk(req.headers.authorization, token)) return json(res, 401, { erro: 'Código inválido: copie o código da aba Contas da central.' });
         if (req.method === 'GET' && rota === 'proximo') {
-          const job = proximoJob({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida) });
+          const job = proximoJob({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida), limite: { tiktok: 4, ...(config.limites || {}) }.tiktok });
           if (job) registrar(config.pastaSaida, 'agendador', 'trabalhando', `TikTok pelo Chrome: postando "${job.titulo}"`);
           return json(res, 200, { job });
         }
@@ -156,6 +164,53 @@ export function criarPainel(config) {
       if (req.method === 'GET' && marca && nomeSeguro(marca[1]) && fs.existsSync(path.join(MARCA, marca[1]))) {
         res.writeHead(200, { 'content-type': marca[2] === 'svg' ? 'image/svg+xml' : 'image/png', 'cache-control': 'max-age=3600' });
         return fs.createReadStream(path.join(MARCA, marca[1])).pipe(res);
+      }
+      // official APIs (src/postador.js): status, keys pasted by the owner (only on this Mac) and the OAuth "Conectar"
+      if (req.method === 'GET' && url.pathname === '/api/apis') {
+        return json(res, 200, { ...statusApis(lerCredenciais(arquivoCredenciais(config))), postador: { ligado: !!config.postadorLigado, automatico: !!config.postarAutomatico, pausa: lerPausa(config.pastaSaida) } });
+      }
+      if (req.method === 'POST' && url.pathname === '/api/credenciais') {
+        if (!local(req)) return json(res, 403, { erro: 'Só no próprio Mac.' });
+        let body = '';
+        req.on('data', (d) => { body += d; if (body.length > 1e4) req.destroy(); });
+        req.on('end', () => {
+          try {
+            const { rede, ...v } = JSON.parse(body || '{}');
+            if (!CAMPOS[rede]) throw new Error('Rede inválida.');
+            const patch = {};
+            for (const k of CAMPOS[rede]) if (typeof v[k] === 'string' && v[k].trim()) patch[k] = v[k].trim().slice(0, 300);
+            if (!Object.keys(patch).length) throw new Error('Nada para salvar.');
+            salvarCredenciais(arquivoCredenciais(config), rede, patch);
+            json(res, 200, statusApis(lerCredenciais(arquivoCredenciais(config))));
+          } catch (e) { json(res, 400, { erro: e.message }); }
+        });
+        return;
+      }
+      const oauth = /^\/oauth\/(meta|youtube)(\/iniciar)?$/.exec(url.pathname);
+      if (req.method === 'GET' && oauth) {
+        if (!local(req)) return json(res, 403, { erro: 'Conecte pelo próprio Mac (localhost).' });
+        const [rede, iniciar] = [oauth[1], !!oauth[2]];
+        const file = arquivoCredenciais(config);
+        const c = lerCredenciais(file);
+        const redirect = `http://localhost:${config.portaPainel || 4321}/oauth/${rede}`;
+        const voltar = (msg, ok) => { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(`<!doctype html><meta charset="utf-8"><body style="font:16px system-ui;background:#111;color:#eee;padding:24px"><h2 style="color:${ok ? '#FFE600' : '#f87171'}">${ok ? 'Conectado' : 'Não conectou'}</h2><p>${String(msg).replace(/[<>&]/g, '')}</p><p><a style="color:#FFE600" href="/#contas">Voltar para Contas</a></p>`); };
+        if (iniciar) {
+          if (rede === 'meta' && !(c.meta.appId && c.meta.appSecret)) return voltar('Cole antes a chave secreta do app da Meta na aba Contas.', false);
+          if (rede === 'youtube' && !(c.youtube.clientId && c.youtube.clientSecret)) return voltar('Cole antes a chave secreta do cliente do Google na aba Contas.', false);
+          const state = novoEstado(rede);
+          res.writeHead(302, { location: rede === 'meta' ? metaApi.urlLogin({ ...c.meta, redirect, state }) : ytApi.urlLogin({ ...c.youtube, redirect, state }) });
+          return res.end();
+        }
+        if (!usarEstado(url.searchParams.get('state'), rede)) return voltar('O pedido expirou ou não saiu daqui. Clique em Conectar de novo.', false);
+        if (!url.searchParams.get('code')) return voltar(`Autorização cancelada (${url.searchParams.get('error_description') || url.searchParams.get('error') || 'sem código'}).`, false);
+        const code = url.searchParams.get('code');
+        const feito = rede === 'meta' ? metaApi.conectar({ ...c.meta, redirect, code }) : ytApi.conectar({ ...c.youtube, redirect, code });
+        feito.then((r) => {
+          salvarCredenciais(file, rede, { ...r, erro: null });
+          registrar(config.pastaSaida, 'agendador', 'pronto', rede === 'meta' ? `Meta conectada: Página ${r.pageName}${r.igUsername ? ` e @${r.igUsername}` : ' (sem Instagram ligado!)'}` : `YouTube conectado: ${r.channelTitle}`);
+          voltar(rede === 'meta' ? `Página ${r.pageName}${r.igUsername ? ` e Instagram @${r.igUsername}` : '. O Instagram não veio: ligue o Instagram à Página e conecte de novo'}.` : `Canal ${r.channelTitle}.`, true);
+        }, (e) => voltar(e.message, false));
+        return;
       }
       if (req.method === 'GET' && url.pathname === '/api/contas') return json(res, 200, lerContas(config));
       if (req.method === 'POST' && url.pathname === '/api/contas') {

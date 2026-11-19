@@ -92,7 +92,7 @@
 </header>
 <main id="tela"><p class="vazio">Carregando...</p></main>
 <script>
-let D = null, P = null, C = null, aba = (location.hash || '#inicio').slice(1);
+let D = null, P = null, C = null, A = null, aba = (location.hash || '#inicio').slice(1);
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${String(a).split('/').map(encodeURIComponent).join('/')}`;
@@ -109,6 +109,7 @@ async function carregar() {
   try { D = await (await fetch('/api/central')).json(); } catch { D = null; }
   try { P = await (await fetch('/api/prontidao')).json(); } catch { P = null; }
   try { C = await (await fetch('/api/contas')).json(); } catch { C = null; }
+  try { A = await (await fetch('/api/apis')).json(); } catch { A = null; }
   desenhar();
 }
 
@@ -202,7 +203,20 @@ const TELAS = {
     };
     const ordem = { youtube: 0, facebook: 1, instagram: 2, tiktok: 3, twitch: 4 };
     const linhas = [...new Set(C.contas.map((c) => c.linha))];
-    return `<p class="dica">Ordem para hoje: 1) um e-mail novo só para o canal, 2) YouTube, 3) a Página do Facebook, 4) Instagram ligado a ela, 5) TikTok. Os passos marcados <span class="anon">anonimato</span> evitam que a conta seja sugerida aos seus contatos e conhecidos. O progresso fica em <code>${esc(C.arquivo)}</code>. <b>Senhas e códigos ficam só no seu gerenciador de senhas, nunca aqui.</b></p>
+    const api = (nome, st, extra = '') => `<div class="linha"><span class="tag ${st.status === 'conectada' ? 'ok' : 'no'}">${esc(st.status)}</span><div class="nome">${esc(nome)}${st.conta ? ` · ${esc(st.conta)}` : ''}<div class="sub">${esc(st.motivo || '')}${extra}</div></div></div>`;
+    const apis = !A ? '' : `<h2>Postagem automática</h2>
+    <p class="dica">${A.postador.pausa ? `<b>Freio puxado:</b> ${esc(A.postador.pausa.motivo || '')} (retome na aba Início). ` : ''}Postador das APIs: <b>${A.postador.ligado ? 'ligado' : 'desligado'}</b> · aprovação automática: <b>${A.postador.automatico ? 'ligada (filtro de qualidade)' : 'desligada'}</b>. Um envio por vez, só no horário agendado e dentro do limite seguro de cada conta. TikTok vai pela extensão do Chrome.</p>
+    <div class="lista">${api('Instagram (API oficial)', A.instagram)}${api('Página do Facebook (API oficial)', A.facebook)}${api('YouTube (API oficial)', A.youtube, A.youtube.privado ? ' <b>O YouTube está travando os envios como privados: falta a auditoria do projeto no Google Cloud.</b>' : '')}</div>
+    <div class="gerir">
+      <div class="conta"><div class="topo2"><span class="r">Meta · app ${esc(A.meta.appId)}</span>${tag(A.instagram.status === 'conectada' ? 'conectada' : 'a criar')}</div>
+        <input class="campo" type="password" autocomplete="off" data-cred="meta" data-campo="appSecret" placeholder="${A.meta.temSegredo ? 'Chave secreta guardada (cole só para trocar)' : 'Chave secreta do app (Configurações > Básico)'}">
+        <div class="topo2"><a class="btn" href="#" data-salvar-cred="meta">Salvar chave</a><a class="btn" href="/oauth/meta/iniciar">Conectar Instagram e Página</a></div></div>
+      <div class="conta"><div class="topo2"><span class="r">Google · YouTube</span>${tag(A.youtube.status === 'conectada' ? 'conectada' : 'a criar')}</div>
+        <input class="campo" type="password" autocomplete="off" data-cred="youtube" data-campo="clientSecret" placeholder="${A.google.temSegredo ? 'Chave secreta guardada (cole só para trocar)' : 'Chave secreta do cliente OAuth do Google'}">
+        <div class="topo2"><a class="btn" href="#" data-salvar-cred="youtube">Salvar chave</a><a class="btn" href="/oauth/youtube/iniciar">Conectar YouTube</a></div></div>
+    </div>
+    <p class="dica">As chaves ficam só em <code>~/Gameplay/.credenciais.json</code> neste Mac e nunca voltam para a página. Conectar só funciona abrindo a central em http://localhost:4322 no próprio Mac.</p>`;
+    return `${apis}<p class="dica">Ordem para hoje: 1) um e-mail novo só para o canal, 2) YouTube, 3) a Página do Facebook, 4) Instagram ligado a ela, 5) TikTok. Os passos marcados <span class="anon">anonimato</span> evitam que a conta seja sugerida aos seus contatos e conhecidos. O progresso fica em <code>${esc(C.arquivo)}</code>. <b>Senhas e códigos ficam só no seu gerenciador de senhas, nunca aqui.</b></p>
     ${linhas.map((l) => `<h2>${esc(C.contas.find((c) => c.linha === l).nome)}</h2><div class="gerir">${C.contas.filter((c) => c.linha === l).sort((a, b) => ordem[a.rede] - ordem[b.rede]).map(card).join('')}</div>`).join('')}
     <h2>Onde dá para fazer live</h2>
     <div class="lista">${C.live.map((v) => `<div class="linha"><span class="tag ${v.pode ? 'ok' : 'no'}">${v.pode ? 'dá hoje' : 'ainda não'}</span><div class="nome">${esc(v.nome)}<div class="sub">${esc(v.resumo)} ${esc(v.requisito)}${v.seguidores != null && !v.pode ? ` Hoje: ${num(v.seguidores)} seguidores.` : ''}</div></div></div>`).join('')}</div>
@@ -263,6 +277,16 @@ function prepararEnvio() {
 }
 
 document.addEventListener('click', async (e) => {
+  const sc = e.target.closest('[data-salvar-cred]');
+  if (sc) {
+    e.preventDefault();
+    const rede = sc.dataset.salvarCred, inp = document.querySelector(`[data-cred="${rede}"]`);
+    const r = await fetch('/api/credenciais', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ rede, [inp.dataset.campo]: inp.value }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { alert(j.erro || 'Não salvou.'); return; }
+    inp.value = ''; carregar();
+    return;
+  }
   const cod = e.target.closest('[data-codigo-tiktok]');
   if (cod) {
     e.preventDefault();

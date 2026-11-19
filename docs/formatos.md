@@ -85,3 +85,16 @@ Para carregar (uma vez, no Chrome logado no TikTok @fnando.gameplay):
 4. Clique no ícone da extensão, cole o código e **Salvar e conferir agora**.
 
 O código fica em `~/Gameplay/.tiktok-chrome-token` (fora do git). Apagar o arquivo e reiniciar o painel gera outro, e a extensão precisa do novo. Se parar antes de clicar em Publicar, tenta mais uma vez 15 minutos depois. Depois do clique, nunca manda de novo (para não postar duas vezes), e o erro fica em `.tiktok-chrome.json` na pasta do corte. Se o TikTok mudar a página do Studio, os seletores estão em `extensao-tiktok/studio.js`.
+
+## Postagem automática pelas APIs oficiais (Instagram, Página do Facebook, YouTube)
+
+Com `postadorLigado: true`, o painel (e o `observar`) roda o postador a cada 5 minutos (`src/postador.js`). Ele pega **um** post entregue em `prontos/` com `agendarPara` vencido e publica em **uma** rede que ainda falta: Instagram Reels e Reels da Página pela Graph API (o arquivo sobe direto do Mac, sem link público), e YouTube Shorts (e os vídeos longos e de missão) pela YouTube Data API. O TikTok continua pela extensão do Chrome. Os links vão para `postado.json` (`links` e `emRede`), sem apagar os das outras redes. Cada rede respeita o limite seguro por dia (`limites`). Post com `aviso` (nudez ou violência na tela) nunca sai sozinho, e trechos listados em `trechosBloqueados` nunca passam no filtro automático.
+
+Erro grave da plataforma (bloqueio, política, strike) puxa o freio (`.pausa.json`) para tudo. Token vencido para só aquela rede, até conectar de novo. Falha comum tenta de novo em 15 min, 1 h e 6 h, e para depois de 3 tentativas.
+
+Para conectar (uma vez, no próprio Mac, em http://localhost:4322/#contas):
+
+1. **Meta**: cole a chave secreta do app (developers.facebook.com > app FNexus Publicador > Configurações > Básico) e clique em **Conectar Instagram e Página**. Escolha a Página Fnando e o Instagram @fnando.gameplay.
+2. **YouTube**: cole a chave secreta do cliente OAuth do Google e clique em **Conectar YouTube**, com a conta fnando.gameplay@gmail.com.
+
+As chaves e os tokens ficam só em `~/Gameplay/.credenciais.json` (permissão 600, fora do git). Os ids das playlists do YouTube ficam em `config.json` > `youtube.playlists` (`shorts`, `curiosidades`, `dicas`, `missoes`). Cada Short entra em Shorts e em Dicas ou Curiosidades (pelo título e pelas hashtags), cada missão em Missões completas, e a sessão inteira em nenhuma.

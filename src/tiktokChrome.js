@@ -9,6 +9,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { LIMITES_SEGUROS } from './canais.js';
 
 export const ESPERA_MS = 15 * 60000; // a post handed out (or that failed) is not handed out again for 15 min
 export const MAX_TENTATIVAS = 2; // stopped before clicking Publish: one more try, then the owner looks
@@ -71,6 +72,7 @@ export function postsTikTok(base) {
 
 // pure: may this post go to the extension now?
 export function disponivel({ post, postado, estado }, agora) {
+  if (post.aviso) return false; // nudity/gore on screen: never on its own
   if (postado?.links?.tiktok || post.postadoEm) return false;
   if (post.agendarPara && Date.parse(post.agendarPara) > agora) return false;
   if (estado?.postou || (estado?.tentativas || 0) >= MAX_TENTATIVAS) return false;
@@ -79,9 +81,13 @@ export function disponivel({ post, postado, estado }, agora) {
 }
 
 // The next post for the extension (oldest due first), or null. Paused = null. Marks it as handed out.
-export function proximoJob({ base, token, agora = Date.now(), pausa = null }) {
+const dia = (t) => new Date(t).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+export function proximoJob({ base, token, agora = Date.now(), pausa = null, limite = LIMITES_SEGUROS.tiktok }) {
   if (pausa) return null;
-  const fila = postsTikTok(base)
+  const todos = postsTikTok(base);
+  const hoje = todos.filter((p) => p.postado?.emRede?.tiktok && dia(Date.parse(p.postado.emRede.tiktok)) === dia(agora)).length;
+  if (hoje >= limite) return null; // safe daily limit per account
+  const fila = todos
     .filter((p) => disponivel(p, agora) && fs.existsSync(path.join(p.dir, 'video.mp4')))
     .sort((a, b) => String(a.post.agendarPara || a.post.criadoEm || '').localeCompare(String(b.post.agendarPara || b.post.criadoEm || '')));
   const p = fila[0];
@@ -113,7 +119,7 @@ export function registrarResultado(base, { id, ok, link, erro, etapa, postou } =
   const estado = ler(path.join(dir, ESTADO)) || {};
   if (ok) {
     const antes = ler(path.join(dir, 'postado.json')) || {};
-    const postado = { ...antes, em: antes.em || em, links: { ...(antes.links || {}), tiktok: typeof link === 'string' && /^https:\/\//.test(link) ? link : 'publicado' } };
+    const postado = { ...antes, em: antes.em || em, links: { ...(antes.links || {}), tiktok: typeof link === 'string' && /^https:\/\//.test(link) ? link : 'publicado' }, emRede: { ...(antes.emRede || {}), tiktok: em } };
     fs.writeFileSync(path.join(dir, 'postado.json'), JSON.stringify(postado, null, 2));
     fs.writeFileSync(path.join(dir, ESTADO), JSON.stringify({ ...estado, em, postou: true, ok: true, erro: null }, null, 2));
     return { ok: true, postado };

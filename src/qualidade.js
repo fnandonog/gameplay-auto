@@ -6,7 +6,7 @@ import path from 'node:path';
 export const PADRAO_FILTRO = { notaMinima: 8.5, duracaoMin: 12, duracaoMax: 75, errosParaPausar: 3 };
 
 // pure: why a cut may not go out on its own (empty list = it may)
-export function motivosRecusa(c, { config = {}, linha = null } = {}) {
+export function motivosRecusa(c, { config = {}, linha = null, sessao = null } = {}) {
   const f = { ...PADRAO_FILTRO, ...(config.filtro || {}) };
   if (config.notaMinima != null && config.filtro?.notaMinima == null) f.notaMinima = config.notaMinima;
   const m = [];
@@ -15,6 +15,13 @@ export function motivosRecusa(c, { config = {}, linha = null } = {}) {
   if (Number.isFinite(dur) && (dur < f.duracaoMin || dur > f.duracaoMax)) m.push(`duração ${Math.round(dur)} s fora de ${f.duracaoMin}–${f.duracaoMax} s`);
   if (!String(c.titulo || '').trim()) m.push('sem título');
   if (!String(c.gancho || '').trim()) m.push('sem gancho');
+  if (c.aviso) m.push(`aviso: ${c.aviso}`);
+  // stretches of a recording that must never go out on their own (nudity, gore...): config.trechosBloqueados
+  for (const t of config.trechosBloqueados || []) {
+    if (t.sessao && sessao && t.sessao !== sessao) continue;
+    if (t.sessao && !sessao) continue;
+    if (Number(c.inicio) < Number(t.fim) && Number(c.fim) > Number(t.inicio)) m.push(`trecho bloqueado (${t.motivo || 'conteúdo sensível'})`);
+  }
   const terceiro = !!c.credito || !!linha?.terceiros;
   if (terceiro) {
     const fonte = (config.terceiros?.fontes || []).find((x) => x.streamer === c.credito?.streamer);
