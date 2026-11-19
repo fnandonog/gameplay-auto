@@ -7,6 +7,8 @@ import path from 'node:path';
 import { listarSessoes } from './painel.js';
 import { linhasDe } from './canais.js';
 import { lerAtividade } from './atividade.js';
+import { horariosSeguros, capacidadeDiaria, LIMITES_SEGUROS } from './canais.js';
+import { run } from './run.js';
 
 export const VIDEO = /\.(mp4|mkv|mov)$/i;
 const ROTEIRO = /\.(md|txt|json)$/i;
@@ -75,12 +77,12 @@ export function listarProntos(config) {
       const feito = lerJson(path.join(pasta, 'postado.json'));
       out.push({
         linha, pasta: p, titulo: post.titulo, gancho: post.gancho, duracao: post.duracao, redes: post.linha?.redes || [],
-        criadoEm: post.criadoEm, status: feito || post.postadoEm ? 'postado' : 'esperando a postagem',
+        criadoEm: post.criadoEm, agendarPara: post.agendarPara || null, status: feito || post.postadoEm ? 'postado' : 'esperando a postagem',
         postadoEm: feito?.em || post.postadoEm || null, links: feito?.links || post.links || {},
       });
     }
   }
-  return out.sort((a, b) => String(b.criadoEm).localeCompare(String(a.criadoEm)));
+  return out.sort((a, b) => String(a.agendarPara || a.criadoEm).localeCompare(String(b.agendarPara || b.criadoEm)));
 }
 
 // Numbers of each account. metricas.json (in the Gameplay folder by default):
@@ -154,4 +156,29 @@ export function receberEnvio(req, config, nome, { limite = 20 * 2 ** 30 } = {}) 
     });
     out.on('error', (e) => { fs.rmSync(tmp, { force: true }); fail(e); });
   });
+}
+
+// What is still missing before the accounts go live, in plain words. Each item: { id, ok, titulo, comoFazer, dono }
+// (dono: 'voce' = something only the owner can do; 'plataforma' = a setting here). `checar` runs the tools (tests stub it).
+export const ARROBAS_PALPITE = new Set(['@fnando', '@fnandoshorts', '@fnandoresenha', '@fnandodicas', '@clipai']);
+export async function prontidao(config, { checar = (cmd, args) => run(cmd, args, { timeoutMs: 10000 }).then(() => true, () => false), env = process.env } = {}) {
+  const linhas = linhasDe(config);
+  const existe = (f) => !!f && fs.existsSync(f);
+  const arrobas = linhas.map((l) => l.arroba || config.marca?.arroba || '').filter(Boolean);
+  const metricas = lerJson(config.arquivoMetricas, null);
+  const conectadas = new Set((metricas?.contas || []).map((c) => c.rede));
+  const redes = [...new Set(linhas.flatMap((l) => l.redes || []))];
+  const itens = [
+    { id: 'ffmpeg', ok: await checar('ffmpeg', ['-version']), titulo: 'ffmpeg instalado no Mac', comoFazer: 'No Terminal: brew install ffmpeg', dono: 'plataforma' },
+    { id: 'whisper', ok: (await checar(config.whisper?.bin || 'whisper-cli', ['--help'])) && existe(config.whisper?.modelo), titulo: 'Transcrição (whisper) instalada com o modelo', comoFazer: 'No Terminal: sh tools/instalar-mac.sh', dono: 'plataforma' },
+    { id: 'ia', ok: !!env.ANTHROPIC_API_KEY || existe(path.join(process.env.HOME || '', '.config', 'ant')), titulo: 'IA para escolher os cortes e escrever títulos', comoFazer: 'Ponha ANTHROPIC_API_KEY no ~/.zshrc (ou rode: ant auth login). Sem ela os títulos saem genéricos.', dono: 'voce' },
+    { id: 'obs', ok: existe(config.pastaEntrada) && (dir(config.pastaEntrada).some((f) => VIDEO.test(f)) || dir(config.pastaProcessados).some((f) => VIDEO.test(f))), titulo: 'OBS gravando na pasta certa', comoFazer: `Configurações do OBS > Saída > Gravação: caminho ${config.pastaEntrada}`, dono: 'plataforma' },
+    { id: 'nome', ok: arrobas.length > 0 && arrobas.every((a) => !ARROBAS_PALPITE.has(a.toLowerCase())), titulo: 'Nome e @ do canal escolhidos', comoFazer: 'Escolha o nome (anônimo) e me diga o @ de cada rede. Ele vai escrito no fim de cada corte ("SEGUE @...").', dono: 'voce' },
+    ...redes.map((r) => ({ id: `conta-${r}`, ok: conectadas.has(r), titulo: `Conta no ${{ youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' }[r] || r} criada e conectada`, comoFazer: 'Crie a conta (e-mail novo, sem seu telefone pessoal) e conecte na sua skill de postagem; ela passa a escrever metricas.json.', dono: 'voce' })),
+    config.postagem === 'upload-post'
+      ? { id: 'postagem', ok: !!env.UPLOAD_POST_API_KEY && linhas.every((l) => l.perfil), titulo: 'Upload-Post com chave e perfis', comoFazer: 'export UPLOAD_POST_API_KEY=... e o perfil de cada linha no config.json', dono: 'voce' }
+      : { id: 'postagem', ok: existe(config.pastaEntrega), titulo: 'Skill de postagem lendo a pasta de prontos', comoFazer: `Aponte sua skill de autopost para ${config.pastaEntrega} (cada pasta tem video.mp4, capa.jpg e post.json com legenda, hashtags e horário).`, dono: 'voce' },
+    { id: 'limites', ok: linhas.every((l) => (l.horarios || []).length <= horariosSeguros(l, config.limites).length), titulo: 'Volume por conta dentro do limite seguro', comoFazer: `Máximo por conta por dia: ${Object.entries({ ...LIMITES_SEGUROS, ...(config.limites || {}) }).map(([r, n]) => `${r} ${n}`).join(', ')}. Para postar mais, crie mais contas (linhas).`, dono: 'plataforma' },
+  ];
+  return { itens, faltam: itens.filter((i) => !i.ok).length, capacidadeDia: capacidadeDiaria(linhas, config.limites) };
 }

@@ -76,9 +76,33 @@ export function focosDe(palavras = [], dur, { minimapa = MINIMAPA_GTA, zoom = 1.
   return out.length ? out : [{ de: 0, ate: dur, tipo: 'normal' }];
 }
 
+// Jump cuts: a pause in the speech longer than maxGap shrinks to `fica` seconds, so the cut never sits still.
+// Only when the cut has speech (minPalavras); a quiet play is left whole. Pure: words relative to the cut →
+// { manter: [[a, b], ...] in the cut's time, palavras: remapped to the new time, dur: new length }.
+export function encolherSilencios(palavras = [], dur, { maxGap = 1.6, fica = 0.45, minPalavras = 5, inicioMax = 1.2 } = {}) {
+  const ws = palavras.filter((w) => w.end > 0 && w.start < dur);
+  if (ws.length < minPalavras) return { manter: [[0, dur]], palavras, dur };
+  const cortes = []; // [from, to] removed
+  let fim = 0;
+  // dead start before the first word
+  if (ws[0].start > inicioMax) cortes.push([0, ws[0].start - fica]);
+  fim = ws[0].end;
+  for (const w of ws.slice(1)) {
+    if (w.start - fim > maxGap) cortes.push([fim + fica / 2, w.start - fica / 2]);
+    fim = Math.max(fim, w.end);
+  }
+  if (!cortes.length) return { manter: [[0, dur]], palavras, dur };
+  const manter = []; let t = 0;
+  for (const [a, b] of cortes) { if (a > t) manter.push([+t.toFixed(2), +a.toFixed(2)]); t = b; }
+  if (dur > t) manter.push([+t.toFixed(2), +dur.toFixed(2)]);
+  const mapa = (x) => { let tirado = 0; for (const [a, b] of cortes) { if (x >= b) tirado += b - a; else if (x > a) return +(a - tirado).toFixed(2); } return +(x - tirado).toFixed(2); };
+  const novo = manter.reduce((n, [a, b]) => n + b - a, 0);
+  return { manter, palavras: palavras.map((w) => ({ ...w, start: mapa(w.start), end: mapa(w.end) })), dur: +novo.toFixed(2) };
+}
+
 // crop of one framing piece, for a box of aspect ar (w/h), inside a 1920x1080 source (pure)
 export function cropFoco(f, ar, src = { w: 1920, h: 1080 }) {
-  if (f.tipo === 'zoom') return `crop=iw/${f.zoom || 1.25}:ih/${f.zoom || 1.25},`;
+  if (f.tipo === 'zoom') return `crop=iw/${f.zoom || 1.25}:ih/${f.zoom || 1.25}:(iw-ow)/2+${f.tremor ?? 10}*sin(47*t):(ih-oh)/2+${f.tremor ?? 10}*cos(41*t),`;
   if (f.tipo !== 'regiao' || !f.regiao) return '';
   const r = f.regiao, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
   let w = Math.max(r.w, r.h * ar) * 1.12, h = w / ar;
@@ -117,23 +141,38 @@ export function argsCorte(job) {
   const formato = FORMATOS[job.formato] ? job.formato : (job.camPct ? 'camtopo' : 'camtopo');
   const L = layoutFormato(formato, { camPct: job.camPct });
   const semCam = !!FORMATOS[formato].semCamera;
-  const dur = +(job.end - job.start).toFixed(3);
+  const durFonte = +(job.end - job.start).toFixed(3);
   const fps = job.fps || 60;
   const mesmo = semCam || job.camera === job.jogo;
+  // jump cuts (encolherSilencios): only when the picture comes from one file
+  const manter = mesmo && Array.isArray(job.manter) && job.manter.length > 1 ? job.manter : null;
+  const dur = manter ? +manter.reduce((n, [a, b]) => n + b - a, 0).toFixed(3) : durFonte;
   const args = ['-hide_banner', '-loglevel', 'error', '-y',
-    '-ss', String(job.start), '-t', String(dur), '-i', job.jogo];
-  if (!mesmo) args.push('-ss', String(Math.max(0, job.start + (job.offsetCamera || 0))), '-t', String(dur), '-i', job.camera);
+    '-ss', String(job.start), '-t', String(durFonte), '-i', job.jogo];
+  if (!mesmo) args.push('-ss', String(Math.max(0, job.start + (job.offsetCamera || 0))), '-t', String(durFonte), '-i', job.camera);
   // sound: the scene's track 1 (full mix); the Source Record files may have no audio
   const audio = job.audio || job.jogo;
   let n = mesmo ? 1 : 2;
   let audIn = '0:a:0';
-  if (audio !== job.jogo && (semCam || audio !== job.camera)) { args.push('-ss', String(job.start), '-t', String(dur), '-i', audio); audIn = `${n}:a:0`; n++; }
+  if (audio !== job.jogo && (semCam || audio !== job.camera)) { args.push('-ss', String(job.start), '-t', String(durFonte), '-i', audio); audIn = `${n}:a:0`; n++; }
   args.push('-f', 'lavfi', '-t', String(dur), '-i', `color=c=${job.corBarra || '0xFFE600'}:s=${W}x10:r=${fps}`);
   const barIn = `${n}:v`; n++;
   let logoIn = null;
   if (job.logo) { args.push('-loop', '1', '-t', String(dur), '-i', job.logo); logoIn = `${n}:v`; n++; }
-  const camIn = mesmo ? '0:v' : '1:v';
+  // whoosh on each framing jump (job.sons: seconds in the final cut)
+  const sons = (job.sons || []).filter((t) => t >= 0 && t < dur).slice(0, 12);
+  let sfxIn = null;
+  if (sons.length) { args.push('-f', 'lavfi', '-t', '0.45', '-i', 'anoisesrc=d=0.45:c=pink:a=0.6:r=48000'); sfxIn = `${n}:a`; n++; }
   const g = [];
+  let vIn = '0:v';
+  if (manter) {
+    const k = manter.length;
+    g.push(`[0:v]split=${k}${manter.map((_, i) => `[mv${i}]`).join('')}`, `[${audIn}]asplit=${k}${manter.map((_, i) => `[ma${i}]`).join('')}`);
+    manter.forEach(([a, b], i) => g.push(`[mv${i}]trim=start=${a}:end=${b},setpts=PTS-STARTPTS[mw${i}]`, `[ma${i}]atrim=start=${a}:end=${b},asetpts=PTS-STARTPTS[mb${i}]`));
+    g.push(`${manter.map((_, i) => `[mw${i}][mb${i}]`).join('')}concat=n=${k}:v=1:a=1[vm][am]`);
+    vIn = 'vm'; audIn = 'am';
+  }
+  const camIn = mesmo ? vIn : '1:v';
   // game-only formats: each framing piece (job.focos, see focosDe) is cropped on its own and the pieces are joined
   const focos = semCam && Array.isArray(job.focos) && job.focos.some((f) => f.tipo !== 'normal') ? job.focos : null;
   const jogoEnquadrado = (entrada, gameH, saida) => {
@@ -145,16 +184,16 @@ export function argsCorte(job) {
   };
   if (formato === 'jogo') {
     const q = L.quadro;
-    g.push('[0:v]split=2[gb][gf]',
+    g.push(`[${vIn}]split=2[gb][gf]`,
       `[gb]scale=${W}:${H}:force_original_aspect_ratio=increase:flags=bilinear,crop=${W}:${H},boxblur=24:2,eq=brightness=-0.12:saturation=1.2,setsar=1,fps=${fps}[bg]`);
     jogoEnquadrado('gf', q.lado, 'fg');
     g.push(`[bg][fg]overlay=0:${q.y}[st]`);
   } else if (formato === 'jogocheio') {
-    jogoEnquadrado('0:v', H, 'st');
+    jogoEnquadrado(vIn, H, 'st');
   } else {
-    if (job.camera === job.jogo) g.push('[0:v]split=2[src_c][src_g]');
+    if (job.camera === job.jogo) g.push(`[${vIn}]split=2[src_c][src_g]`);
     g.push(`[${job.camera === job.jogo ? 'src_c' : camIn}]${filtroCamera({ regiao: job.regiaoCamera, camH: L.camH })},fps=${fps}[cam]`,
-      `[${job.camera === job.jogo ? 'src_g' : '0:v'}]${filtroJogo({ gameH: L.gameH, zoom: job.zoom })},fps=${fps}[game]`,
+      `[${job.camera === job.jogo ? 'src_g' : vIn}]${filtroJogo({ gameH: L.gameH, zoom: job.zoom })},fps=${fps}[game]`,
       '[cam][game]vstack=inputs=2[st]');
   }
   let ultimo = 'st';
@@ -165,7 +204,12 @@ export function argsCorte(job) {
   }
   g.push(`[${ultimo}][${barIn}]overlay=x='-W+W*t/${dur}':y=H-10:eval=frame:shortest=1[pb]`,
     `[pb]ass='${fp(job.ass)}':fontsdir='${fp(FONTS)}',format=yuv420p[v]`,
-    `[${audIn}]afade=t=in:d=0.15,afade=t=out:st=${Math.max(0, dur - 0.3).toFixed(2)}:d=0.3,loudnorm=I=-14:TP=-1.5:LRA=11,aformat=sample_rates=48000:channel_layouts=stereo[a]`);
+    `[${audIn}]afade=t=in:d=0.15,afade=t=out:st=${Math.max(0, dur - 0.3).toFixed(2)}:d=0.3,loudnorm=I=-14:TP=-1.5:LRA=11,aformat=sample_rates=48000:channel_layouts=stereo[${sfxIn ? 'a0' : 'a'}]`);
+  if (sfxIn) {
+    g.push(`[${sfxIn}]highpass=f=500,lowpass=f=5000,afade=t=in:d=0.18,afade=t=out:st=0.18:d=0.27,volume=0.5,aformat=sample_rates=48000:channel_layouts=stereo,asplit=${sons.length}${sons.map((_, i) => `[w${i}]`).join('')}`);
+    sons.forEach((t, i) => g.push(`[w${i}]adelay=${Math.round(Math.max(0, t - 0.2) * 1000)}|${Math.round(Math.max(0, t - 0.2) * 1000)}[x${i}]`));
+    g.push(`[a0]${sons.map((_, i) => `[x${i}]`).join('')}amix=inputs=${sons.length + 1}:duration=first:dropout_transition=0:normalize=0[a]`);
+  }
   args.push('-filter_complex', g.join(';'), '-map', '[v]', '-map', '[a]', ...encoderArgs(job.encoder), '-r', String(fps),
     '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', job.out);
   return args;
@@ -187,15 +231,20 @@ export async function melhorEncoder() {
 // Writes the ASS next to the output and renders one format.
 // marca: { arroba, chamada, logo } of the cut's channel line (see marcaDaLinha in src/marca.js)
 // ganchoSeg: how long the hook stays on top (default 2.5 s; Infinity keeps it the whole cut as a title)
-export async function renderCorte({ jogo, camera, audio, start, end, palavras = [], gancho = '', ganchoSeg, out, formato, marca = null, config = {}, focos }) {
+export async function renderCorte({ jogo, camera, audio, start, end, palavras = [], gancho = '', ganchoSeg, selo = '', out, formato, marca = null, config = {}, focos }) {
   const fmt = formato || config.formatoPadrao || 'camtopo';
   const L = layoutFormato(FORMATOS[fmt] ? fmt : 'camtopo', { camPct: fmt === 'camtopo' ? config.camPct : undefined });
   const ass = out.replace(/\.mp4$/, '.ass');
-  const dur = end - start;
-  fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, hookSec: Math.min(ganchoSeg ?? config.estilo?.ganchoSeg ?? 2.5, dur), marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null }));
+  // jump cuts first (they change the timeline), then framing on the new timeline
+  const enx = config.cortarSilencio === false ? { manter: [[0, end - start]], palavras, dur: end - start } : encolherSilencios(palavras, end - start, config.cortarSilencio || {});
+  palavras = enx.palavras;
+  const dur = enx.dur;
+  focos = focos ?? (config.enquadramento === false || !FORMATOS[fmt]?.semCamera ? null : focosDe(palavras, dur, config.enquadramento || {}));
+  const sons = config.efeitos?.whoosh === false || !focos ? [] : focos.filter((f, i) => i > 0 && f.tipo !== 'normal').map((f) => f.de);
+  fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, selo, hookSec: Math.min(ganchoSeg ?? config.estilo?.ganchoSeg ?? 2.5, dur), marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null }));
   const logo = marca?.logo && fs.existsSync(marca.logo) ? marca.logo : null;
   const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo,
-    focos: focos ?? (config.enquadramento === false ? null : focosDe(palavras, dur, config.enquadramento || {})), encoder: config.encoder || await melhorEncoder() });
+    focos, manter: enx.manter, sons, encoder: config.encoder || await melhorEncoder() });
   await run('ffmpeg', args, { timeoutMs: 30 * 60000 });
   return out;
 }

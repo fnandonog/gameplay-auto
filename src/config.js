@@ -27,10 +27,12 @@ export const PADRAO = {
   // cut formats (src/corte.js FORMATOS): meio (camera half / game half), camtopo (camera 40%), jogo (game square over the
   // blurred game), jogocheio (game fills the screen). Every cut is rendered in each one; formatoPadrao picks the one that
   // goes to posting ('auto': meio when there is speech, jogo when it is a quiet play).
-  formatos: ['meio', 'jogo'],
+  formatos: ['meio', 'jogo'], // without a camera use ["jogo"] and formatoPadrao "jogo"
   formatoPadrao: 'auto',
   // captions: modo 'karaoke' (short line, word turns yellow as spoken) or 'palavra' (one big word at a time, with a pop)
-  estilo: { font: 'Bricolage Grotesque', primary: '#FFE600', base: '#FFFFFF', outline: '#000000', modo: 'karaoke' },
+  estilo: { font: 'Bricolage Grotesque', primary: '#FFE600', base: '#FFFFFF', outline: '#000000', modo: 'karaoke', ganchoSeg: 1e9 }, // ganchoSeg: the hook stays as a title the whole cut
+  cortarSilencio: {}, // jump cuts on pauses in the speech (src/corte.js encolherSilencios); false turns it off
+  efeitos: { whoosh: true },
   // brand on the video: the @ of the cut's line (src/canais.js), the symbol in the corner and "SEGUE @..." at the end
   marca: { arroba: '', chamada: 'SEGUE', mostrarLogo: true, mostrarArroba: true },
   intro: { noLongo: true, nosCortes: false, duracao: 1.2 },
@@ -50,6 +52,9 @@ export const PADRAO = {
   aoVivo: { ligado: false, cortesPorBloco: 2, whisper: {} },
   // automatic framing in the game-only formats (src/corte.js focosDe): false turns it off; { reacoes: false } keeps only the minimap
   enquadramento: {},
+  // posts per account per day, at most (src/canais.js LIMITES_SEGUROS: tiktok 4, instagram 3, youtube 4, facebook 3)
+  limites: {},
+  temCamera: false, // false: only the game-only formats (no webcam yet)
   postarAutomatico: false, // true: cuts with nota >= notaMinima are posted without approval
   notaMinima: 8,
   portaPainel: 4321,

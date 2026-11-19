@@ -91,3 +91,12 @@ test('ao vivo: bloco dá 2 cortes sem vídeo longo; replay dá 1', () => {
   assert.equal(configDoArquivo('Replay 2026-11-19 20-10-00.mp4', base).cortesPorSessao, 1);
   assert.equal(configDoArquivo('x.mp4', { ...base, aoVivo: { ligado: false } }).cortesPorSessao, 6);
 });
+
+import { numerarSeries } from '../src/series.js';
+test('séries: cada série tem sua numeração, o melhor corte pega o número menor', () => {
+  const cs = [{ serie: 'Dicas de GTA 6', nota: 8, titulo: 'B', descricao: 'b?' }, { serie: 'Dicas de GTA 6', nota: 9, titulo: 'A', descricao: 'a?' }, { serie: '', titulo: 'C' }];
+  const n = numerarSeries(cs, { 'dicas de gta 6': 2 });
+  assert.equal(n['dicas de gta 6'], 4);
+  assert.equal(cs[1].parte, 3); assert.equal(cs[0].parte, 4); assert.equal(cs[2].parte, undefined);
+  assert.equal(cs[1].titulo, 'A (Parte 3)');
+});

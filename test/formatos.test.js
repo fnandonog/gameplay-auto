@@ -128,3 +128,13 @@ test('enquadramento: minimapa quando fala dele, zoom rápido na reação', () =>
   assert.match(fc, /concat=n=5:v=1:a=0\[fg\]/);
   assert.match(fc, /trim=start=5.8:end=9.2,setpts=PTS-STARTPTS,crop=\d+:\d+:\d+:\d+,/);
 });
+
+import { encolherSilencios } from '../src/corte.js';
+test('silêncio longo dentro do corte vira corte seco; palavras acompanham', () => {
+  const p = [0.2, 0.6, 1.0, 1.4, 5.0, 5.4].map((t, i) => ({ text: `p${i}`, start: t, end: t + 0.3 }));
+  const r = encolherSilencios(p, 8);
+  assert.equal(r.manter.length, 2);
+  assert.ok(r.dur < 8 - 2.5);
+  assert.ok(Math.abs(r.palavras[4].start - (r.palavras[3].end + 0.45)) < 0.01);
+  assert.equal(encolherSilencios(p.slice(0, 3), 8).manter.length, 1); // pouca fala: fica inteiro
+});

@@ -60,7 +60,7 @@ um vídeo ali e ele vai para a pasta do OBS), **Cortes**, **Vídeo longo**, **Ro
 `~/Gameplay/roteiros`), **Prontos p/ postar** (o que foi entregue para a sua skill; ela grava `postado.json` com os links
 quando posta) e **Redes** (seguidores e views de cada conta, lidos de `~/Gameplay/metricas.json`, que a sua skill de redes
 escreve: `{ "atualizadoEm", "contas": [{ "rede", "linha", "nome", "arroba", "seguidores", "views7d", "curtidas7d", "posts" }], "historico": [{ "dia", "seguidores" }] }`).
-A aprovação dos cortes fica em `/cortes`. Uma gravação que já tem cortes não é processada de novo.
+A aba **Checklist** mostra o que ainda falta para ligar as redes (o que é com você e o que é da plataforma) e quantos posts por dia dá para fazer com segurança. A aprovação dos cortes fica em `/cortes`. Uma gravação que já tem cortes não é processada de novo.
 
 ## Aprovar no celular
 

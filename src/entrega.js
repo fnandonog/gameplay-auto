@@ -5,15 +5,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { listarSessoes } from './painel.js';
-import { linhasDe, linhaDoCorte, distribuirLinhas } from './canais.js';
-import { autoAprovar, textos } from './postagem.js';
+import { linhasDe, linhaDoCorte, distribuirLinhas, horariosSeguros } from './canais.js';
+import { autoAprovar, textos, proximoHorario } from './postagem.js';
 import { registrar } from './atividade.js';
 import { lerPausa } from './qualidade.js';
 
 const slug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
 
 // what goes in post.json (pure)
-export function postDoCorte(c, { sessao, linha, duracao } = {}) {
+// slots already given to delivered posts of a line (their agendarPara), so the next cut takes the next free one
+function slotsDaLinha(base, linhaId) {
+  const dir = path.join(base, slug(linhaId || 'geral'));
+  let ds = []; try { ds = fs.readdirSync(dir); } catch {}
+  return ds.map((d) => { try { return JSON.parse(fs.readFileSync(path.join(dir, d, 'post.json'), 'utf8')).agendarPara; } catch { return null; } }).filter(Boolean);
+}
+
+export function postDoCorte(c, { sessao, linha, duracao, agendarPara = null } = {}) {
   const t = textos(c);
   return {
     titulo: c.titulo || '', descricao: c.descricao || '', hashtags: c.hashtags || [], gancho: c.gancho || '',
@@ -22,6 +29,8 @@ export function postDoCorte(c, { sessao, linha, duracao } = {}) {
     arroba: c.arroba || linha?.arroba || '', formato: c.formato || null, outrosFormatos: Object.keys(c.variantes || {}).filter((f) => f !== c.formato),
     nota: c.nota ?? null, duracao: duracao ?? (c.fim != null && c.inicio != null ? +(c.fim - c.inicio).toFixed(2) : null),
     credito: c.credito || null, sessao, criadoEm: new Date().toISOString(),
+    // when the posting skill should publish it: the line's next free peak hour, within the safe daily limit
+    agendarPara,
   };
 }
 
@@ -49,11 +58,13 @@ export function entregarAprovados(config, { log = console.log } = {}) {
         fs.mkdirSync(destino, { recursive: true });
         fs.copyFileSync(path.join(config.pastaSaida, pasta, c.arquivo), path.join(destino, 'video.mp4'));
         if (c.capa && fs.existsSync(path.join(config.pastaSaida, pasta, c.capa))) fs.copyFileSync(path.join(config.pastaSaida, pasta, c.capa), path.join(destino, 'capa.jpg'));
-        const post = postDoCorte(c, { sessao: dados.sessao || pasta, linha });
+        let agendarPara = null;
+        try { agendarPara = proximoHorario(Date.now(), horariosSeguros(linha, config.limites), slotsDaLinha(base, linha.id)); } catch {}
+        const post = postDoCorte(c, { sessao: dados.sessao || pasta, linha, agendarPara });
         fs.writeFileSync(path.join(destino, 'legenda.txt'), `${post.legendas.tiktok}\n`);
         // post.json last: the skill may take a folder as ready once it exists
         fs.writeFileSync(path.join(destino, 'post.json'), JSON.stringify(post, null, 2));
-        c.status = 'entregue'; c.entregueEm = post.criadoEm; c.pastaEntrega = destino; c.linha = linha.id; delete c.erroEntrega;
+        c.status = 'entregue'; c.entregueEm = post.criadoEm; c.agendadoPara = agendarPara; c.pastaEntrega = destino; c.linha = linha.id; delete c.erroEntrega;
         registrar(config.pastaSaida, 'agendador', 'trabalhando', `Entregue "${c.titulo}" para ${linha.nome}`);
         log(`Entregue: ${c.titulo} → ${destino}`); n++;
       } catch (e) { c.erroEntrega = e.message; log(`Não entregou "${c.titulo}": ${e.message}`); }

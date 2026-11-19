@@ -15,7 +15,7 @@ const SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['id', 'usar', 'inicio', 'fim', 'nota', 'gancho', 'titulo', 'descricao', 'hashtags'],
+        required: ['id', 'usar', 'inicio', 'fim', 'nota', 'gancho', 'titulo', 'descricao', 'hashtags', 'serie'],
         properties: {
           id: { type: 'integer' },
           usar: { type: 'boolean' },
@@ -26,6 +26,7 @@ const SCHEMA = {
           titulo: { type: 'string' },
           descricao: { type: 'string' },
           hashtags: { type: 'array', items: { type: 'string' } },
+          serie: { type: 'string' },
         },
       },
     },
@@ -39,9 +40,12 @@ Para cada trecho decida:
 - inicio e fim em segundos da sessão, dentro da janela recebida, com 20 a 60 s. Comece o mais perto possível da ação,
   sem contexto morto, e termine logo depois da reação (risada, grito, frase de impacto). Nunca corte no meio de uma frase.
 - nota de 0 a 10: o quanto esse corte segura quem está rolando o feed.
-- gancho: 2 a 6 palavras em português que aparecem escritas nos 2 primeiros segundos e fazem a pessoa ficar
-  (curiosidade ou exagero que o vídeo cumpre; nada de mentira, que derruba a retenção).
-- titulo: até 70 caracteres, chamativo, pode ter MAIÚSCULAS em uma ou duas palavras e no máximo 1 emoji.
+- gancho: o título que fica escrito em cima do vídeo inteiro, 4 a 9 palavras em português. Funciona melhor como
+  curiosidade ("DÁ ATÉ PRA DESENTUPIR PIA NO GTA 6") ou pergunta ("O JASON TEM O PODER DO FRANKLIN?"), com o nome do
+  jogo quando couber. Tem que ser cumprido pelo vídeo; nada de mentira, que derruba a retenção.
+- titulo: até 70 caracteres para a legenda do post, chamativo, pode ter MAIÚSCULAS em uma ou duas palavras e no máximo 1 emoji.
+- serie: se o corte cabe numa série que dá para continuar em outros vídeos, o nome curto dela
+  ("Coisas que dá pra fazer no GTA 6", "Dicas de GTA 6", "Detalhes absurdos do GTA 6"); senão "".
 - descricao: 1 ou 2 frases e uma pergunta para puxar comentário.
 - hashtags: 3 a 5, do jogo e do formato (sem #, minúsculas).
 Responda só pelo esquema JSON.`;
@@ -64,7 +68,7 @@ export function aplicarDecisoes(cands, cortes) {
     let start = Math.max(c.start, Math.min(d.inicio, c.end - 15));
     let end = Math.min(c.end, Math.max(d.fim, start + 15));
     if (end - start > 75) end = start + 75;
-    out.push({ ...c, start, end, nota: d.nota, gancho: d.gancho, titulo: d.titulo, descricao: d.descricao, hashtags: d.hashtags });
+    out.push({ ...c, start, end, nota: d.nota, gancho: d.gancho, titulo: d.titulo, descricao: d.descricao, hashtags: d.hashtags, serie: d.serie || '' });
   }
   return out;
 }

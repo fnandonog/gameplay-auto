@@ -56,3 +56,15 @@ prontos/<linha>/<sessão>_<corte>/
 O `post.json` é escrito por último: se ele existe, a pasta está completa. O corte passa a "entregue" no painel. Com `postarAutomatico`, o filtro de qualidade aprova sozinho antes da entrega. O `gameplay observar` entrega a cada 5 minutos, e `gameplay postar` entrega na hora.
 
 Para a postagem ser feita aqui pelo Upload-Post, use `postagem: "upload-post"`.
+
+## Dinamismo (sem câmera)
+
+- **Título fixo**: o gancho fica em cima o vídeo todo (`estilo.ganchoSeg`; use `2.5` para só os primeiros segundos). A IA escreve como curiosidade ou pergunta ("DÁ ATÉ PRA...", "O JASON TEM O PODER DO FRANKLIN?").
+- **Corte seco nas pausas**: pausa na fala maior que 1,6 s vira 0,45 s (`cortarSilencio: { maxGap, fica }`; `false` desliga). Corte sem fala fica inteiro.
+- **Zoom com tremida e whoosh**: nas reações o jogo dá um zoom de 0,9 s com uma tremida leve, e cada mudança de enquadramento toca um whoosh (`efeitos.whoosh: false` desliga). Minimapa: veja `docs/ao-vivo.md`.
+- **Séries "Parte N"**: a IA diz se o corte é de uma série ("Coisas que dá pra fazer no GTA 6"); a plataforma numera (contadores em `<pastaSaida>/.series.json`), escreve "(Parte N)" no título e um selo amarelo "PARTE N" em cima do vídeo.
+- **Sem câmera**: `temCamera: false` (padrão até ligar a webcam) faz só os formatos de jogo.
+
+## Volume seguro
+
+Cada conta posta no máximo `limites` por dia (padrão: TikTok 4, Instagram 3, YouTube 4, Facebook 3), nos horários de pico da linha. O `post.json` leva `agendarPara` com o horário que a sua skill deve publicar. Acima disso as redes tratam como spam (alcance zero, "conteúdo não original", bloqueio de postagem). Para postar mais, crie mais contas (linhas), sem repetir o mesmo corte em duas contas.

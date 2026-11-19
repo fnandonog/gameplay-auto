@@ -42,3 +42,17 @@ export function distribuirLinhas(cortes, linhas) {
 }
 
 export const linhaDoCorte = (c, linhas) => linhas.find((l) => l.id === c.linha) || linhas.find((l) => !l.terceiros) || linhas[0];
+
+// Safe volume per account per day. Above this TikTok, Instagram and YouTube treat the account as spam (reach drops to
+// zero, "unoriginal content" flags, posting blocks). More volume = more accounts (lines), never more posts per account.
+export const LIMITES_SEGUROS = { tiktok: 4, instagram: 3, youtube: 4, facebook: 3 };
+
+// the peak hours a line really uses: no more per day than its strictest network allows (pure)
+export function horariosSeguros(linha = {}, limites = {}) {
+  const lim = { ...LIMITES_SEGUROS, ...limites };
+  const max = Math.min(...(linha.redes || []).map((r) => lim[r] ?? 3), 24);
+  return [...(linha.horarios || ['12:00', '18:30', '21:00'])].sort().slice(0, Math.max(1, max));
+}
+
+// posts per day the whole operation can do safely (pure)
+export const capacidadeDiaria = (linhas, limites = {}) => linhas.reduce((n, l) => n + horariosSeguros(l, limites).length, 0);

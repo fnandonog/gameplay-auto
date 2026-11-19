@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { listarSessoes } from './painel.js';
-import { linhasDe, linhaDoCorte, distribuirLinhas } from './canais.js';
+import { linhasDe, linhaDoCorte, distribuirLinhas, horariosSeguros } from './canais.js';
 import { registrar } from './atividade.js';
 import { motivosRecusa, lerPausa, pausar, erroGrave, PADRAO_FILTRO } from './qualidade.js';
 
@@ -127,7 +127,7 @@ export async function postarAprovados(config, { log = console.log, agora = Date.
     for (const c of [...dados.cortes].filter((x) => x.status === 'aprovado').sort((a, b) => b.nota - a.nota)) {
       if (lerPausa(config.pastaSaida)) break;
       const linha = linhaDoCorte(c, linhas);
-      const quando = proximoHorario(agora, linha.horarios || up.horarios || ['12:00', '18:30', '21:00'], livres(linha.perfil));
+      const quando = proximoHorario(agora, horariosSeguros({ ...linha, horarios: linha.horarios || up.horarios }, config.limites), livres(linha.perfil));
       try {
         registrar(pasta0, 'agendador', 'trabalhando', `Agendando "${c.titulo}" em ${linha.nome}`);
         c.postId = await envio({ video: path.join(pasta0, pasta, c.arquivo), campos: camposPost(c, { perfil: linha.perfil, redes: linha.redes, quando, facebookPage: linha.facebookPage }), apiKey, chave: `${pasta}/${c.arquivo}` });

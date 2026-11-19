@@ -74,11 +74,12 @@
     <button data-a="roteiros">Roteiros<span class="n" data-n="roteiros"></span></button>
     <button data-a="prontos">Prontos p/ postar<span class="n" data-n="prontos"></span></button>
     <button data-a="redes">Redes</button>
+    <button data-a="checklist">Checklist<span class="n" data-n="checklist"></span></button>
   </nav>
 </header>
 <main id="tela"><p class="vazio">Carregando...</p></main>
 <script>
-let D = null, aba = (location.hash || '#inicio').slice(1);
+let D = null, P = null, aba = (location.hash || '#inicio').slice(1);
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${encodeURIComponent(a)}`;
@@ -92,12 +93,13 @@ const NOME_REDE = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram'
 
 async function carregar() {
   try { D = await (await fetch('/api/central')).json(); } catch { D = null; }
+  try { P = await (await fetch('/api/prontidao')).json(); } catch { P = null; }
   desenhar();
 }
 
 function contadores() {
   const r = D.resumo;
-  const n = { brutos: r.brutos, cortes: r.aguardando ? `${r.aguardando} p/ aprovar` : r.cortes, longos: r.longos, roteiros: r.roteiros, prontos: r.prontos };
+  const n = { checklist: P?.faltam ? `faltam ${P.faltam}` : '', brutos: r.brutos, cortes: r.aguardando ? `${r.aguardando} p/ aprovar` : r.cortes, longos: r.longos, roteiros: r.roteiros, prontos: r.prontos };
   document.querySelectorAll('[data-n]').forEach((el) => { const v = n[el.dataset.n]; el.textContent = v ? v : ''; });
 }
 
@@ -106,7 +108,8 @@ const TELAS = {
     const r = D.resumo;
     const k = (n, t, a, forte) => `<div class="kpi${forte ? ' forte' : ''}" data-ir="${a}"><b>${n}</b><span>${t}</span></div>`;
     const ultimos = D.sessoes.flatMap((s) => s.cortes.map((c) => ({ ...c, pasta: s.pasta }))).slice(0, 6);
-    return `<div class="kpis">
+    const aviso = P?.faltam ? `<p class="vazio" style="text-align:left;padding:14px 16px;margin:0 0 14px;border-color:var(--hi)">Faltam <b style="color:var(--hi)">${P.faltam}</b> coisa(s) para ligar as redes. <a href="#checklist" style="color:var(--hi);font-weight:600">Ver o checklist →</a></p>` : '';
+    return `${aviso}<div class="kpis">
       ${k(r.brutosNaFila, 'vídeos brutos na fila', 'brutos')}
       ${k(r.aguardando, 'cortes esperando você', 'cortes', r.aguardando > 0)}
       ${k(r.longos, 'vídeos longos', 'longos')}
@@ -145,8 +148,14 @@ const TELAS = {
   },
   prontos() {
     return `<p class="dica">O que foi aprovado e entregue para a sua skill de postagem, em <code>${esc(D.pastas.entrega)}</code>. Quando a skill posta, ela grava <code>postado.json</code> na pasta e o corte vira "postado" aqui.</p>
-    ${D.prontos.length ? `<div class="lista">${D.prontos.map((p) => `<div class="linha"><div class="nome">${esc(p.titulo)}<div class="sub">${esc(p.linha)} · ${esc((p.redes || []).map((r) => NOME_REDE[r] || r).join(', '))} · ${quando(p.postadoEm || p.criadoEm)}</div></div>
+    ${D.prontos.length ? `<div class="lista">${D.prontos.map((p) => `<div class="linha"><div class="nome">${esc(p.titulo)}<div class="sub">${esc(p.linha)} · ${esc((p.redes || []).map((r) => NOME_REDE[r] || r).join(', '))} · ${p.postadoEm ? 'postado ' + quando(p.postadoEm) : p.agendarPara ? 'vai ao ar ' + quando(p.agendarPara) : quando(p.criadoEm)}</div></div>
       ${Object.entries(p.links || {}).map(([r, u]) => /^https:\/\//.test(u) ? `<a class="tag cy" href="${esc(u)}" target="_blank" rel="noopener">${esc(NOME_REDE[r] || r)}</a>` : '').join('')}${tag(p.status)}</div>`).join('')}</div>` : '<p class="vazio">Nada entregue ainda. Aprove um corte e ele vem para cá.</p>'}`;
+  },
+  checklist() {
+    if (!P) return '<p class="vazio">Carregando...</p>';
+    const item = (i) => `<div class="linha"><span class="tag ${i.ok ? 'ok' : 'no'}">${i.ok ? 'pronto' : 'falta'}</span><div class="nome">${esc(i.titulo)}${i.ok ? '' : `<div class="sub">${esc(i.comoFazer)}</div>`}</div><span class="tag">${i.dono === 'voce' ? 'com você' : 'plataforma'}</span></div>`;
+    return `<p class="dica">${P.faltam ? `Faltam ${P.faltam} item(ns).` : 'Tudo pronto.'} Com as contas de hoje, o limite seguro é de <b>${P.capacidadeDia}</b> post(s) por dia. Para postar mais, crie mais contas, nunca mais posts por conta.</p>
+    <div class="lista">${[...P.itens].sort((a, b) => a.ok - b.ok).map(item).join('')}</div>`;
   },
   redes() {
     const R = D.redes;

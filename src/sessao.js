@@ -13,6 +13,7 @@ import { comIntro } from './intro.js';
 import { renderLongo } from './longo.js';
 import { registrar } from './atividade.js';
 import { linhasDe, distribuirLinhas } from './canais.js';
+import { aplicarSeries } from './series.js';
 
 const VIDEO = /\.(mp4|mkv|mov)$/i;
 const tem = (nome, lista) => lista.some((p) => nome.toLowerCase().includes(p));
@@ -42,8 +43,8 @@ export function ehArquivoExtra(nome, todos) {
 
 // which formats each cut is rendered in (config.formatos), only the known ones, never empty
 export function formatosDoCorte(config = {}) {
-  const lista = (Array.isArray(config.formatos) ? config.formatos : [config.formatos || 'meio', 'jogo']).filter((f) => FORMATOS[f]);
-  return lista.length ? [...new Set(lista)] : ['meio'];
+  const lista = (Array.isArray(config.formatos) ? config.formatos : [config.formatos || 'meio', 'jogo']).filter((f) => FORMATOS[f] && (config.temCamera !== false || FORMATOS[f].semCamera));
+  return lista.length ? [...new Set(lista)] : [config.temCamera === false ? 'jogo' : 'meio'];
 }
 
 // the format that goes first (and to posting). 'auto': with speech the camera matters (meio a meio); a quiet play is
@@ -100,6 +101,7 @@ export async function processarSessao(principal, config, { log = console.log } =
   const decididos = (await decidirCortes(cands, words, { jogo: config.jogo, canal: config.canal, semIa: config.semIa }))
     .sort((a, b) => b.nota - a.nota).slice(0, config.cortesPorSessao);
 
+  aplicarSeries(config.pastaSaida, decididos);
   at('roteirista', 'pronto', `${decididos.length} cortes escolhidos`);
   // 4. render: each cut goes to its line first, so the video carries that line's @ and colors
   const linhas = linhasDe(config);
@@ -118,7 +120,7 @@ export async function processarSessao(principal, config, { log = console.log } =
     for (const fmt of formatos) {
       at('editor', 'trabalhando', `Corte ${i + 1}/${decididos.length} (${FORMATOS[fmt].nome}): ${c.titulo}`);
       const out = path.join(pasta, `${nome}-${fmt}.mp4`);
-      await renderCorte({ jogo: arq.jogo, camera: arq.camera, audio: arq.cena, start: c.start, end: c.end, palavras, gancho: c.gancho, out, formato: fmt, marca, config });
+      await renderCorte({ jogo: arq.jogo, camera: arq.camera, audio: arq.cena, start: c.start, end: c.end, palavras, gancho: c.gancho, selo: c.parte ? `PARTE ${c.parte}` : '', out, formato: fmt, marca, config });
       if (config.intro?.nosCortes) await comIntro(out, { orientacao: 'vertical', marca, config, log });
       variantes[fmt] = path.basename(out);
       // one cover per format, so switching the format on the panel switches the cover too
@@ -126,7 +128,7 @@ export async function processarSessao(principal, config, { log = console.log } =
     }
     const arquivo = variantes[principal];
     const jpg = fs.existsSync(path.join(pasta, arquivo.replace(/\.mp4$/, '.jpg'))) ? arquivo.replace(/\.mp4$/, '.jpg') : null;
-    cortes.push({ arquivo, capa: jpg, formato: principal, variantes, linha: linha.id, arroba: marca?.arroba || '', inicio: +c.start.toFixed(2), fim: +c.end.toFixed(2), nota: c.nota, motivo: c.motivo, gancho: c.gancho, titulo: c.titulo, descricao: c.descricao, hashtags: c.hashtags, status: 'aguardando' });
+    cortes.push({ arquivo, capa: jpg, formato: principal, variantes, linha: linha.id, arroba: marca?.arroba || '', inicio: +c.start.toFixed(2), fim: +c.end.toFixed(2), nota: c.nota, motivo: c.motivo, gancho: c.gancho, titulo: c.titulo, descricao: c.descricao, hashtags: c.hashtags, serie: c.serie || '', parte: c.parte || null, status: 'aguardando' });
   }
 
   at('editor', 'pronto', `${cortes.length} cortes montados`);

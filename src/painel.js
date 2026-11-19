@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { lerAtividade, quadroEscritorio } from './atividade.js';
 import { linhasDe } from './canais.js';
 import { lerPausa, retomar } from './qualidade.js';
-import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio } from './central.js';
+import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGINA = path.join(ROOT, 'public', 'painel.html');
@@ -88,6 +88,7 @@ export function criarPainel(config) {
         const dados = { brutos: listarBrutos(config), sessoes, roteiros: listarRoteiros(config), prontos: listarProntos(config), redes: lerRedes(config) };
         return json(res, 200, { ...dados, resumo: resumo(dados), pastas: { entrada: config.pastaEntrada, saida: config.pastaSaida, entrega: config.pastaEntrega, roteiros: config.pastaRoteiros, metricas: config.arquivoMetricas } });
       }
+      if (req.method === 'GET' && url.pathname === '/api/prontidao') { prontidao(config).then((r) => json(res, 200, r), (e) => json(res, 500, { erro: e.message })); return; }
       if (req.method === 'POST' && url.pathname === '/api/enviar') {
         receberEnvio(req, config, url.searchParams.get('nome')).then((r) => json(res, 200, r), (e) => json(res, 400, { erro: e.message }));
         return;

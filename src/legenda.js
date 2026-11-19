@@ -47,7 +47,7 @@ export function wrap(text, max = 20) {
 // hook: text shown big at the top for hookSec seconds.
 // marca: { arroba: '@fnando', arrobaPos: { x, y }, chamada: 'SEGUE', fimSec: 2, dur } — the handle stays small the whole
 //   video; in the last fimSec seconds a big "SEGUE @fnando" card pops in the middle.
-export function assOf(cues, { layout, style = {}, hook = '', hookSec = 2.5, marca = null } = {}) {
+export function assOf(cues, { layout, style = {}, hook = '', hookSec = 2.5, marca = null, selo = '' } = {}) {
   const { W, H, seam } = layout;
   const font = style.font || 'Bricolage Grotesque';
   const hi = style.primary || '#FFE600', base = style.base || '#FFFFFF', ink = style.outline || '#000000';
@@ -61,6 +61,7 @@ export function assOf(cues, { layout, style = {}, hook = '', hookSec = 2.5, marc
     `Style: Palavra,${font},118,${assColor(base)},${assColor(base)},${assColor(ink)},${assColor(ink, 0x50)},-1,0,0,0,100,100,0,0,1,10,4,5,60,60,0,1`,
     `Style: Gancho,${font},88,${assColor(base)},${assColor(base)},${assColor(ink)},${assColor(ink, 0x40)},-1,0,0,0,100,100,0,0,3,14,0,8,60,60,${layout.ganchoY ?? 90},1`,
     `Style: Arroba,${font},40,${assColor(base, 0x30)},${assColor(base)},${assColor(ink, 0x40)},${assColor(ink, 0x80)},-1,0,0,0,100,100,0,0,1,3,0,6,30,30,0,1`,
+    `Style: Selo,${font},44,${assColor(ink)},${assColor(ink)},${assColor(hi)},${assColor(hi)},-1,0,0,0,100,100,2,0,3,10,0,8,60,60,${Math.max(10, (layout.ganchoY ?? 90) - 74)},1`,
     `Style: Fim,${font},96,${assColor(hi)},${assColor(base)},${assColor(ink)},${assColor(ink, 0x30)},-1,0,0,0,100,100,0,0,3,18,0,5,60,60,0,1`,
     '', '[Events]', 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
   ];
@@ -84,6 +85,7 @@ export function assOf(cues, { layout, style = {}, hook = '', hookSec = 2.5, marc
       return `Dialogue: 1,${assTime(c.start)},${assTime(c.end)},Legenda,,0,0,0,,{\\pos(${W / 2},${seam})}${body}`;
     });
   }
+  if (selo) lines.unshift(`Dialogue: 3,${assTime(0)},${assTime(hook ? hookSec : 2.5)},Selo,,0,0,0,,${assText(selo)}`);
   if (hook) lines.unshift(`Dialogue: 2,${assTime(0)},${assTime(hookSec)},Gancho,,0,0,0,,{\\fad(0,250)}${assText(wrap(hook))}`);
   if (marca?.arroba && marca.dur) {
     const fimSec = marca.fimSec ?? 2;
