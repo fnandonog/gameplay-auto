@@ -37,6 +37,9 @@ export const PADRAO = {
   // 'skill': approved cuts go to pastaEntrega for the owner's posting skill; 'upload-post': this platform schedules them
   postagem: 'skill',
   pastaEntrega: path.join(HOME, 'Gameplay', 'prontos'),
+  // the central (src/central.js): scripts and ideas, and the numbers of the accounts (written by the posting skill)
+  pastaRoteiros: path.join(HOME, 'Gameplay', 'roteiros'),
+  arquivoMetricas: path.join(HOME, 'Gameplay', 'metricas.json'),
   corBarra: '0xFFE600',
   semIa: false,
   // posting (src/postagem.js): UPLOAD_POST_API_KEY in the environment + the profile name here

@@ -52,10 +52,20 @@ O Claude lê a transcrição de cada candidato, acerta início e fim, dá nota, 
 
 Testes: `npm test`.
 
+## Central
+
+`npm run observar` (ou `npm run painel`) abre a central em `http://localhost:4321` (no celular, o endereço que aparece no terminal).
+Abas: **Início** (números de tudo), **Vídeos brutos** (o que está na pasta do OBS e o que já virou corte; dá para arrastar
+um vídeo ali e ele vai para a pasta do OBS), **Cortes**, **Vídeo longo**, **Roteiros** (arquivos `.md` ou `.json` em
+`~/Gameplay/roteiros`), **Prontos p/ postar** (o que foi entregue para a sua skill; ela grava `postado.json` com os links
+quando posta) e **Redes** (seguidores e views de cada conta, lidos de `~/Gameplay/metricas.json`, que a sua skill de redes
+escreve: `{ "atualizadoEm", "contas": [{ "rede", "linha", "nome", "arroba", "seguidores", "views7d", "curtidas7d", "posts" }], "historico": [{ "dia", "seguidores" }] }`).
+A aprovação dos cortes fica em `/cortes`. Uma gravação que já tem cortes não é processada de novo.
+
 ## Aprovar no celular
 
 `npm run observar` também abre o painel. No celular, no mesmo Wi-Fi, abra o endereço que aparece no terminal
-(ex.: `http://192.168.0.10:4321`). Cada corte tem o vídeo, título, descrição e hashtags editáveis e os botões
+(ex.: `http://192.168.0.10:4321/cortes`). Cada corte tem o vídeo, título, descrição e hashtags editáveis e os botões
 Aprovar e Descartar. Para ninguém mais da rede abrir, ponha `"senhaPainel": "..."` no `config.json` e abra uma vez com `/?senha=...`.
 
 ## Postar

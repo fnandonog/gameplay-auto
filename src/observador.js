@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { processarSessao, ehArquivoExtra, arquivosDaSessao } from './sessao.js';
 import { registrar } from './atividade.js';
+import { pastaDaGravacao } from './central.js';
 
 const VIDEO = /\.(mp4|mkv|mov)$/i;
 
@@ -36,6 +37,12 @@ export function observar(config, { estavelSeg = 30, intervaloSeg = 10, log = con
       const principal = path.join(config.pastaEntrada, f);
       try {
         const arq = arquivosDaSessao(principal, nomes, config);
+        // already cut (by hand or by an earlier run): don't redo it, just file the recording away
+        if (fs.existsSync(path.join(config.pastaSaida, pastaDaGravacao(f), 'sessao.json'))) {
+          for (const p of new Set([arq.cena, arq.jogo, arq.camera])) fs.renameSync(p, path.join(config.pastaProcessados, path.basename(p)));
+          log(`${f} já tem cortes; foi para ${config.pastaProcessados}.`);
+          continue;
+        }
         // the extra files must be finished too
         if ([arq.jogo, arq.camera].some((p) => !ok.includes(path.basename(p)))) continue;
         registrar(config.pastaSaida, 'vigia', 'trabalhando', `Gravação nova: ${f}`);

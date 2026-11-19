@@ -123,12 +123,13 @@ export async function melhorEncoder() {
 
 // Writes the ASS next to the output and renders one format.
 // marca: { arroba, chamada, logo } of the cut's channel line (see marcaDaLinha in src/marca.js)
-export async function renderCorte({ jogo, camera, audio, start, end, palavras = [], gancho = '', out, formato, marca = null, config = {} }) {
+// ganchoSeg: how long the hook stays on top (default 2.5 s; Infinity keeps it the whole cut as a title)
+export async function renderCorte({ jogo, camera, audio, start, end, palavras = [], gancho = '', ganchoSeg, out, formato, marca = null, config = {} }) {
   const fmt = formato || config.formatoPadrao || 'camtopo';
   const L = layoutFormato(FORMATOS[fmt] ? fmt : 'camtopo', { camPct: fmt === 'camtopo' ? config.camPct : undefined });
   const ass = out.replace(/\.mp4$/, '.ass');
   const dur = end - start;
-  fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null }));
+  fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, hookSec: Math.min(ganchoSeg ?? config.estilo?.ganchoSeg ?? 2.5, dur), marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null }));
   const logo = marca?.logo && fs.existsSync(marca.logo) ? marca.logo : null;
   const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo, encoder: config.encoder || await melhorEncoder() });
   await run('ffmpeg', args, { timeoutMs: 30 * 60000 });

@@ -9,10 +9,12 @@ import { fileURLToPath } from 'node:url';
 import { lerAtividade, quadroEscritorio } from './atividade.js';
 import { linhasDe } from './canais.js';
 import { lerPausa, retomar } from './qualidade.js';
+import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio } from './central.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGINA = path.join(ROOT, 'public', 'painel.html');
 const ESCRITORIO = path.join(ROOT, 'public', 'escritorio.html');
+const CENTRAL = path.join(ROOT, 'public', 'central.html');
 const MARCA = path.join(ROOT, 'public', 'marca');
 const MIME = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg' }; // only the cuts and their covers are served
 export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'entregue', 'postado'];
@@ -78,7 +80,18 @@ export function criarPainel(config) {
         return res.end();
       }
       if (!autorizado(req)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Abra o endereço com ?senha=...'); }
-      if (req.method === 'GET' && url.pathname === '/') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return fs.createReadStream(PAGINA).pipe(res); }
+      const pagina = (f) => { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return fs.createReadStream(f).pipe(res); };
+      if (req.method === 'GET' && url.pathname === '/') return pagina(CENTRAL);
+      if (req.method === 'GET' && url.pathname === '/cortes') return pagina(PAGINA);
+      if (req.method === 'GET' && url.pathname === '/api/central') {
+        const sessoes = listarSessoes(config.pastaSaida);
+        const dados = { brutos: listarBrutos(config), sessoes, roteiros: listarRoteiros(config), prontos: listarProntos(config), redes: lerRedes(config) };
+        return json(res, 200, { ...dados, resumo: resumo(dados), pastas: { entrada: config.pastaEntrada, saida: config.pastaSaida, entrega: config.pastaEntrega, roteiros: config.pastaRoteiros, metricas: config.arquivoMetricas } });
+      }
+      if (req.method === 'POST' && url.pathname === '/api/enviar') {
+        receberEnvio(req, config, url.searchParams.get('nome')).then((r) => json(res, 200, r), (e) => json(res, 400, { erro: e.message }));
+        return;
+      }
       if (req.method === 'GET' && url.pathname === '/api/sessoes') return json(res, 200, listarSessoes(config.pastaSaida));
       if (req.method === 'GET' && url.pathname === '/escritorio') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return fs.createReadStream(ESCRITORIO).pipe(res); }
       if (req.method === 'GET' && url.pathname === '/api/pausa') return json(res, 200, { pausa: lerPausa(config.pastaSaida), automatico: !!config.postarAutomatico });
