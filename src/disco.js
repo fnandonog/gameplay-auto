@@ -97,6 +97,7 @@ export function limparPostados(config, { agora = Date.now(), esperaH = 2, log = 
       break;
     }
     apagar(path.join(p.dir, 'video.mp4'));
+    apagar(path.join(p.dir, 'video.antes-audio.mp4')); // the copy kept by tools/consertar-audio.mjs
     fs.writeFileSync(path.join(p.dir, 'postado.json'), JSON.stringify({ ...p.postado, limpoEm: new Date(agora).toISOString() }, null, 2));
   }
   if (apagados) {
