@@ -164,7 +164,12 @@ export function criarPainel(config) {
       if (req.method === 'POST' && url.pathname === '/api/retomar') { retomar(config.pastaSaida); return json(res, 200, { pausa: null }); }
       if (req.method === 'GET' && url.pathname === '/api/linhas') return json(res, 200, linhasDe(config).map(({ id, nome, redes, conteudo, terceiros }) => ({ id, nome, redes, conteudo, terceiros: !!terceiros })));
       if (req.method === 'GET' && url.pathname === '/api/escritorio') {
-        return json(res, 200, quadroEscritorio({ atividade: lerAtividade(config.pastaSaida), sessoes: listarSessoes(config.pastaSaida), linhas: linhasDe(config), config, pausa: lerPausa(config.pastaSaida) }));
+        const q = quadroEscritorio({ atividade: lerAtividade(config.pastaSaida), sessoes: listarSessoes(config.pastaSaida), linhas: linhasDe(config), config, pausa: lerPausa(config.pastaSaida) });
+        // what is scheduled and posted lives in the delivery folder (the posters write postado.json there)
+        const prontos = listarProntos(config);
+        q.totais.agendados += prontos.filter((p) => !p.postadoEm).length;
+        q.totais.postados += prontos.filter((p) => p.postadoEm).length;
+        return json(res, 200, q);
       }
       const marca = /^\/marca\/([^/]+\.(svg|png))$/.exec(url.pathname);
       if (req.method === 'GET' && marca && nomeSeguro(marca[1]) && fs.existsSync(path.join(MARCA, marca[1]))) {
