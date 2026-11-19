@@ -56,6 +56,17 @@
   .conta.off { opacity: .6; border-style: dashed; }
   code { background: var(--card2); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
   a.btn { display: inline-block; background: var(--hi); color: var(--bg); font-weight: 700; text-decoration: none; padding: 8px 14px; border-radius: 8px; }
+  .gerir { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .gerir .conta { gap: 8px; }
+  .gerir .topo2 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .gerir .topo2 .r { margin-right: auto; }
+  .passo { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+  .passo input { margin-top: 3px; accent-color: var(--hi); }
+  .passo.feito span { color: var(--muted); text-decoration: line-through; }
+  .anon { font-size: 11px; color: var(--cy); font-weight: 700; margin-left: 4px; white-space: nowrap; }
+  .campo { background: var(--card2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 6px 9px; font: inherit; font-size: 14px; min-width: 0; }
+  .aviso { font-size: 13px; color: var(--hi); }
+  .prog { height: 4px; background: var(--card2); border-radius: 2px; overflow: hidden; } .prog i { display: block; height: 100%; background: var(--hi); }
   svg.graf { width: 100%; height: 120px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 </style>
 </head>
@@ -74,12 +85,13 @@
     <button data-a="roteiros">Roteiros<span class="n" data-n="roteiros"></span></button>
     <button data-a="prontos">Prontos p/ postar<span class="n" data-n="prontos"></span></button>
     <button data-a="redes">Redes</button>
+    <button data-a="contas">Contas<span class="n" data-n="contas"></span></button>
     <button data-a="checklist">Checklist<span class="n" data-n="checklist"></span></button>
   </nav>
 </header>
 <main id="tela"><p class="vazio">Carregando...</p></main>
 <script>
-let D = null, P = null, aba = (location.hash || '#inicio').slice(1);
+let D = null, P = null, C = null, aba = (location.hash || '#inicio').slice(1);
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${String(a).split('/').map(encodeURIComponent).join('/')}`;
@@ -87,19 +99,22 @@ const num = (n) => Number(n || 0).toLocaleString('pt-BR');
 const mb = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : Math.round(b / 1e6) + ' MB';
 const quando = (iso) => iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
 const dur = (s) => s ? (s >= 60 ? `${Math.floor(s / 60)} min ${String(Math.round(s % 60)).padStart(2, '0')} s` : `${Math.round(s)} s`) : '';
-const COR = { aguardando: 'hi', aprovado: 'ok', entregue: 'cy', postado: 'ok', agendado: 'cy', descartado: 'no', 'na fila': 'hi', gravando: 'no', processando: 'cy', processado: 'ok', 'esperando a postagem': 'hi' };
+const COR = { 'a criar': 'no', criando: 'hi', criada: 'cy', conectada: 'ok', reconectar: 'no',  aguardando: 'hi', aprovado: 'ok', entregue: 'cy', postado: 'ok', agendado: 'cy', descartado: 'no', 'na fila': 'hi', gravando: 'no', processando: 'cy', processado: 'ok', 'esperando a postagem': 'hi' };
 const tag = (s) => `<span class="tag ${COR[s] || ''}">${esc(s)}</span>`;
+const LINK_REDE = { youtube: 'https://studio.youtube.com', facebook: 'https://www.facebook.com/pages/create', instagram: 'https://www.instagram.com/accounts/emailsignup/', tiktok: 'https://www.tiktok.com/login', twitch: 'https://www.twitch.tv/signup' };
 const NOME_REDE = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook', twitch: 'Twitch' };
 
 async function carregar() {
   try { D = await (await fetch('/api/central')).json(); } catch { D = null; }
   try { P = await (await fetch('/api/prontidao')).json(); } catch { P = null; }
+  try { C = await (await fetch('/api/contas')).json(); } catch { C = null; }
   desenhar();
 }
 
 function contadores() {
   const r = D.resumo;
-  const n = { checklist: P?.faltam ? `faltam ${P.faltam}` : '', brutos: r.brutos, cortes: r.aguardando ? `${r.aguardando} p/ aprovar` : r.cortes, longos: r.longos, roteiros: r.roteiros, prontos: r.prontos };
+  const fc = C ? C.contas.filter((c) => c.status !== 'conectada').length : 0;
+  const n = { contas: fc ? `${fc} a fazer` : '', checklist: P?.faltam ? `faltam ${P.faltam}` : '', brutos: r.brutos, cortes: r.aguardando ? `${r.aguardando} p/ aprovar` : r.cortes, longos: r.longos, roteiros: r.roteiros, prontos: r.prontos };
   document.querySelectorAll('[data-n]').forEach((el) => { const v = n[el.dataset.n]; el.textContent = v ? v : ''; });
 }
 
@@ -157,6 +172,33 @@ const TELAS = {
     return `<p class="dica">${P.faltam ? `Faltam ${P.faltam} item(ns).` : 'Tudo pronto.'} Com as contas de hoje, o limite seguro é de <b>${P.capacidadeDia}</b> post(s) por dia. Para postar mais, crie mais contas, nunca mais posts por conta.</p>
     <div class="lista">${[...P.itens].sort((a, b) => a.ok - b.ok).map(item).join('')}</div>`;
   },
+  contas() {
+    if (!C) return '<p class="vazio">Carregando...</p>';
+    const porChave = Object.fromEntries(C.contas.map((c) => [c.chave, c]));
+    const card = (c) => {
+      const g = porChave[c.precisa];
+      const falta = g && g.status === 'a criar' ? `<div class="aviso">Crie antes a Página do Facebook desta linha: o Instagram só posta pela skill ligado a uma Página.</div>` : '';
+      const acao = c.status === 'reconectar' ? `<div class="aviso">${esc(c.motivo)}. Entre na sua skill de autopost e conecte esta conta de novo.</div>` : '';
+      return `<div class="conta" data-chave="${esc(c.chave)}">
+        <div class="topo2"><span class="r">${esc(NOME_REDE[c.rede] || c.rede)} · ${esc(c.nome)}${c.soPara ? ' · para o Instagram' : ''}</span>${tag(c.status)}</div>
+        <div class="prog"><i style="width:${(c.feitos / c.total) * 100}%"></i></div>
+        ${falta}${acao}
+        ${c.passos.map((p) => `<label class="passo${p.feito ? ' feito' : ''}"><input type="checkbox" data-passo="${p.id}"${p.feito ? ' checked' : ''}><span>${esc(p.t)}${p.anonimo ? '<span class="anon">anonimato</span>' : ''}</span></label>`).join('')}
+        <div class="topo2"><input class="campo" data-arroba placeholder="@ da conta" value="${esc(c.arroba)}" style="flex:1 1 120px"><a class="btn" href="${esc(LINK_REDE[c.rede])}" target="_blank" rel="noopener">${c.status === 'reconectar' ? 'Reconectar' : 'Abrir'} ${esc(NOME_REDE[c.rede] || c.rede)}</a></div>
+        <input class="campo" data-nota placeholder="Anotação (nunca senha ou código)" value="${esc(c.nota)}">
+        ${c.seguidores != null ? `<span class="sub" style="color:var(--muted);font-size:13px">${num(c.seguidores)} seguidores${c.link ? ` · <a href="${esc(c.link)}" target="_blank" rel="noopener" style="color:var(--cy)">ver perfil</a>` : ''}</span>` : ''}
+      </div>`;
+    };
+    const ordem = { youtube: 0, facebook: 1, instagram: 2, tiktok: 3, twitch: 4 };
+    const linhas = [...new Set(C.contas.map((c) => c.linha))];
+    return `<p class="dica">Ordem para hoje: 1) um e-mail novo só para o canal, 2) YouTube, 3) a Página do Facebook, 4) Instagram ligado a ela, 5) TikTok. Os passos marcados <span class="anon">anonimato</span> evitam que a conta seja sugerida aos seus contatos e conhecidos. O progresso fica em <code>${esc(C.arquivo)}</code>. <b>Senhas e códigos ficam só no seu gerenciador de senhas, nunca aqui.</b></p>
+    ${linhas.map((l) => `<h2>${esc(C.contas.find((c) => c.linha === l).nome)}</h2><div class="gerir">${C.contas.filter((c) => c.linha === l).sort((a, b) => ordem[a.rede] - ordem[b.rede]).map(card).join('')}</div>`).join('')}
+    <h2>Onde dá para fazer live</h2>
+    <div class="lista">${C.live.map((v) => `<div class="linha"><span class="tag ${v.pode ? 'ok' : 'no'}">${v.pode ? 'dá hoje' : 'ainda não'}</span><div class="nome">${esc(v.nome)}<div class="sub">${esc(v.resumo)} ${esc(v.requisito)}${v.seguidores != null && !v.pode ? ` Hoje: ${num(v.seguidores)} seguidores.` : ''}</div></div></div>`).join('')}</div>
+    <p class="dica">As regras de live mudam. Se o app disser outra coisa, vale o app.</p>
+    <h2>Adicionar outra conta</h2>
+    <div class="topo2" style="display:flex;gap:8px;flex-wrap:wrap"><input class="campo" id="novaNome" placeholder="Nome da linha (ex.: Dicas)"><select class="campo" id="novaRede">${Object.keys(LINK_REDE).map((r) => `<option value="${r}">${NOME_REDE[r]}</option>`).join('')}</select><a class="btn" href="#" id="novaConta">Adicionar</a><span id="contaMsg" class="aviso"></span></div>`;
+  },
   redes() {
     const R = D.redes;
     const h = R.historico || [];
@@ -213,9 +255,30 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest('#abas button, [data-ir]');
   if (b) { aba = b.dataset.a || b.dataset.ir; history.replaceState(null, '', '#' + aba); desenhar(); scrollTo(0, 0); }
 });
+async function salvarConta(dados) {
+  const r = await fetch('/api/contas', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(dados) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { alert(j.erro || 'Não salvou.'); return false; }
+  C = j; return true;
+}
+document.addEventListener('change', async (e) => {
+  const card = e.target.closest('[data-chave]');
+  if (!card) return;
+  const chave = card.dataset.chave;
+  let ok = true;
+  if (e.target.dataset.passo) ok = await salvarConta({ chave, passo: e.target.dataset.passo, feito: e.target.checked });
+  else if (e.target.hasAttribute('data-arroba')) ok = await salvarConta({ chave, arroba: e.target.value });
+  else if (e.target.hasAttribute('data-nota')) ok = await salvarConta({ chave, nota: e.target.value });
+  if (!ok || e.target.dataset.passo) desenhar();
+});
+document.addEventListener('click', async (e) => {
+  if (e.target.id !== 'novaConta') return;
+  e.preventDefault();
+  if (await salvarConta({ nova: { nome: $('#novaNome').value, rede: $('#novaRede').value } })) desenhar();
+});
 addEventListener('hashchange', () => { aba = location.hash.slice(1); desenhar(); });
 carregar();
-setInterval(() => { if (!document.querySelector('video:not([paused])') && aba !== 'brutos') carregar(); }, 30000);
+setInterval(() => { if (!document.querySelector('video:not([paused])') && aba !== 'brutos' && aba !== 'contas') carregar(); }, 30000);
 </script>
 </body>
 </html>

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { lerAtividade, quadroEscritorio } from './atividade.js';
 import { linhasDe } from './canais.js';
 import { lerPausa, retomar } from './qualidade.js';
+import { lerContas, salvarConta } from './contas.js';
 import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -108,6 +109,13 @@ export function criarPainel(config) {
       if (req.method === 'GET' && marca && nomeSeguro(marca[1]) && fs.existsSync(path.join(MARCA, marca[1]))) {
         res.writeHead(200, { 'content-type': marca[2] === 'svg' ? 'image/svg+xml' : 'image/png', 'cache-control': 'max-age=3600' });
         return fs.createReadStream(path.join(MARCA, marca[1])).pipe(res);
+      }
+      if (req.method === 'GET' && url.pathname === '/api/contas') return json(res, 200, lerContas(config));
+      if (req.method === 'POST' && url.pathname === '/api/contas') {
+        let body = '';
+        req.on('data', (d) => { body += d; if (body.length > 1e4) req.destroy(); });
+        req.on('end', () => { try { json(res, 200, salvarConta(config, JSON.parse(body || '{}'))); } catch (e) { json(res, 400, { erro: e.message }); } });
+        return;
       }
       if (req.method === 'POST' && url.pathname === '/api/corte') {
         let body = '';
