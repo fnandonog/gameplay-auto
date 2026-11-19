@@ -31,12 +31,14 @@ test('próximo horário de pico em Brasília, pulando os ocupados', () => {
   assert.equal(proximoHorario(Date.parse('2026-11-09T23:50:00Z'), ['21:00']), '2026-11-11T00:00:00Z'); // margem de 20 min
 });
 
-test('piloto automático: aprova o que passa no filtro e descarta o resto com o motivo', () => {
+test('piloto automático: aprova o que passa no filtro; o resto espera o dono com o motivo, nunca é descartado sozinho', () => {
   const ok = { titulo: 't', gancho: 'g', inicio: 10, fim: 40 };
-  const cs = [{ ...ok, status: 'aguardando', nota: 8.5 }, { ...ok, status: 'aguardando', nota: 6 }, { ...ok, status: 'descartado', nota: 9 }];
+  const cs = [{ ...ok, status: 'aguardando', nota: 8.5 }, { ...ok, status: 'aguardando', nota: 6 }, { ...ok, status: 'descartado', nota: 9 },
+    { ...ok, status: 'descartado', descartadoPor: 'filtro', nota: 5 }];
   assert.equal(autoAprovar(cs, 8), 1);
-  assert.deepEqual(cs.map((c) => c.status), ['aprovado', 'descartado', 'descartado']);
+  assert.deepEqual(cs.map((c) => c.status), ['aprovado', 'aguardando', 'descartado', 'aguardando']);
   assert.match(cs[1].filtro[0], /nota 6/);
+  assert.ok(cs[3].barrado);
 });
 
 test('agenda os aprovados, o melhor primeiro, e grava no sessao.json', async () => {

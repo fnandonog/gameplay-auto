@@ -50,5 +50,5 @@ test('CLIPAÍ: crédito vai na legenda e corte de terceiro sem permissão nunca 
   const ok = { status: 'aguardando', nota: 10, titulo: 't', gancho: 'g', inicio: 0, fim: 30 };
   const cs = [{ ...ok, linha: 'clipai' }, { ...ok, credito: c.credito }, { ...ok, linha: 'principal' }];
   assert.equal(autoAprovar(cs, 8, LINHAS_SUGERIDAS), 1);
-  assert.deepEqual(cs.map((x) => x.status), ['descartado', 'descartado', 'aprovado']);
+  assert.deepEqual(cs.map((x) => x.status), ['aguardando', 'aguardando', 'aprovado']);
 });

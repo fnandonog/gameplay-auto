@@ -58,8 +58,8 @@ export function quadroEscritorio({ atividade, sessoes = [], linhas = [], agora =
     if (at.estado === 'trabalhando' && at.em && agora - Date.parse(at.em) > TRAVADO_MS) at = { ...at, estado: 'parado', texto: `${at.texto} (parou sem terminar)` };
     if (a.id === 'agendador' && pausa) at = { estado: 'erro', texto: `Pausado: ${pausa.motivo}`, em: pausa.em };
     if (a.id === 'revisor' && config.postarAutomatico) {
-      const n = cortes.filter((c) => c.descartadoPor === 'filtro').length;
-      at = { estado: 'pronto', texto: `Piloto automático: o filtro aprova sozinho${n ? ` (${n} corte(s) barrado(s))` : ''}` };
+      const n = cortes.filter((c) => c.barrado && c.status === 'aguardando').length;
+      at = { estado: 'pronto', texto: `Piloto automático: o filtro aprova sozinho${n ? ` (${n} corte(s) esperando você)` : ''}` };
     } else if (a.id === 'revisor') {
       const n = conta('aguardando');
       at = n ? { estado: 'esperando', texto: `${n} corte(s) esperando sua aprovação` } : { estado: 'pronto', texto: 'Nada para aprovar' };

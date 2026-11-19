@@ -71,15 +71,18 @@ export function proximoHorario(agora, horarios, ocupados = [], { fusoHoras = -3,
 }
 
 // Autopilot: every waiting cut goes through the quality gate (src/qualidade.js). It passes → approved;
-// it fails → discarded, with the reasons written on the cut so the owner can see why.
+// it fails → it stays waiting for the owner, with the reasons written on the cut. Only the owner discards.
+// Cuts an older version discarded on its own come back to waiting.
 // `config` may be a number (the old minimum score).
 export function autoAprovar(cortes, config = {}, linhas = [], sessao = null) {
   const cfg = typeof config === 'number' ? { filtro: { notaMinima: config } } : config;
   let n = 0;
   for (const c of cortes) {
+    if (c.status === 'descartado' && c.descartadoPor === 'filtro') { c.status = 'aguardando'; delete c.descartadoPor; }
     if (c.status !== 'aguardando') continue;
     const motivos = motivosRecusa(c, { config: cfg, linha: linhas.find((l) => l.id === c.linha), sessao });
-    if (motivos.length) { c.status = 'descartado'; c.descartadoPor = 'filtro'; c.filtro = motivos; continue; }
+    if (motivos.length) { c.filtro = motivos; c.barrado = true; continue; }
+    delete c.filtro; delete c.barrado;
     c.status = 'aprovado'; c.aprovadoPor = 'automatico'; n++;
   }
   return n;

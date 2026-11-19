@@ -53,7 +53,7 @@ test('piloto automático posta sozinho e pausa tudo quando a plataforma recusa',
   assert.equal(n, 1);
   assert.match(lerPausa(dir).motivo, /recusou/);
   const s = JSON.parse(fs.readFileSync(path.join(dir, 's1', 'sessao.json'), 'utf8'));
-  assert.deepEqual(s.cortes.map((c) => c.status), ['agendado', 'aprovado', 'descartado']);
+  assert.deepEqual(s.cortes.map((c) => c.status), ['agendado', 'aprovado', 'aguardando']);
   // paused: nothing more goes out until the owner resumes
   assert.equal(await postarAprovados({ pastaSaida: dir, uploadPost: { perfil: 'p' } }, { log: () => {}, envio: async () => { throw new Error('não devia'); } }), 0);
   delete process.env.UPLOAD_POST_API_KEY;
