@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run } from './run.js';
 import { assOf, cuesOf } from './legenda.js';
-import { filtrarPalavroes, adesivosDe, assAdesivos, escolherMusica } from './efeitos.js';
+import { filtrarPalavroes, adesivosDe, assAdesivos, escolherMusica, impactosDe, marcarEnfase, zoomDosImpactos } from './efeitos.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const FONTS = path.join(ROOT, 'fonts');
@@ -169,6 +169,10 @@ export function argsCorte(job) {
   const entre = bips.map(([a, b]) => `between(t,${a},${b})`).join('+');
   let bipIn = null, musIn = null;
   if (bips.length) { args.push('-f', 'lavfi', '-t', String(dur), '-i', 'sine=frequency=1000:sample_rate=48000'); bipIn = `${n}:a`; n++; }
+  // reaction hits (job.impactos: seconds in the final cut): punch-in zoom + a deep boom
+  const impactos = (job.impactos || []).filter((t) => t >= 0 && t < dur).slice(0, 8);
+  let boomIn = null;
+  if (impactos.length) { args.push('-f', 'lavfi', '-t', '0.7', '-i', "aevalsrc='0.8*sin(2*PI*(48+90*exp(-9*t))*t)*exp(-4.5*t)':s=48000:d=0.7"); boomIn = `${n}:a`; n++; }
   if (job.musica?.arquivo) { args.push('-stream_loop', '-1', '-t', String(dur), '-i', job.musica.arquivo); musIn = `${n}:a:0`; n++; }
   const g = [];
   let vIn = '0:v';
@@ -204,9 +208,11 @@ export function argsCorte(job) {
       '[cam][game]vstack=inputs=2[st]');
   }
   let ultimo = 'st';
+  const z = zoomDosImpactos(impactos, fps);
+  if (z) { g.push(`[st]zoompan=z='${z}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=${W}x${H}:fps=${fps}[stz]`); ultimo = 'stz'; }
   if (logoIn) {
     const tam = job.logoTam || 96;
-    g.push(`[${logoIn}]scale=${tam}:-1,format=rgba,colorchannelmixer=aa=0.92[lg]`, `[st][lg]overlay=${L.logoPos.x}:${L.logoPos.y}:shortest=1[sl]`);
+    g.push(`[${logoIn}]scale=${tam}:-1,format=rgba,colorchannelmixer=aa=0.92[lg]`, `[${ultimo}][lg]overlay=${L.logoPos.x}:${L.logoPos.y}:shortest=1[sl]`);
     ultimo = 'sl';
   }
   g.push(`[${ultimo}][${barIn}]overlay=x='-W+W*t/${dur}':y=H-10:eval=frame:shortest=1[pb]`,
@@ -218,6 +224,10 @@ export function argsCorte(job) {
     g.push('[a0]asplit=2[a0v][a0s]', `[${musIn}]aformat=sample_rates=48000:channel_layouts=stereo,volume=${job.musica.volume ?? 0.12},afade=t=in:d=1,afade=t=out:st=${Math.max(0, dur - 1.5).toFixed(2)}:d=1.5[mu]`,
       '[mu][a0s]sidechaincompress=threshold=0.015:ratio=12:attack=15:release=450:makeup=1[md]');
     mix[0] = 'a0v'; mix.push('md');
+  }
+  if (boomIn) {
+    g.push(`[${boomIn}]lowpass=f=180,volume=0.9,aformat=sample_rates=48000:channel_layouts=stereo,asplit=${impactos.length}${impactos.map((_, i) => `[bo${i}]`).join('')}`);
+    impactos.forEach((t, i) => { const ms = Math.round(Math.max(0, t) * 1000); g.push(`[bo${i}]adelay=${ms}|${ms}[bm${i}]`); mix.push(`bm${i}`); });
   }
   if (bipIn) { g.push(`[${bipIn}]volume='if(${entre},2,0)':eval=frame,aformat=sample_rates=48000:channel_layouts=stereo[bp]`); mix.push('bp'); }
   if (sfxIn) {
@@ -257,6 +267,8 @@ export async function renderCorte({ jogo, camera, audio, start, end, palavras = 
   // profanity: masked in the captions and beeped in the sound (config.filtroPalavroes: 'pesado' default, 'todos', false)
   const filtro = filtrarPalavroes(enx.palavras, { nivel: config.filtroPalavroes ?? 'pesado', extras: config.palavroesExtras || [] });
   palavras = filtro.palavras;
+  const imp = config.efeitos?.impactos !== true ? [] : impactosDe(palavras, dur, config.efeitos?.impactosOpcoes || {});
+  palavras = marcarEnfase(palavras, imp);
   const extras = config.efeitos?.adesivos === false ? [] : assAdesivos(adesivosDe(palavras, dur, config.efeitos?.adesivosOpcoes || {}), L, { cor: marca?.corBarra || '#FFE600' });
   const arqMusica = escolherMusica(path.basename(path.dirname(out)) || out, config.musica);
   focos = focos ?? (config.enquadramento === false || !FORMATOS[fmt]?.semCamera ? null : focosDe(palavras, dur, config.enquadramento || {}));
@@ -264,7 +276,7 @@ export async function renderCorte({ jogo, camera, audio, start, end, palavras = 
   fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, selo, hookSec: Math.min(ganchoSeg ?? config.estilo?.ganchoSeg ?? 2.5, dur), marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null, extras }));
   const logo = marca?.logo && fs.existsSync(marca.logo) ? marca.logo : null;
   const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo,
-    focos, manter: enx.manter, sons, bips: filtro.bips, musica: arqMusica ? { arquivo: arqMusica, volume: config.musica?.volume } : null, encoder: config.encoder || await melhorEncoder() });
+    focos, manter: enx.manter, sons, impactos: imp.map((m) => m.t), bips: filtro.bips, musica: arqMusica ? { arquivo: arqMusica, volume: config.musica?.volume } : null, encoder: config.encoder || await melhorEncoder() });
   await run('ffmpeg', args, { timeoutMs: 30 * 60000 });
   return out;
 }

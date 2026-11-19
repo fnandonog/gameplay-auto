@@ -71,7 +71,7 @@ export function assOf(cues, { layout, style = {}, hook = '', hookSec = 2.5, marc
     const ws = cues.flatMap((c) => c.words);
     lines = ws.map((w, i) => {
       const fim = i < ws.length - 1 ? Math.min(ws[i + 1].start, w.end + 0.6) : w.end + 0.4;
-      const cor = String(w.text).replace(/[^\p{L}]/gu, '').length >= 6 ? `{\\c${assColor(hi)}}` : '';
+      const cor = w.enfase ? '{\\c&H3C3CFF&}' : String(w.text).replace(/[^\p{L}]/gu, '').length >= 6 ? `{\\c${assColor(hi)}}` : '';
       return `Dialogue: 1,${assTime(w.start)},${assTime(Math.max(fim, w.start + 0.12))},Palavra,,0,0,0,,{\\pos(${W / 2},${seam})\\fscx70\\fscy70\\t(0,90,\\fscx108\\fscy108)\\t(90,160,\\fscx100\\fscy100)}${cor}${assText(w.text)}`;
     });
   } else {
@@ -81,7 +81,9 @@ export function assOf(cues, { layout, style = {}, hook = '', hookSec = 2.5, marc
         const lead = Math.round((w.start - t) * 100);
         const dur = Math.max(1, Math.round((w.end - w.start) * 100));
         t = Math.max(t, w.start) + dur / 100;
-        return `${lead > 0 ? `{\\k${lead}}` : ''}{\\kf${dur}}${assText(w.text)}${i < c.words.length - 1 ? ' ' : ''}`;
+        // a reaction word (enfase): bigger and in red, then back to normal
+        const txt = w.enfase ? `{\\1c&H3C3CFF&\\fscx120\\fscy120}${assText(w.text)}{\\1c${assColor(hi)}\\fscx100\\fscy100}` : assText(w.text);
+        return `${lead > 0 ? `{\\k${lead}}` : ''}{\\kf${dur}}${txt}${i < c.words.length - 1 ? ' ' : ''}`;
       }).join('');
       return `Dialogue: 1,${assTime(c.start)},${assTime(c.end)},Legenda,,0,0,0,,{\\pos(${W / 2},${seam})}${body}`;
     });

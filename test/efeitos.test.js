@@ -68,3 +68,14 @@ test('owner stretches become required cuts even when the AI skips them', () => {
   const sumiu = aplicarDecisoes(t, []);
   assert.equal(sumiu[0].gancho, 'ACHEI UM PS5 DENTRO DO GTA 6');
 });
+
+import { impactosDe, marcarEnfase, zoomDosImpactos } from '../src/efeitos.js';
+test('reaction words: spaced hits, two-word reactions, caption emphasis and zoom expression', () => {
+  const ws = [w('olha', 0.2), w('que', 1), w('isso', 1.3), w('caraca', 2), w('nossa', 3), w('é', 6), w('bizarro', 7)];
+  const imp = impactosDe(ws, 20);
+  assert.deepEqual(imp.map((m) => m.t), [1, 7]);
+  const m = marcarEnfase(ws, imp);
+  assert.ok(m[1].enfase && m[2].enfase && m[6].enfase && !m[3].enfase);
+  assert.match(zoomDosImpactos([1], 60), /^1\+0\.12\*min\(1,max\(0,1-abs\(in\/60-1\.05\)\/0\.18\)\)$/);
+  assert.equal(zoomDosImpactos([], 60), null);
+});
