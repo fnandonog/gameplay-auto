@@ -6,6 +6,7 @@ import { processarSessao, ehArquivoExtra, arquivosDaSessao } from './sessao.js';
 import { registrar } from './atividade.js';
 import { pastaDaGravacao } from './central.js';
 import { execFile } from 'node:child_process';
+import { ajustarInbox, pastasDeGravacao, limparPostados, moverGravacao } from './disco.js';
 
 const VIDEO = /\.(mp4|mkv|mov)$/i;
 
@@ -37,13 +38,18 @@ export function arquivoAberto(file) {
 }
 
 export function observar(config, { estavelSeg = config.aoVivo?.ligado ? 15 : 90, aberto = arquivoAberto, intervaloSeg = config.aoVivo?.ligado ? 5 : 10, log = console.log } = {}) {
-  fs.mkdirSync(config.pastaEntrada, { recursive: true });
+  try { fs.mkdirSync(config.pastaEntrada, { recursive: true }); } catch {}
   fs.mkdirSync(config.pastaProcessados, { recursive: true });
   registrar(config.pastaSaida, 'vigia', 'esperando', 'De olho na pasta do OBS');
   log(`Observando ${config.pastaEntrada}. Grave no OBS e os cortes aparecem em ${config.pastaSaida}.`);
   let antes = {}; const desde = {}; let ocupado = false; const falhas = new Set();
+  let ultimaLimpeza = 0;
   const tick = async () => {
     if (ocupado) return;
+    // SSD: OBS's folder follows the disk; processed recordings go to the SSD when it is there
+    if (config.ssd?.pasta) { try { await ajustarInbox(config, { aberto, log }); } catch (e) { log(`SSD: ${e.message}`); } }
+    const processados = config.ssd?.pasta ? pastasDeGravacao(config).gravacoes : config.pastaProcessados;
+    if (Date.now() - ultimaLimpeza > 3600000) { ultimaLimpeza = Date.now(); try { limparPostados(config, { log }); } catch (e) { log(`Limpeza: ${e.message}`); } }
     const nomes = fs.readdirSync(config.pastaEntrada).filter((f) => VIDEO.test(f) && !f.startsWith('.'));
     const agora = Object.fromEntries(nomes.map((f) => [f, fs.statSync(path.join(config.pastaEntrada, f)).size]));
     const estaveis = prontos(agora, antes, desde, Date.now(), estavelSeg * 1000);
@@ -59,8 +65,8 @@ export function observar(config, { estavelSeg = config.aoVivo?.ligado ? 15 : 90,
         const arq = arquivosDaSessao(principal, nomes, config);
         // already cut (by hand or by an earlier run): don't redo it, just file the recording away
         if (fs.existsSync(path.join(config.pastaSaida, pastaDaGravacao(f), 'sessao.json'))) {
-          for (const p of new Set([arq.cena, arq.jogo, arq.camera])) fs.renameSync(p, path.join(config.pastaProcessados, path.basename(p)));
-          log(`${f} já tem cortes; foi para ${config.pastaProcessados}.`);
+          for (const p of new Set([arq.cena, arq.jogo, arq.camera])) moverGravacao(p, path.join(processados, path.basename(p)));
+          log(`${f} já tem cortes; foi para ${processados}.`);
           continue;
         }
         // the extra files must be finished too
@@ -68,7 +74,7 @@ export function observar(config, { estavelSeg = config.aoVivo?.ligado ? 15 : 90,
         registrar(config.pastaSaida, 'vigia', 'trabalhando', `Gravação nova: ${f}`);
         await processarSessao(principal, configDoArquivo(f, config), { log });
         registrar(config.pastaSaida, 'vigia', 'esperando', `${f} processada. De olho na pasta do OBS`);
-        for (const p of new Set([arq.cena, arq.jogo, arq.camera])) fs.renameSync(p, path.join(config.pastaProcessados, path.basename(p)));
+        for (const p of new Set([arq.cena, arq.jogo, arq.camera])) moverGravacao(p, path.join(processados, path.basename(p)));
       } catch (e) {
         falhas.add(f);
         log(`Falhou ${f}: ${e.message}`);

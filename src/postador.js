@@ -31,8 +31,10 @@ export function listarEntregues(base) {
     for (const pasta of pastas) {
       const dir = path.join(base, linha, pasta);
       const post = ler(path.join(dir, 'post.json'));
-      if (!post || !fs.existsSync(path.join(dir, 'video.mp4'))) continue;
-      out.push({ id: `${linha}/${pasta}`, dir, post, postado: ler(path.join(dir, 'postado.json')) || {}, estado: ler(path.join(dir, '.postador.json')) || {}, ytChrome: ler(path.join(dir, '.youtube-chrome.json')) || null });
+      const postado = ler(path.join(dir, 'postado.json')) || {};
+      // a fully posted cut whose video was cleaned (src/disco.js) stays listed for its links and numbers
+      if (!post || (!fs.existsSync(path.join(dir, 'video.mp4')) && !postado.limpoEm)) continue;
+      out.push({ id: `${linha}/${pasta}`, dir, post, postado, estado: ler(path.join(dir, '.postador.json')) || {}, ytChrome: ler(path.join(dir, '.youtube-chrome.json')) || null });
     }
   }
   return out;

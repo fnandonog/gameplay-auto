@@ -68,6 +68,9 @@ export const PADRAO = {
   // background music: royalty-free tracks dropped in pasta, low, ducking under the voice; none when the folder is empty
   musica: { ligado: true, pasta: path.join(HOME, 'Gameplay', 'musicas'), volume: 0.12 },
   youtubeApi: false, // false: YouTube only through the Chrome extension (YouTube Studio); true: the API sends the best 6 a day
+  // external SSD: OBS records there and processed recordings stay there when it is plugged in (src/disco.js)
+  ssd: { pasta: '' }, // e.g. "/Volumes/FNANDO SSD/FNANDO"
+  limparPostados: true, // deletes the video files of cuts already out on every network (covers, texts and links stay)
   temCamera: 'auto', // 'auto': half-and-half with the webcam when the session has a camera file or regiaoCamera; false: game only
   postarAutomatico: false, // true: cuts with nota >= notaMinima are posted without approval
   notaMinima: 8,
