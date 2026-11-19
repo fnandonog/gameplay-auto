@@ -8,6 +8,7 @@ import path from 'node:path';
 import { carregarConfig } from '../src/config.js';
 import { processarSessao } from '../src/sessao.js';
 import { observar } from '../src/observador.js';
+import { arquivoToken, garantirToken } from '../src/tiktokChrome.js';
 import { temFfmpeg } from '../src/run.js';
 import { criarPainel, enderecosLocais } from '../src/painel.js';
 import { postarAprovados } from '../src/postagem.js';
@@ -28,6 +29,7 @@ if (cmd === 'processar' && args[0]) {
   await processarSessao(path.resolve(args[0]), config);
 } else if (cmd === 'observar' || cmd === 'painel') {
   const porta = config.portaPainel || 4321;
+  garantirToken(arquivoToken(config)); // the TikTok extension's code (shown in the Contas tab)
   criarPainel(config).listen(porta, '0.0.0.0', () => {
     console.log(`Painel: http://localhost:${porta}`);
     for (const u of enderecosLocais(porta)) console.log(`No celular (mesmo Wi-Fi): ${u}${config.senhaPainel ? '/?senha=...' : ''}`);

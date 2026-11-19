@@ -183,6 +183,7 @@ const TELAS = {
         <div class="topo2"><span class="r">${esc(NOME_REDE[c.rede] || c.rede)} · ${esc(c.nome)}${c.soPara ? ' · para o Instagram' : ''}</span>${tag(c.status)}</div>
         <div class="prog"><i style="width:${(c.feitos / c.total) * 100}%"></i></div>
         ${falta}${acao}
+        ${c.rede === 'tiktok' ? `<div class="aviso" style="color:var(--muted)">Postagem pela extensão <b>FNANDO: TikTok pelo Chrome</b> (pasta <code>extensao-tiktok</code>): carregue no Chrome logado neste TikTok e cole o código. <a class="btn" href="#" data-codigo-tiktok>Mostrar código</a> <code data-codigo-saida style="user-select:all;word-break:break-all"></code></div>` : ''}
         ${c.passos.map((p) => `<label class="passo${p.feito ? ' feito' : ''}"><input type="checkbox" data-passo="${p.id}"${p.feito ? ' checked' : ''}><span>${esc(p.t)}${p.anonimo ? '<span class="anon">anonimato</span>' : ''}</span></label>`).join('')}
         <div class="topo2"><input class="campo" data-arroba placeholder="@ da conta" value="${esc(c.arroba)}" style="flex:1 1 120px"><a class="btn" href="${esc(LINK_REDE[c.rede])}" target="_blank" rel="noopener">${c.status === 'reconectar' ? 'Reconectar' : 'Abrir'} ${esc(NOME_REDE[c.rede] || c.rede)}</a></div>
         <input class="campo" data-nota placeholder="Anotação (nunca senha ou código)" value="${esc(c.nota)}">
@@ -251,7 +252,15 @@ function prepararEnvio() {
   box.ondrop = (e) => { e.preventDefault(); box.classList.remove('sobre'); enviar(e.dataTransfer.files[0]); };
 }
 
-document.addEventListener('click', (e) => {
+document.addEventListener('click', async (e) => {
+  const cod = e.target.closest('[data-codigo-tiktok]');
+  if (cod) {
+    e.preventDefault();
+    const r = await fetch('/api/tiktok-chrome/codigo');
+    const j = await r.json().catch(() => ({}));
+    cod.parentElement.querySelector('[data-codigo-saida]').textContent = j.codigo || j.erro || 'Não abriu.';
+    return;
+  }
   const b = e.target.closest('#abas button, [data-ir]');
   if (b) { aba = b.dataset.a || b.dataset.ir; history.replaceState(null, '', '#' + aba); desenhar(); scrollTo(0, 0); }
 });

@@ -39,6 +39,8 @@ export const PADRAO = {
   // 'skill': approved cuts go to pastaEntrega for the owner's posting skill; 'upload-post': this platform schedules them
   postagem: 'skill',
   pastaEntrega: path.join(HOME, 'Gameplay', 'prontos'),
+  // the code of the "FNANDO: TikTok pelo Chrome" extension (src/tiktokChrome.js), created on the first panel start
+  arquivoTokenTiktok: path.join(HOME, 'Gameplay', '.tiktok-chrome-token'),
   // the central (src/central.js): scripts and ideas, and the numbers of the accounts (written by the posting skill)
   pastaRoteiros: path.join(HOME, 'Gameplay', 'roteiros'),
   arquivoMetricas: path.join(HOME, 'Gameplay', 'metricas.json'),

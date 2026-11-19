@@ -11,6 +11,8 @@ import { linhasDe } from './canais.js';
 import { lerPausa, retomar } from './qualidade.js';
 import { lerContas, salvarConta } from './contas.js';
 import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
+import { arquivoToken, garantirToken, bearerOk, assinaturaOk, proximoJob, arquivoDoVideo, registrarResultado } from './tiktokChrome.js';
+import { registrar } from './atividade.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGINA = path.join(ROOT, 'public', 'painel.html');
@@ -18,6 +20,10 @@ const ESCRITORIO = path.join(ROOT, 'public', 'escritorio.html');
 const CENTRAL = path.join(ROOT, 'public', 'central.html');
 const MARCA = path.join(ROOT, 'public', 'marca');
 const MIME = { '.mp4': 'video/mp4', '.jpg': 'image/jpeg' }; // only the cuts and their covers are served
+const EXTENSAO = path.join(ROOT, 'extensao-tiktok', 'manifest.json');
+// the TikTok Studio page downloads the video (CORS + Chrome's private network access preflight)
+const CORS_TIKTOK = { 'access-control-allow-origin': 'https://www.tiktok.com', 'access-control-allow-private-network': 'true', 'access-control-allow-headers': 'range', 'vary': 'origin' };
+const local = (req) => /^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/.test(req.socket.remoteAddress || '');
 export const STATUS = ['aguardando', 'aprovado', 'descartado', 'agendado', 'entregue', 'postado'];
 
 // a name that came from the URL must be a plain file/folder name inside the output folder
@@ -59,15 +65,15 @@ export function editarCorte(pastaSaida, { pasta, arquivo, ...mud }, linhas = nul
   return c;
 }
 
-function servirArquivo(req, res, file) {
+function servirArquivo(req, res, file, extra = {}) {
   const stat = fs.statSync(file);
   const type = MIME[path.extname(file)] || 'application/octet-stream';
   const m = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
-  if (!m) { res.writeHead(200, { 'content-type': type, 'content-length': stat.size, 'accept-ranges': 'bytes' }); return fs.createReadStream(file).pipe(res); }
+  if (!m) { res.writeHead(200, { ...extra, 'content-type': type, 'content-length': stat.size, 'accept-ranges': 'bytes' }); return fs.createReadStream(file).pipe(res); }
   const start = m[1] ? Number(m[1]) : Math.max(0, stat.size - Number(m[2]));
   const end = m[1] && m[2] ? Math.min(Number(m[2]), stat.size - 1) : stat.size - 1;
   if (start >= stat.size) { res.writeHead(416, { 'content-range': `bytes */${stat.size}` }); return res.end(); }
-  res.writeHead(206, { 'content-type': type, 'content-length': end - start + 1, 'content-range': `bytes ${start}-${end}/${stat.size}`, 'accept-ranges': 'bytes' });
+  res.writeHead(206, { ...extra, 'content-type': type, 'content-length': end - start + 1, 'content-range': `bytes ${start}-${end}/${stat.size}`, 'accept-ranges': 'bytes' });
   fs.createReadStream(file, { start, end }).pipe(res);
 }
 
@@ -82,6 +88,43 @@ export function criarPainel(config) {
       if (senha && url.searchParams.get('senha') === senha) {
         res.writeHead(302, { location: '/', 'set-cookie': `painel=${encodeURIComponent(senha)}; HttpOnly; SameSite=Strict; Max-Age=31536000; Path=/` });
         return res.end();
+      }
+      // TikTok through Chrome (src/tiktokChrome.js): the extension has its own code, so these come before the panel password
+      if (url.pathname.startsWith('/api/tiktok-chrome/')) {
+        const token = garantirToken(arquivoToken(config));
+        const rota = url.pathname.slice('/api/tiktok-chrome/'.length);
+        if (req.method === 'OPTIONS' && rota.startsWith('video/')) { res.writeHead(204, { ...CORS_TIKTOK, 'access-control-allow-methods': 'GET' }); return res.end(); }
+        if (req.method === 'GET' && rota === 'versao') {
+          let versao = null; try { versao = JSON.parse(fs.readFileSync(EXTENSAO, 'utf8')).version; } catch {}
+          return json(res, 200, { versao });
+        }
+        // the code is shown only to someone on this Mac (the Contas tab), never over the Wi-Fi
+        if (req.method === 'GET' && rota === 'codigo') return local(req) && autorizado(req) ? json(res, 200, { codigo: token }) : json(res, 403, { erro: 'Só no próprio Mac.' });
+        if (req.method === 'GET' && rota.startsWith('video/')) {
+          const id = decodeURIComponent(rota.slice('video/'.length));
+          if (!assinaturaOk(token, id, url.searchParams.get('t')) && !bearerOk(req.headers.authorization, token)) return json(res, 401, { erro: 'Código inválido.' });
+          const file = arquivoDoVideo(config.pastaEntrega, id);
+          return file ? servirArquivo(req, res, file, CORS_TIKTOK) : json(res, 404, { erro: 'Não encontrado.' });
+        }
+        if (!bearerOk(req.headers.authorization, token)) return json(res, 401, { erro: 'Código inválido: copie o código da aba Contas da central.' });
+        if (req.method === 'GET' && rota === 'proximo') {
+          const job = proximoJob({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida) });
+          if (job) registrar(config.pastaSaida, 'agendador', 'trabalhando', `TikTok pelo Chrome: postando "${job.titulo}"`);
+          return json(res, 200, { job });
+        }
+        if (req.method === 'POST' && rota === 'resultado') {
+          let body = '';
+          req.on('data', (d) => { body += d; if (body.length > 1e4) req.destroy(); });
+          req.on('end', () => {
+            try {
+              const r = registrarResultado(config.pastaEntrega, JSON.parse(body || '{}'));
+              registrar(config.pastaSaida, 'agendador', r.ok ? 'pronto' : 'erro', r.ok ? 'TikTok pelo Chrome: vídeo publicado' : `TikTok pelo Chrome parou: ${r.estado.erro}`);
+              json(res, 200, r);
+            } catch (e) { json(res, 400, { erro: e.message }); }
+          });
+          return;
+        }
+        return json(res, 404, { erro: 'Não encontrado.' });
       }
       if (!autorizado(req)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Abra o endereço com ?senha=...'); }
       const pagina = (f) => { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return fs.createReadStream(f).pipe(res); };

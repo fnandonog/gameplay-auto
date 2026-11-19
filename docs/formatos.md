@@ -72,3 +72,16 @@ Cada conta posta no máximo `limites` por dia (padrão: TikTok 4, Instagram 3, Y
 ## Vídeo por missão (YouTube)
 
 Além do vídeo da sessão inteira, cada missão vira um vídeo longo (`src/missoes.js`): a IA olha um quadro a cada 6 s e marca onde a missão começa (nome ou "CAPÍTULO N" na tela, ligação, objetivo novo) e termina (missão concluída, última cena). O trecho é cortado sem recodificar (rápido), ganha thumbnail, título, descrição com capítulos e tags, e aparece na aba **Vídeo longo** e em **Aprovar cortes**. Missão com nudez ou violência explícita na tela vem com aviso. Aprovado, vai para `prontos/youtube-longo/`. `missoes: false` desliga; `{ "passo": 6, "minSeg": 150 }` ajusta. Precisa da IA.
+
+## TikTok pelo Chrome (extensão)
+
+O TikTok posta pela extensão **FNANDO: TikTok pelo Chrome** (pasta `extensao-tiktok/`), sem API do TikTok e sem serviço pago. A cada 2 minutos ela pergunta à central (`http://localhost:4322/api/tiktok-chrome/proximo`) se há corte de uma linha com TikTok já entregue em `prontos/`, com `agendarPara` vencido e ainda sem link do TikTok no `postado.json`. Quando há, abre o TikTok Studio numa janela própria, anexa o `video.mp4`, digita a legenda (título, descrição, crédito e hashtags, até 2.200 caracteres), clica em **Publicar** e conta o resultado. A central grava `links.tiktok` no `postado.json` (os links das outras redes ficam). Com o freio puxado (`.pausa.json`) ela não entrega nada.
+
+Para carregar (uma vez, no Chrome logado no TikTok @fnando.gameplay):
+
+1. Deixe o painel rodando (`npm run painel` ou `npm run observar`).
+2. Em `chrome://extensions`, ligue o **Modo do desenvolvedor**, clique em **Carregar sem compactação** e escolha a pasta `extensao-tiktok` deste projeto.
+3. Na central, aba **Contas** > cartão do TikTok > **Mostrar código** (só abre no próprio Mac). Copie.
+4. Clique no ícone da extensão, cole o código e **Salvar e conferir agora**.
+
+O código fica em `~/Gameplay/.tiktok-chrome-token` (fora do git). Apagar o arquivo e reiniciar o painel gera outro, e a extensão precisa do novo. Se parar antes de clicar em Publicar, tenta mais uma vez 15 minutos depois. Depois do clique, nunca manda de novo (para não postar duas vezes), e o erro fica em `.tiktok-chrome.json` na pasta do corte. Se o TikTok mudar a página do Studio, os seletores estão em `extensao-tiktok/studio.js`.

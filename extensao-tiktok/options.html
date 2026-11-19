@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>FNANDO: TikTok pelo Chrome</title>
+<style>
+body{font:15px/1.5 Inter,system-ui,sans-serif;color:#111;background:#FFFBE0;margin:0;padding:20px;min-width:320px;max-width:520px}
+h1{font:800 19px/1.2 "Bricolage Grotesque",system-ui,sans-serif;margin:0 0 8px;color:#111}
+label{display:block;font-weight:600;margin:14px 0 4px}
+input{width:100%;box-sizing:border-box;padding:10px;border:2px solid #11111133;border-radius:10px;font:inherit;background:#fff}
+input:focus{outline:3px solid #C6F432;border-color:#111}
+button{margin-top:14px;padding:10px 16px;border:0;border-radius:10px;background:#111;color:#FFE600;font:600 15px Inter,system-ui,sans-serif;cursor:pointer}
+button:focus-visible{outline:3px solid #FFE600;outline-offset:2px}
+p{margin:8px 0}.muted{color:#444;font-size:14px}.erro{color:#C62828}
+</style>
+</head>
+<body>
+<h1>TikTok pelo Chrome</h1>
+<p class="muted">A cada 2 minutos pergunta à central do FNANDO (o painel em http://localhost:4322, neste Mac) se há corte para o TikTok. Quando há, abre o TikTok Studio numa janela, anexa o vídeo, digita a legenda, clica em Publicar e fecha. Deixe este Chrome aberto e logado no TikTok @fnando.gameplay, e o painel rodando. O código fica na central: aba Contas &gt; TikTok &gt; Mostrar código.</p>
+<form id="f">
+  <label for="codigo">Código da central</label>
+  <input id="codigo" type="password" autocomplete="off">
+  <div><button type="submit">Salvar e conferir agora</button></div>
+</form>
+<p id="estado" class="muted" aria-live="polite"></p>
+<p id="versao" class="muted"></p>
+<script src="options.js" type="module"></script>
+</body>
+</html>
