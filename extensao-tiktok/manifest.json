@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FNANDO: TikTok pelo Chrome",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pega na central do FNANDO (localhost:4322) o próximo corte do TikTok e publica pelo TikTok Studio, com a legenda, no Chrome onde o TikTok do FNANDO está logado.",
   "permissions": [
     "alarms",

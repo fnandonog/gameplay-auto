@@ -107,6 +107,20 @@ export async function rodada() {
     try {
       aba = await abrirStudio();
       teclas = teclado(aba);
+      // o vídeo vem da central pelo background (a página do TikTok pode não ter a permissão de rede local)
+      teclas.pedacosDoVideo = async (url) => {
+        const r = await fetch(url, { credentials: 'omit' });
+        if (!r.ok) throw new Error(`a central respondeu ${r.status} ao baixar o vídeo`);
+        const bytes = new Uint8Array(await r.arrayBuffer());
+        const pedacos = [];
+        for (let i = 0; i < bytes.length; i += 3 * 1024 * 1024) {
+          const fatia = bytes.subarray(i, i + 3 * 1024 * 1024);
+          let bin = '';
+          for (let k = 0; k < fatia.length; k += 0x8000) bin += String.fromCharCode.apply(null, fatia.subarray(k, k + 0x8000));
+          pedacos.push(btoa(bin));
+        }
+        return pedacos;
+      };
       // um passo curto por vez; um passo cuja página recarregou no meio responde null e postar pede de novo
       const executar = async (func, args) => {
         try { const [r] = await chrome.scripting.executeScript({ target: { tabId: aba.tabId }, func, args }); return r?.result ?? null; } catch { return null; }

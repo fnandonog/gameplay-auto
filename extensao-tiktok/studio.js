@@ -66,11 +66,15 @@ export async function limparRascunhos() {
   return { ok: true, lojas: lojas.length };
 }
 
-// Baixa o vídeo do painel (CORS para www.tiktok.com) e anexa.
+// Baixa o vídeo do painel (CORS para www.tiktok.com) e anexa. O Chrome novo pede permissão de "rede local" para a página
+// do TikTok falar com localhost, e sem ela o fetch falha: por isso o background.js baixa e manda em pedaços (abaixo).
 export async function anexarVideo(url) {
-  const r = await fetch(url, { credentials: 'omit' });
-  if (!r.ok) return { erro: `o painel respondeu ${r.status} ao baixar o vídeo` };
-  const blob = await r.blob();
+  let blob;
+  try {
+    const r = await fetch(url, { credentials: 'omit' });
+    if (!r.ok) return { erro: `o painel respondeu ${r.status} ao baixar o vídeo` };
+    blob = await r.blob();
+  } catch (e) { return { erro: `a página não conseguiu baixar o vídeo da central (${String(e.message || e).slice(0, 80)})`, rede: true }; }
   const input = document.querySelector('input[type="file"][accept*="video"]') || document.querySelector('input[type="file"]');
   if (!input) return { erro: 'o campo de enviar arquivo sumiu' };
   const dt = new DataTransfer();
@@ -78,6 +82,29 @@ export async function anexarVideo(url) {
   input.files = dt.files;
   input.dispatchEvent(new Event('change', { bubbles: true }));
   return { ok: true, bytes: blob.size };
+}
+
+// O vídeo baixado pelo background chega em pedaços base64 (cada executeScript leva poucos MB).
+export function receberPedaco(i, total, b64) {
+  if (i === 0) window.__fnandoVideo = [];
+  const lista = window.__fnandoVideo;
+  if (!lista) return { erro: 'a página recarregou no meio do vídeo' };
+  lista[i] = b64;
+  return { ok: true, tem: lista.filter(Boolean).length, total };
+}
+export function anexarDosPedacos(total) {
+  const lista = window.__fnandoVideo || [];
+  if (lista.filter(Boolean).length !== total) return { erro: 'a página recarregou no meio do vídeo' };
+  const partes = lista.map((b64) => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k); return u; });
+  window.__fnandoVideo = null;
+  const input = document.querySelector('input[type="file"][accept*="video"]') || document.querySelector('input[type="file"]');
+  if (!input) return { erro: 'o campo de enviar arquivo sumiu' };
+  const file = new File(partes, 'fnando.mp4', { type: 'video/mp4' });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  return { ok: true, bytes: file.size };
 }
 
 // Onde clicar: o editor da legenda ou o botão Publicar, trazido para a vista (centro, em pixels CSS).
@@ -149,7 +176,19 @@ export async function postar(executar, aba, job, { espera = 1 } = {}) {
     await executar(fecharAvisos, []);
 
     etapa = 'anexar o vídeo';
-    const a = await executar(anexarVideo, [job.video]);
+    let a = null;
+    if (aba.pedacosDoVideo) {
+      // o background baixa da central (sem precisar da permissão de rede local da página) e manda em pedaços
+      const pedacos = await aba.pedacosDoVideo(job.video);
+      for (let vez = 0; vez < 2 && !a?.ok; vez++) {
+        a = null;
+        for (let i = 0; i < pedacos.length; i++) {
+          const r = await executar(receberPedaco, [i, pedacos.length, pedacos[i]]);
+          if (!r || r.erro) { a = r || { erro: 'a página recarregou no meio do vídeo' }; break; }
+        }
+        if (!a) a = await executar(anexarDosPedacos, [pedacos.length]);
+      }
+    } else a = await executar(anexarVideo, [job.video]);
     if (!a || a.erro) return parar(a?.erro || 'a página recarregou ao anexar');
 
     etapa = 'esperar o vídeo carregar';
