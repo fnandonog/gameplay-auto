@@ -1,7 +1,7 @@
 {
   "versao": 1,
   "jogo": "GTA 6",
-  "atualizado_em": "2026-11-19T16:00:00Z",
+  "atualizado_em": "2026-11-19T16:45:00Z",
   "como_usar": "Cada item é um momento/curiosidade que viralizou fora do Brasil. A central cruza 'palavras_chave' com a transcrição (whisper) e os marcadores das gravações; se bater, o trecho vira corte com prioridade alta e usa 'titulo_short' e 'gancho'. Itens com coberto_no_br=true perdem prioridade.",
   "itens": [
     {
@@ -180,6 +180,180 @@
       "fonte": "https://vgtimes.com/gaming-news/175097-gta-6-players-discover-dexter-easter-egg-as-rockstar-recreates-iconic-miami-apartment-building.html",
       "confirmado": false,
       "coberto_no_br": false,
+      "encontrado_em": "2026-11-19",
+      "prioridade": 3
+    },
+    {
+      "id": "gta6-cachorro-jetski",
+      "tipo": "easter_egg",
+      "titulo": "Cool Dog: o cachorro de jet ski que te resgata",
+      "o_que_e": "Um cachorro pilotando jet ski aparece para resgatar você no mar e pode te levar até a 'Ilha dos Cachorros'.",
+      "como_achar": "Ir de barco ou jet ski bem longe da costa em Partridge Bay (perto de Lummox County) ou Gambit Bay (perto de Key Lento), pular na água, largar o veículo e nadar esperando. Quando ouvir latido, ele está chegando. Suba no jet ski dele e fique nele para ir à ilha (pode faltar gasolina na primeira tentativa).",
+      "palavras_chave": [
+        "cachorro de jet ski",
+        "cachorro no jet ski",
+        "ilha dos cachorros",
+        "cool dog",
+        "dog island",
+        "jet ski dog",
+        "latido",
+        "cachorro"
+      ],
+      "titulo_short": "Um CACHORRO me salvou no GTA 6",
+      "gancho": "Personagem boiando no mar e o latido ao fundo",
+      "fonte": "https://playday.one/2026/11/19/gta-6-cool-dog-easter-egg/",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-19",
+      "prioridade": 1
+    },
+    {
+      "id": "gta6-armazem-armas-vice-dale",
+      "tipo": "arma",
+      "titulo": "Armazém com 3 armas de graça (SMG, fuzil e pistola)",
+      "o_que_e": "Armazém industrial com Type 9 SMG, fuzil Duke 556 e pistola Kalinga 50 largados.",
+      "como_achar": "South Vice-Dale County, uns 5 km da casa do Jason. Type 9 no chão logo à direita ao entrar na sala principal, Duke 556 no chão perto de um corpo, Kalinga 50 numa mesa no escritório.",
+      "palavras_chave": [
+        "armazém abandonado",
+        "fuzil de graça",
+        "arma de graça",
+        "type 9",
+        "duke 556",
+        "vice-dale",
+        "armas escondidas"
+      ],
+      "titulo_short": "3 armas DE GRAÇA no começo do GTA 6",
+      "gancho": "Entrando no armazém escuro e a SMG no chão",
+      "fonte": "https://www.noobfeed.com/articles/gta-6-early-game-guns",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-19",
+      "prioridade": 1
+    },
+    {
+      "id": "gta6-sniper-hamlet",
+      "tipo": "arma",
+      "titulo": "Sniper cedo perto de Hamlet",
+      "o_que_e": "Fuzil de precisão Laird 350 obtido num evento com dois caçadores, um ferido.",
+      "como_achar": "Estrada secundária perto de Hamlet, saindo da rodovia em Grassrivers. Levar o ferido ao hospital dá o sniper como recompensa (ou matar os dois). O mesmo site também cita uma maleta num motel abandonado ao sul de Hamlet.",
+      "palavras_chave": [
+        "sniper",
+        "caçador ferido",
+        "levar pro hospital",
+        "laird",
+        "hamlet",
+        "rifle de precisão"
+      ],
+      "titulo_short": "Salvei um caçador e ganhei um SNIPER no GTA 6",
+      "gancho": "O caçador ferido na beira da estrada",
+      "fonte": "https://www.noobfeed.com/articles/gta-6-early-game-guns",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-19",
+      "prioridade": 2
+    },
+    {
+      "id": "gta6-pistola-navio-espiao",
+      "tipo": "arma",
+      "titulo": "Pistola escondida num navio espião abandonado",
+      "o_que_e": "Pistola Assassin Nipper .38 dentro de um barco espião abandonado.",
+      "como_achar": "Ponta sul da ilha sudeste de Permit Keys, no barco encalhado perto da costa.",
+      "palavras_chave": [
+        "navio espião",
+        "barco espião",
+        "barco abandonado",
+        "pistola escondida",
+        "permit keys",
+        "nipper"
+      ],
+      "titulo_short": "Achei um NAVIO ESPIÃO abandonado no GTA 6",
+      "gancho": "Câmera chegando no casco enferrujado",
+      "fonte": "https://www.noobfeed.com/articles/gta-6-early-game-guns",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-19",
+      "prioridade": 2
+    },
+    {
+      "id": "gta6-shotgun-contrabandista",
+      "tipo": "arma",
+      "titulo": "Escopeta no barco do contrabandista",
+      "o_que_e": "Escopeta Gorse 425 perto de um barco de contrabandista abandonado.",
+      "como_achar": "Ilha mais ao norte de Permit Keys, na costa, ao lado do barco abandonado.",
+      "palavras_chave": [
+        "barco de contrabandista",
+        "contrabandista",
+        "escopeta",
+        "shotgun",
+        "gorse"
+      ],
+      "titulo_short": "A escopeta escondida que ninguém achou no GTA 6",
+      "gancho": "Barco virado na praia",
+      "fonte": "https://www.noobfeed.com/articles/gta-6-early-game-guns",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-19",
+      "prioridade": 2
+    },
+    {
+      "id": "gta6-ganado-retro-ultimate",
+      "tipo": "carro",
+      "titulo": "Ganado retro de graça (Edição Ultimate)",
+      "o_que_e": "Ganado retro já preparado, de graça, para quem tem a Edição Ultimate. Também vem uma moto militar Dinka Enduro e um caiaque na casa do Jason.",
+      "como_achar": "Coastal Auto Care em Key Lento, no Capítulo 1. Só com a Edição Ultimate.",
+      "palavras_chave": [
+        "ganado",
+        "carro de graça",
+        "edição ultimate",
+        "coastal auto care",
+        "moto militar"
+      ],
+      "titulo_short": "Carro DE GRAÇA no começo do GTA 6",
+      "gancho": "Portão da oficina abrindo",
+      "fonte": "https://www.redbull.com/int-en/gta-6-ultimate-edition-bonuses",
+      "confirmado": true,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-19",
+      "prioridade": 3
+    },
+    {
+      "id": "gta6-playstation-no-jogo",
+      "tipo": "easter_egg",
+      "titulo": "PS5 e controle DualSense dentro do jogo",
+      "o_que_e": "Um PS5 com DualSense aparece num cenário do trailer 2, perto do anúncio da Ammu-Nation e do comercial do Phil Cassidy. A localização dentro do jogo ainda não foi publicada.",
+      "como_achar": "Ainda não há localização. Fique de olho em salas com TV e videogame. Quem achar primeiro ganha o vídeo.",
+      "palavras_chave": [
+        "playstation",
+        "ps5",
+        "videogame",
+        "dualsense",
+        "controle de ps5"
+      ],
+      "titulo_short": "Achei um PS5 DENTRO do GTA 6",
+      "gancho": "Zoom no console na estante",
+      "fonte": "https://beebom.com/gta-6-easter-eggs/",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-19",
+      "prioridade": 2
+    },
+    {
+      "id": "gta6-carro-brian",
+      "tipo": "carro",
+      "titulo": "Eclipse verde do Brian (Velozes e Furiosos)",
+      "o_que_e": "Mitsubishi Eclipse verde idêntico ao do Brian no primeiro Velozes e Furiosos, numa garagem.",
+      "como_achar": "Garagem residencial em Vespucci Island, Vice City.",
+      "palavras_chave": [
+        "carro do brian",
+        "velozes e furiosos",
+        "eclipse verde",
+        "carro verde"
+      ],
+      "titulo_short": "O carro do Brian no GTA 6",
+      "gancho": "Portão da garagem abrindo",
+      "fonte": "https://www.hotcars.com/fast-furious-car-hiding-gta-6-garage/",
+      "confirmado": false,
+      "coberto_no_br": true,
       "encontrado_em": "2026-11-19",
       "prioridade": 3
     }
