@@ -2,6 +2,7 @@
 // the browser), scripts and ideas, cuts waiting for approval, cuts delivered to the owner's posting skill, and the
 // numbers of each social account. Everything here only reads folders; the numbers come from a metricas.json that the
 // owner's skill (or anyone) writes, so the central works before any account is connected.
+import { temIa } from './contaClaude.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { listarSessoes } from './painel.js';
@@ -81,6 +82,7 @@ export function listarProntos(config) {
         postadoEm: feito?.em || post.postadoEm || null, links: feito?.links || post.links || {}, emRede: feito?.emRede || {},
         temVideo: fs.existsSync(path.join(pasta, 'video.mp4')), temCapa: fs.existsSync(path.join(pasta, 'capa.jpg')),
         legenda: post.legenda || post.descricao || '', hashtags: post.hashtags || [], aviso: post.aviso || null,
+        formato: post.formato || null, tipo: post.tipo || 'corte', postarJa: !!post.postarJa,
       });
     }
   }
@@ -174,7 +176,7 @@ export async function prontidao(config, { checar = (cmd, args) => run(cmd, args,
   const itens = [
     { id: 'ffmpeg', ok: await checar('ffmpeg', ['-version']), titulo: 'ffmpeg instalado no Mac', comoFazer: 'No Terminal: brew install ffmpeg', dono: 'plataforma' },
     { id: 'whisper', ok: (await checar(config.whisper?.bin || 'whisper-cli', ['--help'])) && existe(config.whisper?.modelo), titulo: 'Transcrição (whisper) instalada com o modelo', comoFazer: 'No Terminal: sh tools/instalar-mac.sh', dono: 'plataforma' },
-    { id: 'ia', ok: !!env.ANTHROPIC_API_KEY, titulo: 'Chave da IA (títulos e escolha dos cortes)', comoFazer: 'Crie uma chave em console.anthropic.com > API Keys e cole na central, em Redes > Chave da IA. Sem ela os títulos saem genéricos e nada é postado sozinho.', dono: 'voce' },
+    { id: 'ia', ok: temIa(env), titulo: 'IA dos títulos e da escolha dos cortes', comoFazer: 'Use a sua conta Claude: no Terminal do Mac rode "claude" uma vez e entre com a sua conta (/login). Ou cole uma chave de API em Contas e conexões > IA. Sem IA os títulos saem genéricos e nada é postado sozinho.', dono: 'voce' },
     { id: 'obs', ok: existe(config.pastaEntrada) && (dir(config.pastaEntrada).some((f) => VIDEO.test(f)) || dir(config.pastaProcessados).some((f) => VIDEO.test(f))), titulo: 'OBS gravando na pasta certa', comoFazer: `Configurações do OBS > Saída > Gravação: caminho ${config.pastaEntrada}`, dono: 'plataforma' },
     { id: 'nome', ok: arrobas.length > 0 && arrobas.every((a) => !ARROBAS_PALPITE.has(a.toLowerCase())), titulo: 'Nome e @ do canal escolhidos', comoFazer: 'Escolha o nome (anônimo) e me diga o @ de cada rede. Ele vai escrito no fim de cada corte ("SEGUE @...").', dono: 'voce' },
     ...redes.map((r) => ({ id: `conta-${r}`, ok: conectadas.has(r), titulo: `Conta no ${{ youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook' }[r] || r} criada e conectada`, comoFazer: 'Crie a conta (e-mail novo, sem seu telefone pessoal) e conecte na sua skill de postagem; ela passa a escrever metricas.json.', dono: 'voce' })),

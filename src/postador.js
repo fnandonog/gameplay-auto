@@ -50,7 +50,7 @@ export function proximoEnvio(posts, { agora = Date.now(), conectadas = REDES_API
   const feitos = contagemHoje(posts, agora);
   const fila = posts
     .filter((p) => !p.post.aviso && (!p.post.agendarPara || Date.parse(p.post.agendarPara) <= agora))
-    .sort((a, b) => String(a.post.agendarPara || a.post.criadoEm || '').localeCompare(String(b.post.agendarPara || b.post.criadoEm || '')));
+    .sort((a, b) => (b.post.postarJa ? 1 : 0) - (a.post.postarJa ? 1 : 0) || String(a.post.agendarPara || a.post.criadoEm || '').localeCompare(String(b.post.agendarPara || b.post.criadoEm || '')));
   for (const p of fila) {
     for (const rede of (p.post.linha?.redes || []).filter((r) => REDES_API.includes(r) && conectadas.includes(r))) {
       if (p.postado.links?.[rede]) continue;
@@ -128,9 +128,37 @@ export async function rodadaPostador(config, { agora = Date.now(), publicar = PU
   }
 }
 
+// one round at a time in this process: the 5-minute timer and the owner's "Postar agora" share the same lock
+let rodando = false;
+
+// "Postar agora" on the central: this post jumps the queue now (still one upload at a time, still the daily limits,
+// still never a post with a warning). TikTok picks it up on the extension's next check.
+export async function postarAgora(config, id, { log = console.log, agora = Date.now() } = {}) {
+  const [linha, pasta] = String(id || '').split('/');
+  if (!nome(linha) || !nome(pasta) || linha !== path.basename(linha) || pasta !== path.basename(pasta)) throw new Error('Post inválido.');
+  const f = path.join(config.pastaEntrega, linha, pasta, 'post.json');
+  const post = ler(f);
+  if (!post) throw new Error('Post não encontrado.');
+  if (post.aviso) throw new Error(`Este post tem aviso (${post.aviso}) e não sai sozinho.`);
+  const novo = { ...post, agendadoAntes: post.agendadoAntes || post.agendarPara || null, agendarPara: new Date(agora).toISOString(), postarJa: true };
+  fs.writeFileSync(f, JSON.stringify(novo, null, 2));
+  registrar(config.pastaSaida, 'agendador', 'trabalhando', `Você mandou postar agora: "${post.titulo}"`);
+  const feitos = [];
+  if (!rodando) {
+    rodando = true;
+    try {
+      for (let i = 0; i < REDES_API.length; i++) {
+        const r = await rodadaPostador(config, { log });
+        feitos.push(r);
+        if (r.feito !== 'publicado' && r.feito !== 'erro') break;
+      }
+    } finally { rodando = false; }
+  }
+  return { agendarPara: novo.agendarPara, feitos };
+}
+
 export function iniciarPostador(config, { intervaloMin = 5, log = console.log } = {}) {
   if (!config.postadorLigado) { log('Postador das APIs desligado (postadorLigado: false no config.json).'); return () => {}; }
-  let rodando = false;
   const vez = async () => {
     if (rodando) return;
     rodando = true;

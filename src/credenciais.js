@@ -1,6 +1,7 @@
 // Keys and tokens of the official APIs (Meta and YouTube), only in ~/Gameplay/.credenciais.json (owner-only, outside git).
 // The app ids are public; the secrets are pasted once by the owner in the Contas tab (only on this Mac) and the tokens come
 // from the "Conectar" buttons (OAuth on localhost:4322). Nothing here is ever sent back to the page.
+import { acharClaude } from './contaClaude.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -55,6 +56,6 @@ export function statusApis(c) {
     youtube: { ...st(!!(y.clientId && y.clientSecret), !!y.refreshToken, 'youtube'), conta: y.channelTitle || '', privado: !!y.travadoPrivado },
     meta: { appId: m.appId || '', configId: m.configId || '', temSegredo: !!m.appSecret },
     google: { clientId: y.clientId || '', temSegredo: !!y.clientSecret },
-    ia: { temChave: !!(c.ia?.apiKey || process.env.ANTHROPIC_API_KEY) },
+    ia: { temChave: !!(c.ia?.apiKey || process.env.ANTHROPIC_API_KEY), conta: !!acharClaude() },
   };
 }

@@ -49,9 +49,11 @@
   .pill.ok { color: var(--ok); } .pill.hi { color: var(--hi); } .pill.no { color: var(--no); } .pill.cy { color: var(--cy); }
   .sw { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex: none; }
   /* alerts */
-  .alertas { display: grid; gap: 8px; margin-bottom: 18px; }
-  .alerta { display: flex; gap: 12px; align-items: center; background: linear-gradient(90deg, rgba(255,230,0,.08), transparent 60%), var(--card); border: 1px solid var(--line); border-left: 3px solid var(--hi); border-radius: 12px; padding: 10px 14px; }
-  .alerta .txt { flex: 1; min-width: 0; } .alerta b { display: block; } .alerta span { color: var(--muted); font-size: 13px; }
+  .alertas { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--hi); border-radius: 14px; margin-bottom: 18px; overflow: hidden; }
+  .ah { display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--hi); }
+  .ah .luz { width: 8px; height: 8px; border-radius: 50%; background: var(--hi); }
+  .alerta { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+  .alerta .txt { flex: 1; min-width: 0; } .alerta b { display: block; font-size: 14px; } .alerta span { color: var(--muted); font-size: 13px; }
   /* KPI */
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
   .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
@@ -81,18 +83,24 @@
   .rd .mini b { display: block; color: var(--text); font-size: 14px; font-variant-numeric: tabular-nums; }
   .rd .mais { color: var(--ok); font-weight: 700; }
   /* post cards */
-  .fila { display: grid; grid-auto-flow: column; grid-auto-columns: 168px; gap: 12px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
-  .pc { background: var(--card2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; cursor: pointer; text-align: left; padding: 0; display: flex; flex-direction: column; }
+  .diafila + .diafila { margin-top: 18px; }
+  .dfh { display: flex; gap: 10px; align-items: baseline; margin-bottom: 10px; } .dfh b { font-size: 15px; text-transform: capitalize; }
+  .fila { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; align-items: flex-start; }
+  .pc { flex: none; width: 200px; background: var(--card2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; cursor: pointer; text-align: left; padding: 0; display: flex; flex-direction: column; }
+  .pc.h { width: 632px; }
   .pc:hover { border-color: #3a3e4c; }
-  .pc .cv { position: relative; aspect-ratio: 9/16; background: #000 center/cover; }
-  .pc .cv .hora { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.72); border-radius: 7px; padding: 2px 7px; font-size: 12px; font-weight: 700; }
+  .pc .cv { position: relative; height: 356px; background: #000 center/cover; }
+  .pc .cv .hora { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.75); border-radius: 8px; padding: 3px 9px; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .pc .cv .tipo { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,.75); border-radius: 7px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+  .pc .cv .avs { position: absolute; top: 10px; right: 10px; background: var(--no); color: #fff; border-radius: 7px; padding: 2px 8px; font-size: 11px; font-weight: 800; }
   .pc .cv .play { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; transition: opacity .15s; background: rgba(0,0,0,.25); }
   .pc:hover .play { opacity: 1; }
-  .pc .cv .redinhas { position: absolute; bottom: 8px; left: 8px; display: flex; gap: 4px; }
+  .redinhas { display: flex; gap: 4px; }
   .rx { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; font-size: 9px; font-weight: 800; color: #fff; background: var(--c); border: 1px solid rgba(0,0,0,.4); }
   .rx.off { opacity: .35; }
-  .pc .tt { padding: 8px 10px 10px; font-size: 13px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .pc .dd { padding: 0 10px 10px; font-size: 12px; color: var(--muted); margin-top: auto; }
+  .pc .hr { padding: 10px 12px 0; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; } .pc .hr .ok { font-size: 12px; color: var(--ok); }
+  .pc .tt { padding: 2px 12px 4px; font-size: 14px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .pc .dd { padding: 4px 12px 12px; font-size: 12px; color: var(--muted); margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
   /* calendar */
   .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
   .cd { background: var(--card); border: 1px solid var(--line); border-radius: 12px; min-height: 260px; padding: 8px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -126,6 +134,8 @@
   dialog::backdrop { background: rgba(0,0,0,.7); }
   .md { display: grid; grid-template-columns: 300px 1fr; }
   .md video { width: 100%; aspect-ratio: 9/16; background: #000; display: block; border-radius: 16px 0 0 16px; }
+  .md.h { grid-template-columns: 1fr; } .md.h video { aspect-ratio: 16/9; border-radius: 16px 16px 0 0; }
+  dialog:has(.md.h) { max-width: 960px; }
   .md .info { padding: 18px; display: grid; gap: 12px; align-content: start; }
   .md h3 { margin: 0; font-size: 17px; padding-right: 30px; }
   .md .fechar { position: absolute; top: 10px; right: 10px; background: var(--card2); border: 1px solid var(--line); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; }
@@ -219,6 +229,8 @@
     .cal { grid-template-columns: 1fr; } .cd { min-height: 0; } .cd.vazia { display: none; }
     .md { grid-template-columns: 1fr; } .md video { border-radius: 16px 16px 0 0; max-height: 60vh; }
     .tab .esconde { display: none; }
+    .pc { width: 170px; } .pc .cv { height: 302px; } .pc.h { width: calc(100vw - 64px); } .pc.h .cv { height: calc((100vw - 64px) * 9 / 16); }
+    .md.h video { max-height: none; }
   }
   @media (max-width: 520px) { .redesgrid { grid-template-columns: 1fr; } .redes { grid-template-columns: 1fr; } .kpi .val { font-size: 23px; } }
 </style>
@@ -315,7 +327,7 @@ function alertas() {
   if (esperando) out.push([`${esperando} corte(s) esperando você`, 'Os que o filtro não aprovou sozinho estão lá com o motivo. Nada é descartado sem você.', '<a class="btn" href="/cortes">Revisar</a>']);
   for (const r of redes().filter((x) => x.cor !== 'ok')) out.push([`${NOME[r.rede]}: ${r.estado}`, '', '<button class="btn sec" data-ir="redes">Resolver</button>']);
   if (A?.postador?.pausa) out.push(['A postagem está pausada', A.postador.pausa.motivo || '', '<a class="btn sec" href="/escritorio">Ver</a>']);
-  for (const i of (P?.itens || []).filter((i) => !i.ok && !/^conta-/.test(i.id) && i.id !== 'postagem')) out.push([i.titulo, i.comoFazer, i.id === 'ia' ? '<button class="btn" data-ir="redes">Colar a chave</button>' : '']);
+  for (const i of (P?.itens || []).filter((i) => !i.ok && !/^conta-/.test(i.id) && i.id !== 'postagem')) out.push([i.titulo, i.comoFazer, i.id === 'ia' ? '<button class="btn" data-ir="redes">Como ligar</button>' : '']);
   for (const [r, e] of Object.entries(D.redes?.erros || {})) out.push([`Não li os números do ${NOME[r] || r}`, e, '']);
   return out;
 }
@@ -366,17 +378,24 @@ function sparkline(r) {
   return `<svg viewBox="0 0 ${W} ${h}" preserveAspectRatio="none" style="width:100%;height:${h}px;display:block" aria-label="seguidores em 14 dias"><polyline points="${pts}" fill="none" stroke="${cor(r)}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
 }
 
+const deitado = (p) => p.formato === 'horizontal' || p.tipo === 'missao' || p.tipo === 'longo';
 function cardPost(p) {
   const feito = !!p.postadoEm, t = p.postadoEm || p.agendarPara;
-  return `<button class="pc" data-post="${esc(p.linha + '/' + p.pasta)}">
+  return `<button class="pc${deitado(p) ? ' h' : ''}" data-post="${esc(p.linha + '/' + p.pasta)}">
     <div class="cv" style="${p.temCapa ? `background-image:url('${pronto(p, 'capa.jpg')}')` : ''}">
-      <span class="hora">${t ? `${diaDe(t)} · ${hora(t)}` : 'sem horário'}</span>
-      <span class="play"><svg width="44" height="44" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,.6)"/><path d="M10 8l6 4-6 4z" fill="#fff"/></svg></span>
-      <span class="redinhas">${(p.redes || []).map((r) => rx(r, feito && !p.emRede?.[r])).join('')}</span>
+      ${deitado(p) ? `<span class="tipo">${p.tipo === 'missao' ? 'Missão completa' : 'Vídeo longo'}${p.duracao ? ' · ' + dur(p.duracao) : ''}</span>` : p.duracao ? `<span class="tipo">${dur(p.duracao)}</span>` : ''}
+      <span class="play"><svg width="52" height="52" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,.6)"/><path d="M10 8l6 4-6 4z" fill="#fff"/></svg></span>
+      ${p.aviso ? '<span class="avs">não sai sozinho</span>' : ''}
     </div>
+    <div class="hr">${t ? (feito ? `${diaDe(t)} ${hora(t)}` : hora(t)) : 'sem horário'}${feito ? ' <span class="ok">✓ publicado</span>' : ''}</div>
     <div class="tt">${esc(p.titulo)}</div>
-    ${feito ? `<div class="dd">${curto(viewsDoPost(p))} views · ${curto(curtidasDoPost(p))} curtidas</div>` : ''}
+    <div class="dd"><span class="redinhas">${(p.redes || []).map((r) => rx(r, feito && !p.emRede?.[r])).join('')}</span>${feito ? `<span>${curto(viewsDoPost(p))} views</span>` : ''}</div>
   </button>`;
+}
+function proximosPorDia(prox) {
+  const g = new Map();
+  for (const p of prox) { const k = p.agendarPara ? diaDe(p.agendarPara) : 'Sem horário'; if (!g.has(k)) g.set(k, []); g.get(k).push(p); }
+  return [...g.entries()].slice(0, 4).map(([d, l]) => `<div class="diafila"><div class="dfh"><b>${esc(d)}</b><span class="muted">${l.length} post(s)</span></div><div class="fila">${l.map(cardPost).join('')}</div></div>`).join('');
 }
 
 const TIPO = { easter_egg: ['Easter eggs', '#a855f7', 'Easter egg'], arma: ['Armas', '#f0564c', 'Arma'], carro: ['Carros', '#5b8ff9', 'Carro'], dica: ['Dicas', '#2ecc71', 'Dica'], dinheiro: ['Dinheiro', '#e3b341', 'Dinheiro'], momento_engracado: ['Engraçados', '#e8457f', 'Momento engraçado'] };
@@ -448,7 +467,7 @@ const TELAS = {
     const al = alertas();
     return `<div class="cab"><div><h1>Visão geral</h1><div class="sub">${D.redes?.atualizadoEm ? `Números ${ha(D.redes.atualizadoEm)} · lidos das redes a cada 3 horas` : 'Os números aparecem quando as redes estiverem conectadas'}</div></div>
       <div class="acoes"><button class="btn sec" data-atualizar>Atualizar números</button></div></div>
-    ${al.length ? `<div class="alertas">${al.map(([t, s, b]) => `<div class="alerta"><div class="txt"><b>${esc(t)}</b>${s ? `<span>${esc(s)}</span>` : ''}</div>${b}</div>`).join('')}</div>` : ''}
+    ${al.length ? `<div class="alertas"><div class="ah"><span class="luz"></span>Precisa de você · ${al.length}</div>${al.map(([t, s, b]) => `<div class="alerta"><div class="txt"><b>${esc(t)}</b>${s ? `<span>${esc(s)}</span>` : ''}</div>${b}</div>`).join('')}</div>` : ''}
     <div class="kpis">
       <div class="kpi"><div class="rot">Seguidores e inscritos</div><div class="val">${num(T.seguidores)}</div><div class="d"><b>+${num(ganho7('seguidores'))}</b> em 7 dias</div></div>
       <div class="kpi"><div class="rot">Visualizações</div><div class="val">${curto(viewsTot)}</div><div class="d"><b>+${curto(ganho7('views'))}</b> em 7 dias</div></div>
@@ -468,7 +487,7 @@ const TELAS = {
       <div class="mini"><div><b>${m ? curto(m.views) : '—'}</b>views</div><div><b>${m ? curto(m.views7d) : '—'}</b>views em 7 dias</div></div>
     </div>`; }).join('')}</div>
     <div class="caixa bloco"><div class="topo"><h2>Próximos posts</h2><span class="muted">${prox.length} na fila</span><div class="dir"><button class="btn sec" data-ir="agenda">Ver calendário</button></div></div>
-      ${prox.length ? `<div class="fila">${prox.slice(0, 12).map(cardPost).join('')}</div>` : '<div class="semdados">Nada na fila. O que você gravar vira corte e entra aqui sozinho.</div>'}</div>
+      ${prox.length ? proximosPorDia(prox) : '<div class="semdados">Nada na fila. O que você gravar vira corte e entra aqui sozinho.</div>'}</div>
     <div class="caixa bloco"><div class="topo"><h2>Melhores vídeos</h2><div class="dir"><button class="btn sec" data-ir="publicados">Ver todos</button></div></div>
       ${top.length ? tabelaPosts(top) : '<div class="semdados">Quando os primeiros vídeos saírem, os que mais deram views aparecem aqui.</div>'}</div>`;
   },
@@ -544,9 +563,9 @@ const TELAS = {
       </div>`;
     };
     const live = C?.live || [];
-    const ia = `<div class="rede"><div class="cb"><span class="rx" style="--c:#8a7a00;width:36px;height:36px;font-size:12px;border-radius:10px">IA</span><div class="txt"><div style="font-weight:700">Chave da IA</div>
-      <div class="estado" style="color:var(--${A?.ia?.temChave ? 'ok' : 'no'})">${A?.ia?.temChave ? 'Guardada: títulos e escolha dos cortes pela IA' : 'Falta: sem ela os títulos saem genéricos'}</div></div></div>
-      ${A?.ia?.temChave ? '' : '<div class="muted" style="font-size:13px">Crie em <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> > API Keys > Create Key e cole aqui.</div>'}
+    const ia = `<div class="rede"><div class="cb"><span class="rx" style="--c:#8a7a00;width:36px;height:36px;font-size:12px;border-radius:10px">IA</span><div class="txt"><div style="font-weight:700">IA dos títulos e da escolha dos cortes</div>
+      <div class="estado" style="color:var(--${A?.ia?.temChave || A?.ia?.conta ? 'ok' : 'no'})">${A?.ia?.temChave ? 'Chave de API guardada: títulos e escolha dos cortes pela IA' : A?.ia?.conta ? 'Usando a sua conta Claude deste Mac (Claude Code)' : 'Falta: sem IA os títulos saem genéricos'}</div></div></div>
+      <div class="muted" style="font-size:13px">${A?.ia?.temChave ? 'A chave tem prioridade sobre a conta.' : 'Com a sua conta: no Terminal do Mac rode <code>claude</code> uma vez, digite <code>/login</code> e entre com a sua conta Claude. A central passa a usar essa conta, sem chave. Se preferir uma chave de API, cole abaixo.'}</div>
       <div class="linha2"><input class="campo" type="password" autocomplete="off" data-cred="ia" data-campo="apiKey" placeholder="${A?.ia?.temChave ? 'Cole só para trocar' : 'sk-ant-...'}" style="flex:1"><button class="btn${A?.ia?.temChave ? ' sec' : ''}" data-salvar-cred="ia">Salvar</button></div></div>`;
     return `<div class="cab"><div><h1>Contas e conexões</h1><div class="sub">As chaves ficam só neste Mac (<code>~/Gameplay/.credenciais.json</code>) e nunca aparecem de novo na página.</div></div></div>
     <div class="redes">${R.map(card).join('')}${ia}</div>
@@ -591,12 +610,14 @@ function abrirPost(chave) {
   if (!p) return;
   const N = numerosDoPost(p), t = p.postadoEm || p.agendarPara;
   const m = $('#modal');
-  m.innerHTML = `<div class="md" style="position:relative">
+  const podeJa = !p.postadoEm && !p.aviso && p.temVideo;
+  m.innerHTML = `<div class="md${deitado(p) ? ' h' : ''}" style="position:relative">
     ${p.temVideo ? `<video src="${pronto(p, 'video.mp4')}" ${p.temCapa ? `poster="${pronto(p, 'capa.jpg')}"` : ''} controls playsinline autoplay></video>` : '<div class="semdados">Vídeo não encontrado</div>'}
     <div class="info"><button class="fechar" data-fechar aria-label="Fechar">✕</button>
       <h3>${esc(p.titulo)}</h3>
       <div>${p.postadoEm ? `<span class="pill ok">publicado ${diaDe(p.postadoEm).toLowerCase()} às ${hora(p.postadoEm)}</span>` : t ? `<span class="pill cy">sai ${diaDe(t).toLowerCase()} às ${hora(t)}</span>` : '<span class="pill hi">sem horário</span>'} ${p.duracao ? `<span class="pill">${dur(p.duracao)}</span>` : ''}</div>
       ${p.aviso ? `<div class="aviso">${esc(p.aviso)}: este não sai sozinho.</div>` : ''}
+      ${podeJa ? `<div class="linha2"><button class="btn" data-postar-ja="${esc(p.linha + '/' + p.pasta)}">Postar agora</button><span class="faint" data-pj-msg style="font-size:12px">Sai agora no Instagram, Facebook e YouTube; o TikTok pega pela extensão em poucos minutos.</span></div>` : ''}
       <div><div class="rot">Redes</div><div class="lr">${(p.redes || []).map((r) => { const n = N[r] || {}; const em = p.emRede?.[r];
         return `<div>${rx(r, p.postadoEm && !em)}<span>${NOME[r]}</span>${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">abrir</a>` : ''}${n.privado ? '<span class="pill hi">privado</span>' : ''}
           <span class="v">${em || n.link ? [n.views != null ? `${num(n.views)} views` : '', n.curtidas != null ? `${num(n.curtidas)} ♥` : '', n.comentarios != null ? `${num(n.comentarios)} coment.` : ''].filter(Boolean).join(' · ') || 'publicado' : 'na fila'}</span></div>`; }).join('')}</div></div>
@@ -661,6 +682,13 @@ document.addEventListener('click', async (e) => {
   const q = (s) => e.target.closest(s);
   if (q('[data-fechar]') || e.target.id === 'modal') { $('#modal').close(); return; }
   const post = q('[data-post]'); if (post) { abrirPost(post.dataset.post); return; }
+  const pj = q('[data-postar-ja]');
+  if (pj) { pj.disabled = true; pj.textContent = 'Postando...'; const msg = $('[data-pj-msg]');
+    const r = await fetch('/api/postar-agora', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: pj.dataset.postarJa }) }).then((x) => x.json()).catch(() => ({ erro: 'A central não respondeu.' }));
+    if (r.erro) { msg.textContent = r.erro; pj.textContent = 'Postar agora'; pj.disabled = false; return; }
+    const ok = (r.feitos || []).filter((f) => f.feito === 'publicado').map((f) => NOME[f.rede]), err = (r.feitos || []).filter((f) => f.feito === 'erro');
+    msg.textContent = `${ok.length ? 'Publicado: ' + ok.join(', ') + '. ' : ''}${err.length ? 'Falhou: ' + err.map((f) => `${NOME[f.rede]} (${f.erro})`).join('; ') + '. ' : ''}${!ok.length && !err.length ? 'Entrou na frente da fila. ' : ''}O TikTok sai pela extensão em poucos minutos.`;
+    pj.textContent = 'Enviado'; await carregar(); return; }
   const idq = q('[data-ideia]'); if (idq) { abrirIdeia(idq.dataset.ideia); return; }
   const rf = q('[data-rfiltro]'); if (rf) { est.radarFiltro = rf.dataset.rfiltro; desenhar(); return; }
   const rt = q('[data-rtipo]'); if (rt) { est.radarTipo = rt.dataset.rtipo; desenhar(); return; }

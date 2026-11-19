@@ -1,6 +1,7 @@
 // The editor's judgment: Claude reads each candidate's transcript and decides the exact cut, the hook and the titles.
 // Without ANTHROPIC_API_KEY (or a profile from `ant auth login`) the pipeline still runs with simple defaults.
 import Anthropic from '@anthropic-ai/sdk';
+import { clienteIa } from './contaClaude.js';
 import { textoEntre } from './transcricao.js';
 
 export const MODELO = 'claude-opus-5-5';
@@ -83,7 +84,7 @@ export async function decidirCortes(cands, words, opts = {}) {
   if (!cands.length) return [];
   if (opts.semIa) return semIa(cands);
   let client;
-  try { client = new Anthropic(); } catch { return semIa(cands); }
+  try { client = clienteIa(); } catch { return semIa(cands); }
   try {
     const stream = client.messages.stream({
       model: MODELO,

@@ -15,6 +15,7 @@ import { lerRadar, sincronizarRadar, lerEstadoRadar, salvarEstadoRadar, statusDa
 import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
 import { arquivoToken, garantirToken, bearerOk, assinaturaOk, proximoJob, arquivoDoVideo, registrarResultado } from './tiktokChrome.js';
 import { registrar } from './atividade.js';
+import { postarAgora } from './postador.js';
 import crypto from 'node:crypto';
 import { arquivoCredenciais, lerCredenciais, salvarCredenciais, statusApis, aplicarChaveIa } from './credenciais.js';
 import * as metaApi from './postadores/meta.js';
@@ -254,6 +255,12 @@ export function criarPainel(config) {
         const nome = decodeURIComponent(ri[1]), file = path.join(pastaImagensRadar(config), nome);
         if (!imagemRadarSegura(nome) || !fs.existsSync(file)) return json(res, 404, { erro: 'Não encontrado.' });
         return servirArquivo(req, res, file, { 'content-type': /\.png$/i.test(nome) ? 'image/png' : /\.webp$/i.test(nome) ? 'image/webp' : 'image/jpeg' });
+      }
+      if (req.method === 'POST' && url.pathname === '/api/postar-agora') {
+        let body = '';
+        req.on('data', (d) => { body += d; if (body.length > 1e4) req.destroy(); });
+        req.on('end', () => { Promise.resolve().then(() => postarAgora(config, JSON.parse(body || '{}').id)).then((r) => json(res, 200, r), (e) => json(res, 400, { erro: e.message })); });
+        return;
       }
       if (req.method === 'POST' && url.pathname === '/api/radar/foto') {
         const partes = []; let n = 0;

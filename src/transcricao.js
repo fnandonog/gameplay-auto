@@ -63,7 +63,7 @@ export function removerAlucinacoes(words, { nomeDepois = 3, maxRepeticoes = 2 } 
 export async function transcrever(wav, { modelo, idioma = 'pt', threads = 8, bin = 'whisper-cli' } = {}) {
   if (!modelo || !fs.existsSync(modelo)) throw new Error(`Modelo do Whisper não encontrado: ${modelo || '(vazio)'}. Rode: sh tools/instalar-mac.sh`);
   const base = wav.replace(/\.wav$/, '');
-  await run(bin, ['-m', modelo, '-f', wav, '-l', idioma, '-t', String(threads), '-ml', '1', '-sow', '-oj', '-of', base], { timeoutMs: 4 * 3600000 });
+  await run(bin, ['-m', modelo, '-f', wav, '-l', idioma, '-t', String(threads), '-ml', '1', '-sow', '-mc', '0', '-oj', '-of', base], { timeoutMs: 4 * 3600000 });
   const json = JSON.parse(fs.readFileSync(`${base}.json`, 'utf8'));
   return removerAlucinacoes(palavrasDoWhisper(json));
 }

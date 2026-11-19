@@ -172,3 +172,21 @@ test('legenda: tira os créditos que o Whisper inventa e as repetições em loop
   assert.equal(removerAlucinacoes(w('meu deus meu deus meu deus meu deus')).map((x) => x.text).join(' '), 'meu deus meu deus');
   assert.equal(removerAlucinacoes(w('a legenda por enquanto tá boa')).length, 4); // known risk: "legenda por" itself goes
 });
+
+test('conta Claude: prompt with schema and JSON extraction', async () => {
+  const { montarPrompt, extrairJson, acharClaude } = await import('../src/contaClaude.js');
+  const p = montarPrompt({ system: 'S', messages: [{ role: 'user', content: [{ type: 'text', text: 'oi' }, { type: 'image', source: { data: '', media_type: 'image/jpeg' } }] }], output_config: { format: { schema: { type: 'object' } } } }, () => '/tmp/a.jpg');
+  assert.match(p, /S\n\noi\n\n\[imagem: leia o arquivo \/tmp\/a\.jpg\]/);
+  assert.match(p, /JSON Schema/);
+  assert.equal(extrairJson('ok:\n```json\n{"a":[1]}\n```'), '{"a":[1]}');
+  assert.throws(() => extrairJson('sem json'));
+  assert.equal(acharClaude({ CLAUDE_BIN: '/x/claude' }), '/x/claude');
+  assert.equal(acharClaude({ PATH: '/nada' }, () => false), null);
+});
+
+test('postar agora: jumps the queue', async () => {
+  const { proximoEnvio } = await import('../src/postador.js');
+  const mk = (id, ag, ja) => ({ id, post: { agendarPara: ag, postarJa: ja, linha: { redes: ['youtube'] } }, postado: {}, estado: {} });
+  const r = proximoEnvio([mk('velho', '2026-11-19T10:00:00Z'), mk('ja', '2026-11-19T16:00:00Z', true)], { agora: Date.parse('2026-11-19T16:01:00Z'), conectadas: ['youtube'] });
+  assert.equal(r.post.id, 'ja');
+});

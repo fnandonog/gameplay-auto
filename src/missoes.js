@@ -5,7 +5,7 @@
 // Needs the AI; without it nothing is made.
 import fs from 'node:fs';
 import path from 'node:path';
-import Anthropic from '@anthropic-ai/sdk';
+import { clienteIa } from './contaClaude.js';
 import { run } from './run.js';
 import { MODELO } from './ia.js';
 import { textoEntre } from './transcricao.js';
@@ -73,7 +73,7 @@ async function quadros(cena, dir, passo) {
 
 export async function detectarMissoes({ cena, words = [], duracao, pasta, config = {}, log = console.log, client = null }) {
   let ia = client;
-  try { ia ||= new Anthropic(); } catch { log('Missões: sem IA, pulei.'); return []; }
+  try { ia ||= clienteIa(); } catch { log('Missões: sem IA, pulei.'); return []; }
   const passo = config.missoes?.passo || 6;
   const dir = path.join(pasta, '.quadros');
   try {
@@ -111,7 +111,7 @@ export async function renderMissoes({ cena, words = [], missoes, pasta, config =
   missoes = missoes.filter((m) => !m.incompleta);
   if (!missoes.length) return [];
   let ia = client;
-  try { ia ||= new Anthropic(); } catch { return []; }
+  try { ia ||= clienteIa(); } catch { return []; }
   fs.mkdirSync(path.join(pasta, 'missoes'), { recursive: true });
   const out = [];
   for (const [i, m] of missoes.entries()) {

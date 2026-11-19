@@ -86,3 +86,11 @@ export function quadroEscritorio({ atividade, sessoes = [], linhas = [], agora =
     pausa,
   };
 }
+
+// on startup nothing is running yet: a "working" left by a process that was restarted becomes "parado"
+export function limparTrabalhando(pastaSaida, em = new Date().toISOString()) {
+  const a = lerAtividade(pastaSaida);
+  const presos = Object.entries(a.agentes || {}).filter(([, v]) => v?.estado === 'trabalhando').map(([k]) => k);
+  for (const id of presos) registrar(pastaSaida, id, 'parado', `${a.agentes[id].texto || 'Tarefa'} (interrompida quando a central reiniciou)`, em);
+  return presos;
+}

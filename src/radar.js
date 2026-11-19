@@ -146,10 +146,10 @@ export function candidatosDoRadar(words, itens, { janela = 30, minPalavras = 2, 
   return out;
 }
 
-// copies the radar file from the `radar` branch (the cloud routine pushes there). Best effort, at most once an hour.
+// copies the radar file from the `radar` branch (the cloud routine pushes there). Best effort, at most every 10 minutes.
 export async function sincronizarRadar(config, { forcar = false } = {}) {
   const f = arquivoRadar(config);
-  try { if (!forcar && Date.now() - fs.statSync(f).mtimeMs < 3600e3) return false; } catch {}
+  try { if (!forcar && Date.now() - fs.statSync(f).mtimeMs < 10 * 60e3) return false; } catch {}
   try {
     await run('git', ['-C', ROOT, 'fetch', '-q', 'origin', 'radar'], { timeoutMs: 30000 });
     const txt = await run('git', ['-C', ROOT, 'show', 'origin/radar:radar/radar-gta6.json'], { timeoutMs: 10000 });

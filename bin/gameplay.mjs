@@ -19,6 +19,7 @@ import { entregarAprovados } from '../src/entrega.js';
 import { gerarIntro } from '../src/intro.js';
 import { marcaDaLinha } from '../src/marca.js';
 import { linhasDe } from '../src/canais.js';
+import { limparTrabalhando } from '../src/atividade.js';
 
 const [cmd, ...resto] = process.argv.slice(2);
 const flags = new Set(resto.filter((a) => a.startsWith('--')));
@@ -33,6 +34,7 @@ if (cmd === 'processar' && args[0]) {
   await processarSessao(path.resolve(args[0]), config);
 } else if (cmd === 'observar' || cmd === 'painel') {
   const porta = config.portaPainel || 4321;
+  limparTrabalhando(config.pastaSaida); // the office never shows a job from before this start as running
   garantirToken(arquivoToken(config)); // the TikTok extension's code (shown in the Contas tab)
   criarPainel(config).listen(porta, '0.0.0.0', () => {
     console.log(`Painel: http://localhost:${porta}`);

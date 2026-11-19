@@ -89,7 +89,7 @@ export function proximoJob({ base, token, agora = Date.now(), pausa = null, limi
   if (hoje >= limite) return null; // safe daily limit per account
   const fila = todos
     .filter((p) => disponivel(p, agora) && fs.existsSync(path.join(p.dir, 'video.mp4')))
-    .sort((a, b) => String(a.post.agendarPara || a.post.criadoEm || '').localeCompare(String(b.post.agendarPara || b.post.criadoEm || '')));
+    .sort((a, b) => (b.post.postarJa ? 1 : 0) - (a.post.postarJa ? 1 : 0) || String(a.post.agendarPara || a.post.criadoEm || '').localeCompare(String(b.post.agendarPara || b.post.criadoEm || '')));
   const p = fila[0];
   if (!p) return null;
   fs.writeFileSync(path.join(p.dir, ESTADO), JSON.stringify({ ...(p.estado || {}), em: new Date(agora).toISOString(), tentativas: (p.estado?.tentativas || 0) + 1 }, null, 2));
