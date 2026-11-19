@@ -1,7 +1,7 @@
 {
   "versao": 1,
   "jogo": "GTA 6",
-  "atualizado_em": "2026-11-19T16:45:00Z",
+  "atualizado_em": "2026-11-19T17:00:00Z",
   "como_usar": "Cada item é um momento/curiosidade que viralizou fora do Brasil. A central cruza 'palavras_chave' com a transcrição (whisper) e os marcadores das gravações; se bater, o trecho vira corte com prioridade alta e usa 'titulo_short' e 'gancho'. Itens com coberto_no_br=true perdem prioridade.",
   "itens": [
     {
@@ -31,7 +31,21 @@
       "confirmado": false,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 1
+      "prioridade": 1,
+      "por_que_viraliza": "Easter egg literal (um ovo de verdade) e uma cena engraçada como recompensa: curiosidade pura.",
+      "fontes": [
+        {
+          "url": "https://www.ibtimes.co.uk/gta-6-player-discovers-literal-easter-egg-leonida-1833342",
+          "titulo": "O easter egg que é um ovo de verdade",
+          "plataforma": "X (xGarbett) via IBTimes",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida",
+        "referencia": "Topo de uma torre de rádio, ninho com ovos coloridos (torre exata não publicada)",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-gato-carro",
@@ -56,7 +70,21 @@
       "confirmado": true,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 1
+      "prioridade": 1,
+      "por_que_viraliza": "Animal fazendo algo inesperado e engraçado, o tipo de clipe que mais circula.",
+      "fontes": [
+        {
+          "url": "https://www.techradar.com/live/news/gta-6-launch-day-november-19",
+          "titulo": "Gato ataca quando você rouba o carro dele",
+          "plataforma": "Reddit via TechRadar",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Qualquer lugar",
+        "referencia": "Aleatório: carro roubado com gato dentro",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-piso-dinheiro",
@@ -82,7 +110,21 @@
       "confirmado": true,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 2
+      "prioridade": 2,
+      "por_que_viraliza": "Dica que evita perder dinheiro, e todo iniciante quer saber.",
+      "fontes": [
+        {
+          "url": "https://www.videogameschronicle.com/guide/gta-6-beginners-guide-6-tips-you-need-to-know-before-starting-gta-6/",
+          "titulo": "Esconderijo de dinheiro no quarto do Jason",
+          "plataforma": "VGC",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida Keys",
+        "referencia": "Quarto do Jason, casa em Key Lento, piso solto",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-cobra-dolores",
@@ -106,7 +148,21 @@
       "confirmado": true,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 2
+      "prioridade": 2,
+      "por_que_viraliza": "Segredo de bicho de estimação que dá vantagem: curiosidade e utilidade juntas.",
+      "fontes": [
+        {
+          "url": "https://www.videogameschronicle.com/guide/gta-6-beginners-guide-6-tips-you-need-to-know-before-starting-gta-6/",
+          "titulo": "Buff secreto: alimentar a cobra Dolores",
+          "plataforma": "VGC",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida Keys",
+        "referencia": "Casa do Jason em Key Lento, terrário da cobra",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-guardar-arma-policia",
@@ -133,7 +189,21 @@
       "confirmado": true,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 3
+      "prioridade": 3,
+      "por_que_viraliza": "Mostra que a polícia do GTA 6 é diferente das anteriores, o que gera comparação e debate.",
+      "fontes": [
+        {
+          "url": "https://www.techradar.com/live/news/gta-6-launch-day-november-19",
+          "titulo": "Fugir da polícia sem atirar",
+          "plataforma": "X via TechRadar",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Qualquer lugar",
+        "referencia": "Durante abordagem policial",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-mergulho-naufragio",
@@ -159,7 +229,21 @@
       "confirmado": false,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 3
+      "prioridade": 3,
+      "por_que_viraliza": "Dinheiro fácil no começo, que é o que mais se busca na primeira semana.",
+      "fontes": [
+        {
+          "url": "https://www.gtaboom.com/how-to-make-money-fast-and-early-in-gta-6-725c",
+          "titulo": "Dinheiro fácil mergulhando em naufrágios",
+          "plataforma": "GTABoom",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida Keys",
+        "referencia": "Naufrágios nos Keys; equipamento de scuba com Kenton",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-predio-dexter",
@@ -181,7 +265,21 @@
       "confirmado": false,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 3
+      "prioridade": 3,
+      "por_que_viraliza": "Referência a série famosa, com comparação lado a lado.",
+      "fontes": [
+        {
+          "url": "https://vgtimes.com/gaming-news/175097-gta-6-players-discover-dexter-easter-egg-as-rockstar-recreates-iconic-miami-apartment-building.html",
+          "titulo": "O prédio do Dexter em Vice City",
+          "plataforma": "VGTimes",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Vice City",
+        "referencia": "Condomínio parecido com o do Dexter (endereço não publicado)",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-cachorro-jetski",
@@ -205,7 +303,21 @@
       "confirmado": false,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 1
+      "prioridade": 1,
+      "por_que_viraliza": "Cachorro pilotando jet ski que te resgata: absurdo, fofo e muito compartilhável.",
+      "fontes": [
+        {
+          "url": "https://playday.one/2026/11/19/gta-6-cool-dog-easter-egg/",
+          "titulo": "Cool Dog: o cachorro de jet ski que te resgata",
+          "plataforma": "PlayDay",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida Keys / Lummox County",
+        "referencia": "Mar aberto em Partridge Bay (perto de Lummox County) ou Gambit Bay (perto de Key Lento)",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-armazem-armas-vice-dale",
@@ -228,7 +340,21 @@
       "confirmado": false,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 1
+      "prioridade": 1,
+      "por_que_viraliza": "Armas fortes de graça logo no começo, a busca nº 1 de quem começou a jogar.",
+      "fontes": [
+        {
+          "url": "https://www.noobfeed.com/articles/gta-6-early-game-guns",
+          "titulo": "Armazém com 3 armas de graça (SMG, fuzil e pistola)",
+          "plataforma": "NoobFeed",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Vice-Dale County",
+        "referencia": "Armazém industrial em South Vice-Dale, uns 5 km da casa do Jason",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-sniper-hamlet",
@@ -250,7 +376,21 @@
       "confirmado": false,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 2
+      "prioridade": 2,
+      "por_que_viraliza": "Missão aleatória escondida que dá recompensa rara.",
+      "fontes": [
+        {
+          "url": "https://www.noobfeed.com/articles/gta-6-early-game-guns",
+          "titulo": "Sniper cedo perto de Hamlet",
+          "plataforma": "NoobFeed",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Grassrivers",
+        "referencia": "Estrada secundária perto de Hamlet, saindo da rodovia",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-pistola-navio-espiao",
@@ -272,7 +412,21 @@
       "confirmado": false,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 2
+      "prioridade": 2,
+      "por_que_viraliza": "Lugar misterioso (navio espião) com arma escondida: exploração e recompensa.",
+      "fontes": [
+        {
+          "url": "https://www.noobfeed.com/articles/gta-6-early-game-guns",
+          "titulo": "Pistola escondida num navio espião abandonado",
+          "plataforma": "NoobFeed",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida Keys",
+        "referencia": "Ponta sul da ilha sudeste de Permit Keys, barco encalhado",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-shotgun-contrabandista",
@@ -293,7 +447,21 @@
       "confirmado": false,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 2
+      "prioridade": 2,
+      "por_que_viraliza": "Arma escondida num cenário com história (barco de contrabandista).",
+      "fontes": [
+        {
+          "url": "https://www.noobfeed.com/articles/gta-6-early-game-guns",
+          "titulo": "Escopeta no barco do contrabandista",
+          "plataforma": "NoobFeed",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida Keys",
+        "referencia": "Ilha mais ao norte de Permit Keys, barco abandonado na costa",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-ganado-retro-ultimate",
@@ -314,14 +482,28 @@
       "confirmado": true,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 3
+      "prioridade": 3,
+      "por_que_viraliza": "Carro de graça no começo, mas só para quem tem a Edição Ultimate.",
+      "fontes": [
+        {
+          "url": "https://www.redbull.com/int-en/gta-6-ultimate-edition-bonuses",
+          "titulo": "Ganado retro de graça (Edição Ultimate)",
+          "plataforma": "Red Bull",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida Keys",
+        "referencia": "Coastal Auto Care, Key Lento",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-playstation-no-jogo",
       "tipo": "easter_egg",
       "titulo": "PS5 e controle DualSense dentro do jogo",
       "o_que_e": "Um PS5 com DualSense aparece num cenário do trailer 2, perto do anúncio da Ammu-Nation e do comercial do Phil Cassidy. A localização dentro do jogo ainda não foi publicada.",
-      "como_achar": "Ainda não há localização. Fique de olho em salas com TV e videogame. Quem achar primeiro ganha o vídeo.",
+      "como_achar": "O fernando já achou numa gravação dele; a central localiza o trecho. Localização pública ainda não existe.",
       "palavras_chave": [
         "playstation",
         "ps5",
@@ -335,7 +517,21 @@
       "confirmado": false,
       "coberto_no_br": false,
       "encontrado_em": "2026-11-19",
-      "prioridade": 2
+      "prioridade": 1,
+      "por_que_viraliza": "Easter egg da própria plataforma: quem joga no PS5 se identifica e compartilha.",
+      "fontes": [
+        {
+          "url": "https://beebom.com/gta-6-easter-eggs/",
+          "titulo": "PS5 e controle DualSense dentro do jogo",
+          "plataforma": "Beebom",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Vice City",
+        "referencia": "Visto no trailer 2 perto do anúncio da Ammu-Nation; o fernando achou numa gravação dele",
+        "imagens": []
+      }
     },
     {
       "id": "gta6-carro-brian",
@@ -355,7 +551,97 @@
       "confirmado": false,
       "coberto_no_br": true,
       "encontrado_em": "2026-11-19",
-      "prioridade": 3
+      "prioridade": 3,
+      "por_que_viraliza": "Referência a Velozes e Furiosos, mas já saturado.",
+      "fontes": [
+        {
+          "url": "https://www.hotcars.com/fast-furious-car-hiding-gta-6-garage/",
+          "titulo": "Eclipse verde do Brian (Velozes e Furiosos)",
+          "plataforma": "HotCars",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Vice City",
+        "referencia": "Garagem residencial em Vespucci Island",
+        "imagens": []
+      }
+    },
+    {
+      "id": "gta6-ovni-kelly-county",
+      "tipo": "easter_egg",
+      "titulo": "OVNI que dá troféu secreto",
+      "o_que_e": "Encontro com um OVNI (luz azul no céu) que desbloqueia o troféu 'The Truth Is Out There'.",
+      "como_achar": "Sozinho, de noite depois das 2h, na estrada a noroeste do Starlet Motel em Kelly County. Procure um carro com pisca-alerta ligado na beira da estrada (se não estiver lá, saia e volte), siga a trilha ao lado para o mato e vá até a luz azul. O spawn é um pouco aleatório.",
+      "palavras_chave": [
+        "ovni",
+        "disco voador",
+        "luz azul",
+        "starlet motel",
+        "kelly county",
+        "carro piscando",
+        "ufo",
+        "the truth is out there",
+        "troféu secreto"
+      ],
+      "titulo_short": "Achei um OVNI no GTA 6 (e ganhei troféu)",
+      "gancho": "Luz azul no céu, no meio do mato à noite",
+      "fonte": "https://www.powerpyx.com/gta-6-ufo-aliens-easter-egg-location",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-19",
+      "prioridade": 1,
+      "por_que_viraliza": "Mistério e alienígena é tradição do GTA e ainda dá troféu: todo mundo vai querer ver.",
+      "fontes": [
+        {
+          "url": "https://www.powerpyx.com/gta-6-ufo-aliens-easter-egg-location",
+          "titulo": "OVNI que dá troféu secreto",
+          "plataforma": "PowerPyx",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Kelly County",
+        "referencia": "Estrada a noroeste do Starlet Motel, carro com pisca-alerta, trilha para o mato",
+        "imagens": []
+      }
+    },
+    {
+      "id": "gta6-pe-grande",
+      "tipo": "easter_egg",
+      "titulo": "Pé Grande comendo um cervo",
+      "o_que_e": "O Pé Grande aparece comendo a carcaça de um cervo num cruzamento de terra. Se você seguir ele até o mato, acha um boneco estranho amarrado numa árvore, desmaia e acorda de volta no cruzamento.",
+      "como_achar": "Num cruzamento de estrada de terra em Leonida, com mata em volta. O local exato não foi publicado, e vários jogadores já postaram clipes.",
+      "palavras_chave": [
+        "pé grande",
+        "pe grande",
+        "bigfoot",
+        "cervo",
+        "boneco na árvore",
+        "desmaiei",
+        "estrada de terra"
+      ],
+      "titulo_short": "O PÉ GRANDE existe no GTA 6",
+      "gancho": "Silhueta peluda comendo o cervo na estrada",
+      "fonte": "https://www.gamesradar.com/games/grand-theft-auto/gta-6-bigfoot-sightings-are-already-ramping-up-as-rockstar-honors-a-22-year-old-grand-theft-auto-legend/",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-19",
+      "prioridade": 1,
+      "por_que_viraliza": "Lenda clássica do GTA confirmada por clipes de jogadores, com final assustador.",
+      "fontes": [
+        {
+          "url": "https://www.gamesradar.com/games/grand-theft-auto/gta-6-bigfoot-sightings-are-already-ramping-up-as-rockstar-honors-a-22-year-old-grand-theft-auto-legend/",
+          "titulo": "Pé Grande comendo um cervo",
+          "plataforma": "GamesRadar",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida (interior)",
+        "referencia": "Cruzamento de estrada de terra cercado de mata",
+        "imagens": []
+      }
     }
   ]
 }
