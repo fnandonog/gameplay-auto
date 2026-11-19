@@ -50,6 +50,7 @@ export async function ajustarInbox(config, { aberto = async () => false, log = (
   if (ehLink && atual === alvo.inbox) return alvo;
   // something being recorded in the current inbox: switch later
   let nomes = []; try { nomes = fs.readdirSync(link); } catch {}
+  nomes = nomes.filter((n) => !n.startsWith('.')); // .DS_Store and exFAT's ._ files are held by Finder or VMs, not by OBS
   for (const n of nomes) if (await aberto(path.join(link, n))) return null;
   // recordings waiting in the old place go along (closed files only, checked above)
   for (const n of nomes) moverGravacao(path.join(link, n), path.join(alvo.inbox, n));
