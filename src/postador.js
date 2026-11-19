@@ -135,7 +135,8 @@ export async function rodadaPostador(config, { agora = Date.now(), publicar = PU
   if (lerPausa(config.pastaSaida)) return { feito: 'pausado' };
   const credFile = arquivoCredenciais(config);
   const cred = lerCredenciais(credFile);
-  const conectadas = redesConectadas(cred);
+  // config.youtubeApi false: YouTube goes only by the Chrome extension (the owner's choice while the quota is 6 a day)
+  const conectadas = redesConectadas(cred).filter((r) => r !== 'youtube' || config.youtubeApi !== false);
   if (!conectadas.length) return { feito: 'sem redes conectadas' };
   const posts = listarEntregues(config.pastaEntrega);
   const prox = proximoEnvio(posts, { agora, conectadas, limites: limitesDe(config) });

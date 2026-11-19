@@ -67,7 +67,8 @@ export const PADRAO = {
   palavroesExtras: [],
   // background music: royalty-free tracks dropped in pasta, low, ducking under the voice; none when the folder is empty
   musica: { ligado: true, pasta: path.join(HOME, 'Gameplay', 'musicas'), volume: 0.12 },
-  temCamera: false, // false: only the game-only formats (no webcam yet)
+  youtubeApi: false, // false: YouTube only through the Chrome extension (YouTube Studio); true: the API sends the best 6 a day
+  temCamera: 'auto', // 'auto': half-and-half with the webcam when the session has a camera file or regiaoCamera; false: game only
   postarAutomatico: false, // true: cuts with nota >= notaMinima are posted without approval
   notaMinima: 8,
   portaPainel: 4321,

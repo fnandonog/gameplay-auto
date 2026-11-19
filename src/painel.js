@@ -142,7 +142,7 @@ export function criarPainel(config) {
         // YouTube Studio by the same extension: what the API quota does not cover (src/youtubeChrome.js)
         if (req.method === 'GET' && rota === 'yt-proximo') {
           if (config.youtubeChrome === false) return json(res, 200, { job: null });
-          const apiOk = redesConectadas(lerCredenciais(arquivoCredenciais(config))).includes('youtube') && config.postadorLigado;
+          const apiOk = config.youtubeApi !== false && redesConectadas(lerCredenciais(arquivoCredenciais(config))).includes('youtube') && config.postadorLigado;
           const job = proximoJobYoutube({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida), apiLimite: apiOk ? limitesDe(config).youtube : 0, limite: config.ritmo?.maxPorDia ? config.ritmo.maxPorDia + (config.ritmo.longosPorDia || 0) : 30 });
           if (job) registrar(config.pastaSaida, 'agendador', 'trabalhando', `YouTube pelo Chrome: postando "${job.titulo}"`);
           return json(res, 200, { job });

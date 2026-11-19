@@ -45,6 +45,12 @@ export function ehArquivoExtra(nome, todos) {
 }
 
 // which formats each cut is rendered in (config.formatos), only the known ones, never empty
+// pure: does this session have a webcam? temCamera true/false forces it; 'auto' (default) looks at the files and config
+export function temCameraNaSessao(config = {}, arq = {}) {
+  if (config.temCamera === true || config.temCamera === false) return config.temCamera;
+  return !!((arq.camera && arq.camera !== arq.jogo && arq.camera !== arq.cena) || config.regiaoCamera);
+}
+
 export function formatosDoCorte(config = {}) {
   const lista = (Array.isArray(config.formatos) ? config.formatos : [config.formatos || 'meio', 'jogo']).filter((f) => FORMATOS[f] && (config.temCamera !== false || FORMATOS[f].semCamera));
   return lista.length ? [...new Set(lista)] : [config.temCamera === false ? 'jogo' : 'meio'];
@@ -130,7 +136,8 @@ export async function processarSessao(principal, config, { log = console.log } =
     const palavras = palavrasEntre(words, c.start, c.end);
     const linha = linhas.find((l) => l.id === linhaId) || linhas[0];
     const marca = marcaDaLinha(linha, config);
-    const formatos = formatosDoCorte(config);
+    // webcam: a separate camera file in the session (OBS Source Record) or the camera's place in the scene (regiaoCamera)
+    const formatos = formatosDoCorte({ ...config, temCamera: temCameraNaSessao(config, arq) });
     const principal = formatoPrincipal(config.formatoPadrao, { palavras: palavras.length, formatos });
     log(`Montando corte ${i + 1}/${decididos.length}: ${c.titulo} (${(c.end - c.start).toFixed(0)} s, ${formatos.join(' + ')})`);
     const variantes = {};

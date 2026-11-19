@@ -79,3 +79,13 @@ test('reaction words: rare hits, two-word reactions, caption emphasis and gentle
   assert.equal(zoomDosImpactos([1], 60), '1+0.06*min(1,max(0,1-abs(in/60-1.10)/0.35))');
   assert.equal(zoomDosImpactos([], 60), null);
 });
+
+import { temCameraNaSessao, formatosDoCorte } from '../src/sessao.js';
+test('webcam: auto when the session has a camera file or a camera region', () => {
+  assert.equal(temCameraNaSessao({ temCamera: 'auto' }, { cena: 'a', jogo: 'a', camera: 'a' }), false);
+  assert.equal(temCameraNaSessao({ temCamera: 'auto' }, { cena: 'a', jogo: 'a', camera: 'cam' }), true);
+  assert.equal(temCameraNaSessao({ regiaoCamera: { x: 0, y: 0, w: 480, h: 270 } }, { cena: 'a', jogo: 'a', camera: 'a' }), true);
+  assert.equal(temCameraNaSessao({ temCamera: false }, { camera: 'cam', jogo: 'a' }), false);
+  assert.deepEqual(formatosDoCorte({ temCamera: true }), ['meio', 'jogo']);
+  assert.deepEqual(formatosDoCorte({ temCamera: false }), ['jogo']);
+});
