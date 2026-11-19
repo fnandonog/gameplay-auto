@@ -54,3 +54,17 @@ test('argsCorte mutes the beep ranges, adds the beep and ducks the music', () =>
   const sem = argsCorte({ jogo: 'j.mp4', camera: 'j.mp4', start: 10, end: 30, ass: 'x.ass', out: 'o.mp4', formato: 'jogocheio', encoder: 'libx264' });
   assert.match(sem[sem.indexOf('-filter_complex') + 1], /\[a0\]anull\[a\]/);
 });
+
+import { trechosDaGravacao, seg } from '../src/trechos.js';
+import { aplicarDecisoes } from '../src/ia.js';
+test('owner stretches become required cuts even when the AI skips them', () => {
+  assert.equal(seg('29:15'), 1755);
+  assert.equal(seg('1:00:05'), 3605);
+  const t = trechosDaGravacao([{ gravacao: '2026-11-19 09-35-27', de: '29:15', ate: '30:05', gancho: 'ACHEI UM PS5 DENTRO DO GTA 6' }, { gravacao: '2026-11-19 07-56-04', de: '1:00', ate: '1:30' }], '2026-11-19 09-35-27', 2460);
+  assert.equal(t.length, 1);
+  assert.deepEqual([t[0].start, t[0].end, t[0].obrigatorio], [1755, 1805, true]);
+  const pulou = aplicarDecisoes(t, [{ id: 0, usar: false, inicio: 1760, fim: 1800, nota: 5, gancho: 'X', titulo: 'Y', descricao: '', hashtags: [], serie: '' }]);
+  assert.equal(pulou.length, 1);
+  const sumiu = aplicarDecisoes(t, []);
+  assert.equal(sumiu[0].gancho, 'ACHEI UM PS5 DENTRO DO GTA 6');
+});

@@ -67,11 +67,16 @@ export function aplicarDecisoes(cands, cortes) {
   const out = [];
   for (const d of cortes || []) {
     const c = cands[d.id];
-    if (!c || !d.usar) continue;
+    if (!c || (!d.usar && !c.obrigatorio)) continue;
     let start = Math.max(c.start, Math.min(d.inicio, c.end - 15));
     let end = Math.min(c.end, Math.max(d.fim, start + 15));
     if (end - start > 75) end = start + 75;
     out.push({ ...c, start, end, nota: d.nota, gancho: d.gancho, titulo: d.titulo, descricao: d.descricao, hashtags: d.hashtags, serie: d.serie || '' });
+  }
+  // a stretch the owner asked for (trechos fixos) is never left out, even when the AI skipped it
+  for (const c of cands) {
+    if (!c.obrigatorio || out.some((o) => o.start < c.end && o.end > c.start)) continue;
+    out.push({ ...c, nota: c.nota ?? 9, gancho: c.gancho || 'OLHA O QUE EU ACHEI', titulo: c.titulo || TITULO_SEM_IA, descricao: c.descricao || 'Você já tinha visto isso? Comenta aí!', hashtags: c.hashtags || ['gta6', 'gameplay', 'ps5'], serie: '' });
   }
   return out;
 }

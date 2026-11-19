@@ -7,6 +7,7 @@ import { argsExtrairAudio, transcrever, palavrasEntre } from './transcricao.js';
 import { run } from './run.js';
 import { candidatos, escolher, mesclar, capitulosDe, volumePorSegundo } from './momentos.js';
 import { lerRadar, candidatosDoRadar, sincronizarRadar } from './radar.js';
+import { lerTrechos, trechosDaGravacao } from './trechos.js';
 import { decidirCortes } from './ia.js';
 import { renderCorte, capa, FORMATOS } from './corte.js';
 import { marcaDaLinha } from './marca.js';
@@ -107,12 +108,15 @@ export async function processarSessao(principal, config, { log = console.log } =
   await sincronizarRadar(config);
   const doRadar = candidatosDoRadar(words, lerRadar(config).itens).map((c) => ({ ...c, end: Math.min(duracao || Infinity, c.end) }));
   if (doRadar.length) log(`Radar: ${doRadar.length} trecho(s) com assunto que bombou lá fora.`);
-  const cands = escolher(mesclar([...candidatos({ words, capitulos, volMic, volJogo, duracao, config }), ...doRadar]).filter(foraDoDescarte), config.cortesPorSessao * 2 + doRadar.length);
+  // stretches the owner asked for by hand (~/Gameplay/trechos-fixos.json): always a cut, even inside a discarded part
+  const fixos = trechosDaGravacao(lerTrechos(config), arq.base, duracao);
+  if (fixos.length) log(`${fixos.length} trecho(s) pedido(s) por você nesta gravação.`);
+  const cands = [...fixos, ...escolher(mesclar([...candidatos({ words, capitulos, volMic, volJogo, duracao, config }), ...doRadar]).filter(foraDoDescarte).filter((c) => !fixos.some((f) => c.start < f.end && c.end > f.start)), config.cortesPorSessao * 2 + doRadar.length)];
   log(`${cands.length} momentos candidatos (${capitulos.length} marcadores do OBS).`);
   at('cacador', 'pronto', `${cands.length} momentos candidatos`);
   at('roteirista', 'trabalhando', 'Escolhendo cortes, ganchos e títulos');
   const decididos = (await decidirCortes(cands, words, { jogo: config.jogo, canal: config.canal, semIa: config.semIa }))
-    .sort((a, b) => b.nota - a.nota).slice(0, config.cortesPorSessao);
+    .sort((a, b) => (b.obrigatorio ? 1 : 0) - (a.obrigatorio ? 1 : 0) || b.nota - a.nota).slice(0, config.cortesPorSessao + fixos.length);
 
   aplicarSeries(config.pastaSaida, decididos);
   at('roteirista', 'pronto', `${decididos.length} cortes escolhidos`);
