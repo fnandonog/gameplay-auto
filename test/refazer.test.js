@@ -58,3 +58,10 @@ test('a session without a camera cannot be redone with the camera', () => {
   const base = sessao();
   assert.throws(() => refazerCorte({ pastaSaida: base }, { pasta: 's1', arquivo: '01-pia-meio.mp4', edicao: { formato: 'meio' } }), /não tem câmera/);
 });
+
+test('a mic track silent most of the time is flagged', async () => {
+  const { micMudo } = await import('../src/momentos.js');
+  assert.equal(micMudo([...Array(82).fill(-90), ...Array(18).fill(-40)]), 0.82);
+  assert.equal(micMudo(Array(100).fill(-45)), 0);
+  assert.equal(micMudo([-90, -90]), 0);
+});

@@ -157,7 +157,7 @@ function desenhar() {
   document.querySelectorAll('#filtro button').forEach((b) => { b.classList.toggle('on', b.dataset.f === filtro); $('.n', b).textContent = conta[b.dataset.f] || ''; });
   const html = sessoes.map((s) => {
     const l = itens(s).filter((c) => (GRUPO[c.status || 'aguardando'] || 'aguardando') === filtro);
-    return l.length ? `<h2>Gravação de ${esc(s.sessao)}</h2><div class="grade">${l.map((c) => card(s, c)).join('')}</div>` : '';
+    return l.length ? `<h2>Gravação de ${esc(s.sessao)}</h2>${s.avisoMic ? `<div class="porque no" style="margin-bottom:10px">🎙️ ${esc(s.avisoMic)}</div>` : ''}<div class="grade">${l.map((c) => card(s, c)).join('')}</div>` : '';
   }).join('');
   $('#lista').innerHTML = `<p class="explica">${EXPLICA[filtro]}</p>` + (html || '<p class="vazio">Nada aqui.</p>');
 }

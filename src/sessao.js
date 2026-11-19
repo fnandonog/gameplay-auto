@@ -5,7 +5,7 @@ import path from 'node:path';
 import { probe } from './run.js';
 import { argsExtrairAudio, transcrever, palavrasEntre } from './transcricao.js';
 import { run } from './run.js';
-import { candidatos, escolher, mesclar, capitulosDe, volumePorSegundo } from './momentos.js';
+import { candidatos, escolher, mesclar, capitulosDe, volumePorSegundo, micMudo } from './momentos.js';
 import { lerRadar, candidatosDoRadar, sincronizarRadar } from './radar.js';
 import { lerTrechos, trechosDaGravacao } from './trechos.js';
 import { decidirCortes } from './ia.js';
@@ -100,6 +100,10 @@ export async function processarSessao(principal, config, { log = console.log } =
   log('Medindo o volume...');
   at('cacador', 'trabalhando', 'Medindo o volume e procurando os momentos');
   const volMic = await volumePorSegundo(arq.cena, faixaMic);
+  // the voice track silent most of the time = the mic gate in OBS is closing on the voice (cuts come out without it)
+  const mudo = audios > faixaMic && faixaMic > 0 ? micMudo(volMic) : 0;
+  const avisoMic = mudo >= 0.5 ? `O microfone ficou mudo em ${Math.round(mudo * 100)}% da gravação (no OBS, o filtro "Noise gate" do microfone está fechando na sua voz). Os cortes podem sair sem a sua fala.` : null;
+  if (avisoMic) { log(avisoMic); at('escriba', 'erro', avisoMic); }
   const volJogo = audios > config.faixaJogo ? await volumePorSegundo(arq.cena, config.faixaJogo) : [];
 
   // 3. missions first (needs the AI to read the screen): abandoned attempts are left out of every cut
@@ -170,7 +174,7 @@ export async function processarSessao(principal, config, { log = console.log } =
     catch (e) { log(`Missões falharam: ${e.message}`); }
   }
 
-  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, criadoEm: new Date().toISOString(), cortes, longo, missoes, descartados };
+  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, ...(avisoMic ? { avisoMic, micMudo: mudo } : {}), criadoEm: new Date().toISOString(), cortes, longo, missoes, descartados };
   fs.writeFileSync(path.join(pasta, 'sessao.json'), JSON.stringify(manifesto, null, 2));
   log(`Pronto: ${cortes.length} cortes em ${pasta}`);
   return { pasta, manifesto };
