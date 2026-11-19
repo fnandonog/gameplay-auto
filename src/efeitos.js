@@ -118,15 +118,16 @@ export function escolherMusica(nome, musica = {}, listar = (d) => { try { return
 
 // reaction words: a quick punch-in zoom, a deep "boom" and the word bigger in red on the caption (the style of the big
 // BR gameplay channels: the reaction is the moment, so the edit hits it)
-const REACOES = ['caraca', 'caramba', 'nossa', 'mds', 'meudeus', 'socorro', 'bizarro', 'bizarra', 'insano', 'insana', 'absurdo', 'absurda', 'surreal', 'mentira', 'serio', 'queisso', 'olhaisso', 'doideira', 'doido', 'loucura', 'louco', 'sinistro', 'sinistra', 'brabo', 'braba', 'incrivel', 'ai', 'eita', 'vish', 'nao'];
-export function impactosDe(palavras = [], dur = Infinity, { intervalo = 4, max = 6, fimSec = 2 } = {}) {
+// only strong reactions (subtle and rare: at most 2 per cut, 8 s apart)
+const REACOES = ['caraca', 'caramba', 'meudeus', 'socorro', 'bizarro', 'bizarra', 'insano', 'insana', 'absurdo', 'absurda', 'surreal', 'queisso', 'doideira', 'sinistro', 'sinistra'];
+export function impactosDe(palavras = [], dur = Infinity, { intervalo = 8, max = 2, fimSec = 2 } = {}) {
   const out = [];
   let ultimo = -Infinity;
   for (let i = 0; i < palavras.length; i++) {
     const w = palavras[i];
     if (w.palavrao || w.start < 0.8 || w.start > dur - fimSec - 0.6) continue;
     const n = normalizar(w.text), dois = n + normalizar(palavras[i + 1]?.text);
-    const hit = REACOES.includes(dois) ? 2 : REACOES.includes(n) && n !== 'nao' && n !== 'ai' ? 1 : 0;
+    const hit = REACOES.includes(dois) ? 2 : REACOES.includes(n) ? 1 : 0;
     if (!hit || w.start - ultimo < intervalo) continue;
     out.push({ t: +w.start.toFixed(2), i, n: hit });
     ultimo = w.start;
@@ -139,9 +140,9 @@ export function marcarEnfase(palavras, impactos) {
   const idx = new Set(impactos.flatMap((m) => (m.n === 2 ? [m.i, m.i + 1] : [m.i])));
   return palavras.map((w, i) => (idx.has(i) ? { ...w, enfase: true } : w));
 }
-// pure: zoompan expression of the punch-ins (1 + up to 12 % for 0.35 s around each hit), frame based
-export function zoomDosImpactos(ts = [], fps = 60, forca = 0.12) {
+// pure: zoompan expression of the punch-ins (a gentle 6 % push over 0.7 s around each hit), frame based
+export function zoomDosImpactos(ts = [], fps = 60, forca = 0.06) {
   if (!ts.length) return null;
-  const pulso = ts.map((t) => `max(0,1-abs(in/${fps}-${(t + 0.05).toFixed(2)})/0.18)`).join('+');
+  const pulso = ts.map((t) => `max(0,1-abs(in/${fps}-${(t + 0.1).toFixed(2)})/0.35)`).join('+');
   return `1+${forca}*min(1,${pulso})`;
 }

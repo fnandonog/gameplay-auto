@@ -172,7 +172,7 @@ export function argsCorte(job) {
   // reaction hits (job.impactos: seconds in the final cut): punch-in zoom + a deep boom
   const impactos = (job.impactos || []).filter((t) => t >= 0 && t < dur).slice(0, 8);
   let boomIn = null;
-  if (impactos.length) { args.push('-f', 'lavfi', '-t', '0.7', '-i', "aevalsrc='0.8*sin(2*PI*(48+90*exp(-9*t))*t)*exp(-4.5*t)':s=48000:d=0.7"); boomIn = `${n}:a`; n++; }
+  if (impactos.length && job.boom) { args.push('-f', 'lavfi', '-t', '0.7', '-i', "aevalsrc='0.8*sin(2*PI*(48+90*exp(-9*t))*t)*exp(-4.5*t)':s=48000:d=0.7"); boomIn = `${n}:a`; n++; }
   if (job.musica?.arquivo) { args.push('-stream_loop', '-1', '-t', String(dur), '-i', job.musica.arquivo); musIn = `${n}:a:0`; n++; }
   const g = [];
   let vIn = '0:v';
@@ -276,7 +276,7 @@ export async function renderCorte({ jogo, camera, audio, start, end, palavras = 
   fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, selo, hookSec: Math.min(ganchoSeg ?? config.estilo?.ganchoSeg ?? 2.5, dur), marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null, extras }));
   const logo = marca?.logo && fs.existsSync(marca.logo) ? marca.logo : null;
   const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo,
-    focos, manter: enx.manter, sons, impactos: imp.map((m) => m.t), bips: filtro.bips, musica: arqMusica ? { arquivo: arqMusica, volume: config.musica?.volume } : null, encoder: config.encoder || await melhorEncoder() });
+    focos, manter: enx.manter, sons, impactos: imp.map((m) => m.t), boom: config.efeitos?.boom === true, bips: filtro.bips, musica: arqMusica ? { arquivo: arqMusica, volume: config.musica?.volume } : null, encoder: config.encoder || await melhorEncoder() });
   await run('ffmpeg', args, { timeoutMs: 30 * 60000 });
   return out;
 }
