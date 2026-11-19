@@ -68,8 +68,15 @@ export function assThumb(texto, estilo = {}) {
     `Dialogue: 0,${assTime(0)},${assTime(5)},T,,0,0,0,,${wrap(String(texto).toUpperCase(), 12).replace(/\n/g, '\\N')}`, ''].join('\n');
 }
 
-export async function renderLongo({ cena, words, duracao, momentos, pasta, config = {}, titulo, marca = null, log = console.log }) {
-  const segs = segmentosLongos({ words, duracao, protegidos: momentos, silencioMax: config.silencioMax ?? 20 });
+// pure: segments minus the stretches that must not appear (abandoned mission attempts); pieces under minSeg drop
+export function subtrair(segs, remover = [], minSeg = 2) {
+  let out = segs.map((s) => ({ ...s }));
+  for (const r of remover) out = out.flatMap((s) => (r.fim <= s.start || r.inicio >= s.end ? [s] : [{ ...s, end: r.inicio }, { ...s, start: r.fim }]));
+  return out.filter((s) => s.end - s.start >= minSeg);
+}
+
+export async function renderLongo({ cena, words, duracao, momentos, pasta, config = {}, titulo, marca = null, remover = [], log = console.log }) {
+  const segs = subtrair(segmentosLongos({ words, duracao, protegidos: momentos, silencioMax: config.silencioMax ?? 20 }), remover);
   const melhor = [...momentos].sort((a, b) => b.nota - a.nota)[0];
   const previa = melhor ? { start: Math.max(melhor.start, melhor.end - 10), end: melhor.end } : null;
   const durPrevia = previa ? previa.end - previa.start : 0;

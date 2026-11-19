@@ -18,36 +18,50 @@ const mmss = (t) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Mat
 
 const SCHEMA_EVENTOS = { type: 'object', additionalProperties: false, required: ['eventos'], properties: { eventos: { type: 'array', items: {
   type: 'object', additionalProperties: false, required: ['t', 'tipo', 'missao'],
-  properties: { t: { type: 'number' }, tipo: { type: 'string', enum: ['inicio', 'fim', 'sensivel'] }, missao: { type: 'string' } } } } } };
+  properties: { t: { type: 'number' }, tipo: { type: 'string', enum: ['inicio', 'fim', 'falha', 'sensivel'] }, missao: { type: 'string' } } } } } };
 
 export const SISTEMA_MISSOES = `Você assiste uma gravação de gameplay quadro a quadro (um quadro a cada poucos segundos, com o tempo em segundos).
 Marque só o que aparece na tela:
 - inicio: começa uma missão (nome da missão ou "CAPÍTULO N" na tela, ligação/mensagem que passa o trabalho, objetivo novo de missão). Em missao, o nome que aparece (ou um nome curto do objetivo).
 - fim: a missão termina ("missão concluída", tela de resultado, última cena antes do jogo livre). Em missao, o mesmo nome.
+- falha: a tentativa acabou sem concluir ("missão fracassada", tela de tentar de novo, menu de pausa saindo ou reiniciando a missão, carregar save). Em missao, o nome da missão.
 - sensivel: nudez, sexo ou violência explícita na tela (em missao, o que é).
 Responda só pelo esquema JSON. Se nada acontece nesses quadros, devolva eventos vazio.`;
 
-// pure: events → missions. A start opens a mission; the next start or an end closes it. Short ones are dropped.
-export function montarMissoes(eventos, duracao, { minSeg = 150, folga = 5 } = {}) {
+// pure: events → missions. A start opens a mission and only an end ("missão concluída") completes it.
+// An attempt that fails, is restarted (the same mission starts again after `reinicioSeg`) or is left for another
+// mission is abandoned: it never becomes a mission video and its stretch goes to `descartados`, so no cut uses it
+// either. The open mission at the end of the recording (he stopped recording mid-mission) is kept as `incompleta`
+// and is not rendered. Short ones are dropped.
+export function montarMissoes(eventos, duracao, { minSeg = 150, folga = 5, reinicioSeg = 90 } = {}) {
   const ev = [...eventos].filter((e) => Number.isFinite(e.t)).sort((a, b) => a.t - b.t);
   const out = [];
+  const descartados = [];
   let atual = null;
+  const mesma = (e) => atual && atual.missao.toLowerCase() === String(e.missao || '').trim().toLowerCase();
   const fechar = (fim) => {
     if (atual && fim - atual.inicio >= minSeg) out.push({ ...atual, fim: Math.min(duracao, fim + folga) });
     atual = null;
   };
+  const abandonar = (fim, motivo) => {
+    if (atual && fim > atual.inicio) descartados.push({ inicio: atual.inicio, fim, missao: atual.missao, motivo });
+    atual = null;
+  };
   for (const e of ev) {
     if (e.tipo === 'inicio') {
-      if (atual && atual.missao.toLowerCase() === String(e.missao).toLowerCase()) continue; // same mission seen again
-      fechar(e.t - folga);
-      atual = { missao: String(e.missao || 'Missão').trim(), inicio: Math.max(0, e.t - folga), avisos: [] };
+      if (mesma(e) && e.t - atual.visto < reinicioSeg) { atual.visto = e.t; continue; } // same title card, still on screen
+      if (atual) abandonar(e.t - folga, mesma(e) ? 'reiniciou a missão' : 'largou a missão no meio');
+      atual = { missao: String(e.missao || 'Missão').trim(), inicio: Math.max(0, e.t - folga), visto: e.t, avisos: [] };
     } else if (e.tipo === 'fim' && atual) fechar(e.t);
+    else if (e.tipo === 'falha' && atual) abandonar(e.t + folga, 'missão fracassada ou abandonada');
   }
-  if (atual) fechar(duracao);
+  if (atual && duracao - atual.inicio >= minSeg) out.push({ ...atual, fim: duracao, incompleta: true });
+  for (const m of out) delete m.visto;
   for (const s of ev.filter((e) => e.tipo === 'sensivel')) {
     const m = out.find((x) => s.t >= x.inicio && s.t <= x.fim);
     if (m) (m.avisos ||= []).push(`${mmss(s.t - m.inicio)}: ${s.missao}`);
   }
+  out.descartados = descartados;
   return out;
 }
 
@@ -74,7 +88,9 @@ export async function detectarMissoes({ cena, words = [], duracao, pasta, config
       const txt = msg.content.find((b) => b.type === 'text')?.text || '{}';
       eventos.push(...(JSON.parse(txt).eventos || []));
     }
-    return montarMissoes(eventos, duracao, config.missoes || {});
+    const ms = montarMissoes(eventos, duracao, config.missoes || {});
+    for (const d of ms.descartados) log(`Missão "${d.missao}" descartada (${d.motivo}): ${mmss(d.inicio)} a ${mmss(d.fim)}.`);
+    return ms;
   } catch (e) { log(`Missões: ${e.message}`); return []; } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 
@@ -92,6 +108,7 @@ async function textosDaMissao(m, words, { jogo = '', client }) {
 
 // cuts each mission (stream copy: the OBS scene's video + track 1), writes the thumbnail and the texts
 export async function renderMissoes({ cena, words = [], missoes, pasta, config = {}, log = console.log, client = null }) {
+  missoes = missoes.filter((m) => !m.incompleta);
   if (!missoes.length) return [];
   let ia = client;
   try { ia ||= new Anthropic(); } catch { return []; }

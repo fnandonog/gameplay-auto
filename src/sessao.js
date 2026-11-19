@@ -95,11 +95,19 @@ export async function processarSessao(principal, config, { log = console.log } =
   const volMic = await volumePorSegundo(arq.cena, faixaMic);
   const volJogo = audios > config.faixaJogo ? await volumePorSegundo(arq.cena, config.faixaJogo) : [];
 
-  // 3. candidates → AI
+  // 3. missions first (needs the AI to read the screen): abandoned attempts are left out of every cut
+  let achadas = [];
+  if (config.videoLongo !== false && config.missoes !== false && !config.semIa && duracao >= 600) {
+    try { achadas = await detectarMissoes({ cena: arq.cena, words, duracao, pasta, config, log }); } catch (e) { log(`Missões falharam: ${e.message}`); }
+  }
+  const descartados = achadas.descartados || [];
+  const foraDoDescarte = (c) => !descartados.some((d) => c.start < d.fim && c.end > d.inicio);
+
+  // 4. candidates → AI
   await sincronizarRadar(config);
   const doRadar = candidatosDoRadar(words, lerRadar(config).itens).map((c) => ({ ...c, end: Math.min(duracao || Infinity, c.end) }));
   if (doRadar.length) log(`Radar: ${doRadar.length} trecho(s) com assunto que bombou lá fora.`);
-  const cands = escolher(mesclar([...candidatos({ words, capitulos, volMic, volJogo, duracao, config }), ...doRadar]), config.cortesPorSessao * 2 + doRadar.length);
+  const cands = escolher(mesclar([...candidatos({ words, capitulos, volMic, volJogo, duracao, config }), ...doRadar]).filter(foraDoDescarte), config.cortesPorSessao * 2 + doRadar.length);
   log(`${cands.length} momentos candidatos (${capitulos.length} marcadores do OBS).`);
   at('cacador', 'pronto', `${cands.length} momentos candidatos`);
   at('roteirista', 'trabalhando', 'Escolhendo cortes, ganchos e títulos');
@@ -108,7 +116,7 @@ export async function processarSessao(principal, config, { log = console.log } =
 
   aplicarSeries(config.pastaSaida, decididos);
   at('roteirista', 'pronto', `${decididos.length} cortes escolhidos`);
-  // 4. render: each cut goes to its line first, so the video carries that line's @ and colors
+  // 5. render: each cut goes to its line first, so the video carries that line's @ and colors
   const linhas = linhasDe(config);
   const fila = decididos.map((c, i) => ({ c, i, corte: { nota: c.nota } }));
   distribuirLinhas(fila.map((f) => f.corte), linhas);
@@ -137,21 +145,21 @@ export async function processarSessao(principal, config, { log = console.log } =
   }
 
   at('editor', 'pronto', `${cortes.length} cortes montados`);
-  // 5. the full YouTube video
+  // 6. the full YouTube video
   let longo = null;
   if (config.videoLongo !== false && duracao >= 120) {
     at('montador', 'trabalhando', 'Montando o vídeo do YouTube');
-    try { longo = await renderLongo({ cena: arq.cena, words, duracao, momentos: decididos, pasta, config, marca: marcaDaLinha(linhas.find((l) => !l.terceiros) || linhas[0], config), log }); at('montador', 'pronto', 'Vídeo longo pronto'); } catch (e) { log(`Vídeo longo falhou: ${e.message}`); at('montador', 'erro', `Vídeo longo falhou: ${e.message}`); }
+    try { longo = await renderLongo({ cena: arq.cena, words, duracao, momentos: decididos, pasta, config, remover: descartados, marca: marcaDaLinha(linhas.find((l) => !l.terceiros) || linhas[0], config), log }); at('montador', 'pronto', 'Vídeo longo pronto'); } catch (e) { log(`Vídeo longo falhou: ${e.message}`); at('montador', 'erro', `Vídeo longo falhou: ${e.message}`); }
   }
 
-  // 6. one YouTube video per mission (needs the AI to read the screen)
+  // 7. one YouTube video per mission
   let missoes = [];
-  if (config.videoLongo !== false && config.missoes !== false && !config.semIa && duracao >= 600) {
-    try { missoes = await renderMissoes({ cena: arq.cena, words, missoes: await detectarMissoes({ cena: arq.cena, words, duracao, pasta, config, log }), pasta, config, log }); }
+  if (achadas.length) {
+    try { missoes = await renderMissoes({ cena: arq.cena, words, missoes: achadas, pasta, config, log }); }
     catch (e) { log(`Missões falharam: ${e.message}`); }
   }
 
-  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, criadoEm: new Date().toISOString(), cortes, longo, missoes };
+  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, criadoEm: new Date().toISOString(), cortes, longo, missoes, descartados };
   fs.writeFileSync(path.join(pasta, 'sessao.json'), JSON.stringify(manifesto, null, 2));
   log(`Pronto: ${cortes.length} cortes em ${pasta}`);
   return { pasta, manifesto };

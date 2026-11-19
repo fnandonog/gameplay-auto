@@ -135,3 +135,16 @@ test('missões: início abre, fim ou próximo início fecha, curta cai, nudez vi
   assert.equal(m[0].inicio, 95); assert.equal(m[0].fim, 705); assert.equal(m[1].fim, 1400);
   assert.equal(m[0].avisos.length, 1);
 });
+
+test('missões: tentativa abandonada ou reiniciada é descartada; a que fica aberta no fim é incompleta', () => {
+  const ev = [{ t: 100, tipo: 'inicio', missao: 'Aluguel' }, { t: 400, tipo: 'inicio', missao: 'Aluguel' }, { t: 800, tipo: 'fim', missao: 'Aluguel' },
+    { t: 900, tipo: 'inicio', missao: 'Roubo' }, { t: 1300, tipo: 'falha', missao: 'Roubo' }, { t: 1400, tipo: 'inicio', missao: 'Barco' }];
+  const m = montarMissoes(ev, 2000);
+  assert.deepEqual(m.map((x) => [x.missao, x.inicio, !!x.incompleta]), [['Aluguel', 395, false], ['Barco', 1395, true]]);
+  assert.deepEqual(m.descartados.map((d) => [d.missao, d.inicio, d.fim, d.motivo]), [['Aluguel', 95, 395, 'reiniciou a missão'], ['Roubo', 895, 1305, 'missão fracassada ou abandonada']]);
+});
+
+import { subtrair } from '../src/longo.js';
+test('vídeo longo: os trechos descartados saem dos segmentos', () => {
+  assert.deepEqual(subtrair([{ start: 0, end: 100 }, { start: 200, end: 300 }], [{ inicio: 50, fim: 250 }]), [{ start: 0, end: 50 }, { start: 250, end: 300 }]);
+});
