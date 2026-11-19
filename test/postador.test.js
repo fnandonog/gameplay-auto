@@ -165,3 +165,15 @@ test('cuts made without the AI never pass the automatic filter', () => {
   assert.match(motivosRecusa({ ...ok, semIa: true }).join(), /sem a IA/);
   assert.match(motivosRecusa({ ...ok, titulo: 'Não acredito no que aconteceu 😱' }).join(), /sem a IA/);
 });
+
+test('proximoEnvio: YouTube only takes the best of the day when the quota is short', () => {
+  const base = tmp();
+  entregar(base, 'fraco', { titulo: 'F', nota: 5, agendarPara: '2026-11-19T15:00:00Z' });
+  entregar(base, 'forte', { titulo: 'B', nota: 9, agendarPara: '2026-11-19T20:00:00Z' });
+  entregar(base, 'medio', { titulo: 'M', nota: 7, agendarPara: '2026-11-19T16:00:00Z' });
+  const posts = listarEntregues(base);
+  const yt = (lim) => proximoEnvio(posts, { agora: AGORA, conectadas: ['youtube'], limites: { youtube: lim } });
+  assert.equal(yt(1), null); // the best (forte) is not due yet; fraco and medio wait
+  assert.equal(yt(2).post.id, 'principal/medio');
+  assert.equal(yt(3).post.id, 'principal/fraco');
+});

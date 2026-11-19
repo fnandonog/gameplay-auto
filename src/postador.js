@@ -53,9 +53,17 @@ export function proximoEnvio(posts, { agora = Date.now(), conectadas = REDES_API
   const fila = posts
     .filter((p) => !p.post.aviso && (!p.post.agendarPara || Date.parse(p.post.agendarPara) <= agora))
     .sort((a, b) => (b.post.postarJa ? 1 : 0) - (a.post.postarJa ? 1 : 0) || String(a.post.agendarPara || a.post.criadoEm || '').localeCompare(String(b.post.agendarPara || b.post.criadoEm || '')));
+  // YouTube has a small daily quota: of the videos due today (or overdue) it takes only the best by nota
+  // (long videos and "Postar agora" first), so the 6 a day are the strongest cuts
+  const naFilaYt = (p) => (p.post.linha?.redes || []).includes('youtube') && !p.postado.links?.youtube && !p.post.aviso
+    && (p.estado.youtube?.tentativas || 0) < MAX_TENTATIVAS && (!p.post.agendarPara || dia(Date.parse(p.post.agendarPara)) <= dia(agora));
+  const pesoYt = (p) => (p.post.postarJa ? 100 : 0) + (p.post.tipo === 'missao' || p.post.tipo === 'longo' || p.post.formato === 'horizontal' ? 50 : 0) + (Number(p.post.nota) || 0);
+  const vagasYt = Math.max(0, (lim.youtube ?? 3) - (feitos.youtube || 0));
+  const melhoresYt = new Set(posts.filter(naFilaYt).sort((a, b) => pesoYt(b) - pesoYt(a)).slice(0, vagasYt));
   for (const p of fila) {
     for (const rede of (p.post.linha?.redes || []).filter((r) => REDES_API.includes(r) && conectadas.includes(r))) {
       if (p.postado.links?.[rede]) continue;
+      if (rede === 'youtube' && !melhoresYt.has(p)) continue;
       const e = p.estado[rede] || {};
       if (e.tentativas >= MAX_TENTATIVAS || (e.proximaEm && Date.parse(e.proximaEm) > agora)) continue;
       if ((feitos[rede] || 0) >= (lim[rede] ?? 3)) continue;
