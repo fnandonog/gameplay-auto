@@ -52,7 +52,7 @@ test('argsCorte mutes the beep ranges, adds the beep and ducks the music', () =>
   assert.ok(a.includes('sine=frequency=1000:sample_rate=48000'));
   assert.equal(a[a.indexOf('m.mp3') - 5], '-stream_loop');
   const sem = argsCorte({ jogo: 'j.mp4', camera: 'j.mp4', start: 10, end: 30, ass: 'x.ass', out: 'o.mp4', formato: 'jogocheio', encoder: 'libx264' });
-  assert.match(sem[sem.indexOf('-filter_complex') + 1], /\[a0\]anull\[a\]/);
+  assert.match(sem[sem.indexOf('-filter_complex') + 1], /\[a0\]apad=whole_dur=20,atrim=end=20\[a\]/);
 });
 
 import { trechosDaGravacao, seg } from '../src/trechos.js';

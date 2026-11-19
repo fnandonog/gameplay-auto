@@ -24,7 +24,7 @@ export function disponivelYt(p, agora, apiIds) {
   if (apiIds.has(p.id)) return false; // the API sends this one
   const t = p.estado.youtube?.tentativas || 0;
   if (t > 0 && t < 3) return false; // the API is on it (retrying)
-  if (e?.postou || (e?.tentativas || 0) >= MAX_TENTATIVAS) return false;
+  if (e?.postou || e?.rascunho || (e?.tentativas || 0) >= MAX_TENTATIVAS) return false;
   if (e?.em && agora - Date.parse(e.em) < ESPERA_MS) return false;
   return true;
 }
@@ -74,7 +74,9 @@ export function registrarResultadoYoutube(base, { id, ok, link, erro, etapa, pos
     fs.writeFileSync(path.join(dir, ESTADO), JSON.stringify({ ...estado, em, postou: true, ok: true, erro: null }, null, 2));
     return { ok: true, postado };
   }
-  const novo = { ...estado, em, ok: false, postou: !!postou || !!estado.postou, erro: String(erro || 'sem detalhe').slice(0, 300), etapa: etapa ? String(etapa).slice(0, 80) : null };
+  // once the video was attached, YouTube keeps it as a draft: a retry would make a second draft, so it stops here
+  const antesDoAnexo = /^(abrir|anexar)/.test(String(etapa || ''));
+  const novo = { ...estado, em, ok: false, rascunho: !antesDoAnexo || !!estado.rascunho, postou: !!postou || !!estado.postou, erro: String(erro || 'sem detalhe').slice(0, 300), etapa: etapa ? String(etapa).slice(0, 80) : null };
   fs.writeFileSync(path.join(dir, ESTADO), JSON.stringify(novo, null, 2));
   return { ok: false, estado: novo };
 }

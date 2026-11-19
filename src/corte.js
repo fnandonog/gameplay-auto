@@ -175,6 +175,10 @@ export function argsCorte(job) {
   if (impactos.length && job.boom) { args.push('-f', 'lavfi', '-t', '0.7', '-i', "aevalsrc='0.8*sin(2*PI*(48+90*exp(-9*t))*t)*exp(-4.5*t)':s=48000:d=0.7"); boomIn = `${n}:a`; n++; }
   if (job.musica?.arquivo) { args.push('-stream_loop', '-1', '-t', String(dur), '-i', job.musica.arquivo); musIn = `${n}:a:0`; n++; }
   const g = [];
+  // the source sound on its own clock first: overlapping or missing stretches in the recording (OBS) are dropped/filled
+  // so the sound always has exactly the picture's length, and the later steps can number the samples safely
+  g.push(`[${audIn}]aresample=48000:async=1:first_pts=0[asrc]`);
+  audIn = 'asrc';
   let vIn = '0:v';
   if (manter) {
     const k = manter.length;
@@ -234,8 +238,10 @@ export function argsCorte(job) {
     g.push(`[${sfxIn}]highpass=f=500,lowpass=f=5000,afade=t=in:d=0.18,afade=t=out:st=0.18:d=0.27,volume=0.5,aformat=sample_rates=48000:channel_layouts=stereo,asplit=${sons.length}${sons.map((_, i) => `[w${i}]`).join('')}`);
     sons.forEach((t, i) => { g.push(`[w${i}]adelay=${Math.round(Math.max(0, t - 0.2) * 1000)}|${Math.round(Math.max(0, t - 0.2) * 1000)}[x${i}]`); mix.push(`x${i}`); });
   }
-  if (mix.length === 1) g.push('[a0]anull[a]');
-  else g.push(`${mix.map((m) => `[${m}]`).join('')}amix=inputs=${mix.length}:duration=first:dropout_transition=0:normalize=0${musIn ? ',alimiter=limit=0.89:level=0' : ''}[a]`);
+  // the sound ends exactly with the picture (never longer: a longer sound plays over a frozen last frame)
+  const fimA = `apad=whole_dur=${dur},atrim=end=${dur}`;
+  if (mix.length === 1) g.push(`[a0]${fimA}[a]`);
+  else g.push(`${mix.map((m) => `[${m}]`).join('')}amix=inputs=${mix.length}:duration=first:dropout_transition=0:normalize=0${musIn ? ',alimiter=limit=0.89:level=0' : ''},${fimA}[a]`);
   args.push('-filter_complex', g.join(';'), '-map', '[v]', '-map', '[a]', ...encoderArgs(job.encoder), '-r', String(fps),
     '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', job.out);
   return args;
@@ -278,7 +284,18 @@ export async function renderCorte({ jogo, camera, audio, start, end, palavras = 
   const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo,
     focos, manter: enx.manter, sons, impactos: imp.map((m) => m.t), boom: config.efeitos?.boom === true, bips: filtro.bips, musica: arqMusica ? { arquivo: arqMusica, volume: config.musica?.volume } : null, encoder: config.encoder || await melhorEncoder() });
   await run('ffmpeg', args, { timeoutMs: 30 * 60000 });
+  // never hand out a cut whose sound and picture differ in length (it plays out of sync on the networks)
+  const sin = await conferirSincronia(out);
+  if (!sin.ok) throw new Error(`som e imagem com tamanhos diferentes (vídeo ${sin.video}s, áudio ${sin.audio}s): corte não entregue`);
   return out;
+}
+
+// pure: picture and sound of the same length (within 0.25 s)
+export const sincroniaOk = (video, audio) => Number.isFinite(video) && Number.isFinite(audio) && Math.abs(video - audio) <= 0.25;
+export async function conferirSincronia(arquivo) {
+  const txt = await run('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_type,duration', '-of', 'csv=p=0', arquivo], { timeoutMs: 30000 }).catch(() => '');
+  const d = Object.fromEntries(String(txt).trim().split('\n').map((l) => l.split(',')).filter((x) => x.length >= 2).map(([t, v]) => [t, parseFloat(v)]));
+  return { ok: sincroniaOk(d.video, d.audio), video: d.video, audio: d.audio };
 }
 
 // cover: one frame of the cut (default: 40% in, usually the reaction)
