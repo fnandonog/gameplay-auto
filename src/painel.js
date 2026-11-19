@@ -95,6 +95,7 @@ function servirArquivo(req, res, file, extra = {}) {
 
 const json = (res, code, body) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(body)); };
 
+let contatoTiktok = null;
 export function criarPainel(config) {
   const senha = config.senhaPainel || '';
   const autorizado = (req) => !senha || (req.headers.cookie || '').split(/;\s*/).includes(`painel=${encodeURIComponent(senha)}`);
@@ -123,6 +124,7 @@ export function criarPainel(config) {
           return file ? servirArquivo(req, res, file, CORS_TIKTOK) : json(res, 404, { erro: 'Não encontrado.' });
         }
         if (!bearerOk(req.headers.authorization, token)) return json(res, 401, { erro: 'Código inválido: copie o código da aba Contas da central.' });
+        contatoTiktok = new Date().toISOString(); // the central shows when the extension last checked in
         if (req.method === 'GET' && rota === 'proximo') {
           const job = proximoJob({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida), limite: { tiktok: 4, ...(config.limites || {}) }.tiktok });
           if (job) registrar(config.pastaSaida, 'agendador', 'trabalhando', `TikTok pelo Chrome: postando "${job.titulo}"`);
@@ -183,7 +185,7 @@ export function criarPainel(config) {
       }
       // official APIs (src/postador.js): status, keys pasted by the owner (only on this Mac) and the OAuth "Conectar"
       if (req.method === 'GET' && url.pathname === '/api/apis') {
-        return json(res, 200, { ...statusApis(lerCredenciais(arquivoCredenciais(config))), postador: { ligado: !!config.postadorLigado, automatico: !!config.postarAutomatico, pausa: lerPausa(config.pastaSaida) } });
+        return json(res, 200, { ...statusApis(lerCredenciais(arquivoCredenciais(config))), tiktok: { ultimoContato: contatoTiktok }, postador: { ligado: !!config.postadorLigado, automatico: !!config.postarAutomatico, pausa: lerPausa(config.pastaSaida) } });
       }
       if (req.method === 'POST' && url.pathname === '/api/credenciais') {
         if (!local(req)) return json(res, 403, { erro: 'Só no próprio Mac.' });

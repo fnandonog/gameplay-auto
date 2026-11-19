@@ -33,7 +33,10 @@ Responda só pelo esquema JSON. Se nada acontece nesses quadros, devolva eventos
 // mission is abandoned: it never becomes a mission video and its stretch goes to `descartados`, so no cut uses it
 // either. The open mission at the end of the recording (he stopped recording mid-mission) is kept as `incompleta`
 // and is not rendered. Short ones are dropped.
-export function montarMissoes(eventos, duracao, { minSeg = 150, folga = 5, reinicioSeg = 90 } = {}) {
+// Only a restart of the same mission or an explicit failure discards footage, and at most the last `maxDescarteSeg`
+// before it (the failed attempt itself, never half the recording). Another mission starting without a "passed" card
+// usually means the card was missed: the previous one is kept (no mission video, cuts still allowed).
+export function montarMissoes(eventos, duracao, { minSeg = 150, folga = 5, reinicioSeg = 90, maxDescarteSeg = 420 } = {}) {
   const ev = [...eventos].filter((e) => Number.isFinite(e.t)).sort((a, b) => a.t - b.t);
   const out = [];
   const descartados = [];
@@ -44,13 +47,18 @@ export function montarMissoes(eventos, duracao, { minSeg = 150, folga = 5, reini
     atual = null;
   };
   const abandonar = (fim, motivo) => {
-    if (atual && fim > atual.inicio) descartados.push({ inicio: atual.inicio, fim, missao: atual.missao, motivo });
+    if (atual && fim > atual.inicio) descartados.push({ inicio: Math.max(atual.inicio, fim - maxDescarteSeg), fim, missao: atual.missao, motivo });
+    atual = null;
+  };
+  const semFim = (fim) => {
+    if (atual && fim - atual.inicio >= minSeg) out.push({ ...atual, fim: Math.min(duracao, fim), incompleta: true, semFim: true });
     atual = null;
   };
   for (const e of ev) {
     if (e.tipo === 'inicio') {
       if (mesma(e) && e.t - atual.visto < reinicioSeg) { atual.visto = e.t; continue; } // same title card, still on screen
-      if (atual) abandonar(e.t - folga, mesma(e) ? 'reiniciou a missão' : 'largou a missão no meio');
+      if (atual && mesma(e)) abandonar(e.t - folga, 'reiniciou a missão');
+      else if (atual) semFim(e.t - folga);
       atual = { missao: String(e.missao || 'Missão').trim(), inicio: Math.max(0, e.t - folga), visto: e.t, avisos: [] };
     } else if (e.tipo === 'fim' && atual) fechar(e.t);
     else if (e.tipo === 'falha' && atual) abandonar(e.t + folga, 'missão fracassada ou abandonada');

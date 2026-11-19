@@ -131,8 +131,9 @@ test('missões: início abre, fim ou próximo início fecha, curta cai, nudez vi
   const ev = [{ t: 100, tipo: 'inicio', missao: 'Aluguel' }, { t: 130, tipo: 'inicio', missao: 'aluguel' }, { t: 520, tipo: 'sensivel', missao: 'nudez' },
     { t: 700, tipo: 'fim', missao: 'Aluguel' }, { t: 900, tipo: 'inicio', missao: 'Curta' }, { t: 950, tipo: 'inicio', missao: 'Roubo' }];
   const m = montarMissoes(ev, 1400);
-  assert.deepEqual(m.map((x) => x.missao), ['Aluguel', 'Roubo']);
-  assert.equal(m[0].inicio, 95); assert.equal(m[0].fim, 705); assert.equal(m[1].fim, 1400);
+  assert.deepEqual(m.filter((x) => !x.incompleta || x.missao === 'Roubo').map((x) => x.missao), ['Aluguel', 'Roubo']);
+  assert.equal(m[0].inicio, 95); assert.equal(m[0].fim, 705); assert.equal(m.at(-1).fim, 1400);
+  assert.equal(m.descartados.length, 0);
   assert.equal(m[0].avisos.length, 1);
 });
 
@@ -142,6 +143,14 @@ test('missões: tentativa abandonada ou reiniciada é descartada; a que fica abe
   const m = montarMissoes(ev, 2000);
   assert.deepEqual(m.map((x) => [x.missao, x.inicio, !!x.incompleta]), [['Aluguel', 395, false], ['Barco', 1395, true]]);
   assert.deepEqual(m.descartados.map((d) => [d.missao, d.inicio, d.fim, d.motivo]), [['Aluguel', 95, 395, 'reiniciou a missão'], ['Roubo', 895, 1305, 'missão fracassada ou abandonada']]);
+});
+
+test('missões: outra missão começando sem o fim não descarta nada; falha longa descarta só o fim da tentativa', () => {
+  const ev = [{ t: 37, tipo: 'inicio', missao: 'Island Dreams' }, { t: 487, tipo: 'inicio', missao: 'Despedida' }, { t: 1303, tipo: 'inicio', missao: 'Rum da Shirley' },
+    { t: 2350, tipo: 'falha', missao: 'Rum da Shirley' }];
+  const m = montarMissoes(ev, 3000);
+  assert.deepEqual(m.map((x) => [x.missao, !!x.semFim]), [['Island Dreams', true], ['Despedida', true]]);
+  assert.deepEqual(m.descartados.map((d) => [d.inicio, d.fim]), [[2355 - 420, 2355]]);
 });
 
 import { subtrair } from '../src/longo.js';
@@ -204,4 +213,17 @@ test('IA: o token do claude setup-token vai para CLAUDE_CODE_OAUTH_TOKEN, não p
   assert.equal(aplicarChaveIa(f, env), true);
   assert.equal(env.ANTHROPIC_API_KEY, undefined);
   assert.match(env.CLAUDE_CODE_OAUTH_TOKEN, /^sk-ant-oat01-/);
+});
+
+test('série: a Parte 1 nunca sai depois da Parte 2', async () => {
+  const { reordenarSeries } = await import('../src/entrega.js');
+  const L = { id: 'principal' };
+  const posts = [
+    { id: 'pia', titulo: 'Desentupir pia (Parte 1)', sessao: 's1', linha: L, agendarPara: '2026-11-21T15:00:00Z' },
+    { id: 'supino', titulo: 'Supino (Parte 2)', sessao: 's1', linha: L, agendarPara: '2026-11-19T21:30:00Z' },
+    { id: 'cel', titulo: 'Celular (Parte 3)', sessao: 's1', linha: L, agendarPara: '2026-11-20T00:00:00Z' },
+    { id: 'ja', titulo: 'Velho (Parte 4)', sessao: 's1', linha: L, agendarPara: '2026-11-19T15:00:00Z', postado: true },
+  ];
+  assert.deepEqual(reordenarSeries(posts), [
+    { id: 'pia', agendarPara: '2026-11-19T21:30:00Z' }, { id: 'supino', agendarPara: '2026-11-20T00:00:00Z' }, { id: 'cel', agendarPara: '2026-11-21T15:00:00Z' }]);
 });

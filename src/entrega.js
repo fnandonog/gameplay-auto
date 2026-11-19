@@ -29,6 +29,7 @@ export function postDoCorte(c, { sessao, linha, duracao, agendarPara = null } = 
     arroba: c.arroba || linha?.arroba || '', formato: c.formato || null, outrosFormatos: Object.keys(c.variantes || {}).filter((f) => f !== c.formato),
     nota: c.nota ?? null, duracao: duracao ?? (c.fim != null && c.inicio != null ? +(c.fim - c.inicio).toFixed(2) : null),
     credito: c.credito || null, aviso: c.aviso || null, sessao, criadoEm: new Date().toISOString(),
+    serie: c.serie || null, parte: c.parte ?? null,
     // when the posting skill should publish it: the line's next free peak hour, within the safe daily limit
     agendarPara,
   };
@@ -100,5 +101,43 @@ export function entregarAprovados(config, { log = console.log } = {}) {
     if (mudou) fs.writeFileSync(file, JSON.stringify(dados, null, 2));
   }
   if (n) registrar(config.pastaSaida, 'agendador', 'pronto', `${n} corte(s) entregue(s) para a postagem`);
+  try { const r = reordenarSeriesNaPasta(base); if (r) log(`Agenda: ${r} parte(s) de série trocaram de horário para sair em ordem.`); } catch {}
   return n;
+}
+
+// pure: a part of a series never goes out before an earlier part. Within each series (same line), the posts not yet
+// posted keep the same set of time slots, handed out again in part order. Returns [{ id, agendarPara }] to change.
+const parteDe = (p) => Number(p.parte) || Number((/parte\s*(\d+)/i.exec(p.titulo || '') || [])[1]) || null;
+export function reordenarSeries(posts) {
+  const grupos = new Map();
+  for (const p of posts) {
+    const parte = parteDe(p);
+    if (!parte || !p.agendarPara || p.postado || p.postarJa) continue;
+    const k = `${p.linha?.id || ''}|${p.serie ? `s:${String(p.serie).toLowerCase()}` : `g:${p.sessao || ''}`}`;
+    if (!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push({ ...p, parte });
+  }
+  const mudar = [];
+  for (const g of grupos.values()) {
+    const slots = g.map((p) => p.agendarPara).sort();
+    g.sort((a, b) => a.parte - b.parte).forEach((p, i) => { if (p.agendarPara !== slots[i]) mudar.push({ id: p.id, agendarPara: slots[i] }); });
+  }
+  return mudar;
+}
+function reordenarSeriesNaPasta(base) {
+  const posts = [];
+  for (const l of fs.readdirSync(base).filter((d) => !d.startsWith('.'))) {
+    let ds = []; try { ds = fs.readdirSync(path.join(base, l)).filter((d) => !d.startsWith('.')); } catch { continue; }
+    for (const d of ds) {
+      const dir = path.join(base, l, d);
+      try { posts.push({ ...JSON.parse(fs.readFileSync(path.join(dir, 'post.json'), 'utf8')), id: dir, postado: fs.existsSync(path.join(dir, 'postado.json')) }); } catch {}
+    }
+  }
+  const mudar = reordenarSeries(posts);
+  for (const m of mudar) {
+    const f = path.join(m.id, 'post.json');
+    const post = JSON.parse(fs.readFileSync(f, 'utf8'));
+    fs.writeFileSync(f, JSON.stringify({ ...post, agendarPara: m.agendarPara }, null, 2));
+  }
+  return mudar.length;
 }

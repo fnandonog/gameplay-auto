@@ -309,7 +309,11 @@ function redes() {
   return REDES.map((rede) => {
     const c = conta(rede), m = met(rede);
     let estado, cr, acao;
-    if (rede === 'tiktok') { estado = 'Posta pela extensão do Chrome'; cr = 'ok'; }
+    if (rede === 'tiktok') {
+      const u = A?.tiktok?.ultimoContato, min = u ? (Date.now() - Date.parse(u)) / 6e4 : Infinity;
+      if (min < 15) { estado = `Extensão do Chrome ligada (falou com a central ${ha(u)})`; cr = 'ok'; }
+      else { estado = u ? `A extensão não fala com a central ${ha(u)}: abra o Chrome fnando.gameplay` : 'A extensão ainda não falou com a central: abra o Chrome fnando.gameplay'; cr = 'hi'; }
+    }
     else {
       const st = A?.[rede] || { status: 'falta credencial' };
       if (st.status === 'conectada') { estado = rede === 'youtube' && st.privado ? 'Conectado, mas sobe privado (falta a auditoria do Google)' : 'Conectado: posta sozinho'; cr = rede === 'youtube' && st.privado ? 'hi' : 'ok'; }
