@@ -92,14 +92,14 @@ export function receberPedaco(i, total, b64) {
   lista[i] = b64;
   return { ok: true, tem: lista.filter(Boolean).length, total };
 }
-export function anexarDosPedacos(total) {
+export function anexarDosPedacos(total, seletor = 'input[type="file"][accept*="video"]', nome = 'fnando.mp4', tipo = 'video/mp4') {
   const lista = window.__fnandoVideo || [];
   if (lista.filter(Boolean).length !== total) return { erro: 'a página recarregou no meio do vídeo' };
   const partes = lista.map((b64) => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k); return u; });
   window.__fnandoVideo = null;
-  const input = document.querySelector('input[type="file"][accept*="video"]') || document.querySelector('input[type="file"]');
+  const input = document.querySelector(seletor) || (tipo.startsWith('video') ? document.querySelector('input[type="file"]') : null);
   if (!input) return { erro: 'o campo de enviar arquivo sumiu' };
-  const file = new File(partes, 'fnando.mp4', { type: 'video/mp4' });
+  const file = new File(partes, nome, { type: tipo });
   const dt = new DataTransfer();
   dt.items.add(file);
   input.files = dt.files;

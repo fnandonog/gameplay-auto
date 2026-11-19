@@ -6,9 +6,11 @@
 // A cada 30 minutos confere na central qual é a versão da pasta extensao-tiktok: se for mais nova, recarrega sozinha.
 // Lado do servidor: src/tiktokChrome.js (rotas /api/tiktok-chrome/... em src/painel.js).
 import { postar } from './studio.js';
+import { postarYoutube } from './youtube.js';
 
 export const PAINEL = 'http://localhost:4322';
 const STUDIO = 'https://www.tiktok.com/tiktokstudio/upload?from=upload';
+const YT_UPLOAD = 'https://www.youtube.com/upload';
 
 async function marcar(texto, titulo) {
   await chrome.action.setBadgeText({ text: texto });
@@ -17,11 +19,11 @@ async function marcar(texto, titulo) {
 }
 
 // TikTok Studio numa janela própria, sem foco (as abas do dono ficam como estão); devolve a aba e a janela.
-async function abrirStudio() {
-  const janela = await chrome.windows.create({ url: STUDIO, focused: false, width: 1280, height: 900 });
+async function abrirStudio(url = STUDIO) {
+  const janela = await chrome.windows.create({ url, focused: false, width: 1280, height: 900 });
   const id = janela.tabs[0].id;
   await new Promise((ok, falha) => {
-    const fim = setTimeout(() => { chrome.tabs.onUpdated.removeListener(ver); falha(new Error('o TikTok Studio não abriu')); }, 60000);
+    const fim = setTimeout(() => { chrome.tabs.onUpdated.removeListener(ver); falha(new Error('o Studio não abriu')); }, 60000);
     function ver(t, info) { if (t === id && info.status === 'complete') { clearTimeout(fim); chrome.tabs.onUpdated.removeListener(ver); ok(); } }
     chrome.tabs.onUpdated.addListener(ver);
   });
@@ -98,19 +100,26 @@ export async function rodada() {
     const auth = { authorization: `Bearer ${codigo}`, 'x-extensao-versao': chrome.runtime.getManifest().version };
     const r = await fetch(`${painel}/api/tiktok-chrome/proximo`, { headers: auth, credentials: 'omit' });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `a central respondeu ${r.status}`);
-    const { job, atualizar } = await r.json();
+    const { job: jobTt, atualizar } = await r.json();
     await chrome.storage.local.set({ vistoEm: Date.now(), ultimoErro: null });
     if (atualizar) { await marcar('!', atualizar); return; }
+    // sem TikTok agora: pergunta se há vídeo do YouTube (o que passa da cota da API)
+    let job = jobTt, rede = 'tiktok';
+    if (!job) {
+      const y = await fetch(`${painel}/api/tiktok-chrome/yt-proximo`, { headers: auth, credentials: 'omit' }).then((x) => (x.ok ? x.json() : {})).catch(() => ({}));
+      if (y.job) { job = y.job; rede = 'youtube'; }
+    }
     if (!job) { await marcar('', 'esperando o próximo vídeo'); return; }
-    await marcar('▲', 'postando um vídeo no TikTok');
+    const nomeRede = rede === 'youtube' ? 'YouTube' : 'TikTok';
+    await marcar('▲', `postando um vídeo no ${nomeRede}`);
     let res;
     try {
-      aba = await abrirStudio();
+      aba = await abrirStudio(rede === 'youtube' ? YT_UPLOAD : STUDIO);
       teclas = teclado(aba);
-      // o vídeo vem da central pelo background (a página do TikTok pode não ter a permissão de rede local)
-      teclas.pedacosDoVideo = async (url) => {
+      // os arquivos vêm da central pelo background (a página pode não ter a permissão de rede local do Chrome)
+      teclas.pedacos = async (url) => {
         const r = await fetch(url, { credentials: 'omit' });
-        if (!r.ok) throw new Error(`a central respondeu ${r.status} ao baixar o vídeo`);
+        if (!r.ok) throw new Error(`a central respondeu ${r.status} ao baixar o arquivo`);
         const bytes = new Uint8Array(await r.arrayBuffer());
         const pedacos = [];
         for (let i = 0; i < bytes.length; i += 3 * 1024 * 1024) {
@@ -121,17 +130,20 @@ export async function rodada() {
         }
         return pedacos;
       };
+      teclas.pedacosDoVideo = teclas.pedacos;
       // um passo curto por vez; um passo cuja página recarregou no meio responde null e postar pede de novo
       const executar = async (func, args) => {
         try { const [r] = await chrome.scripting.executeScript({ target: { tabId: aba.tabId }, func, args }); return r?.result ?? null; } catch { return null; }
       };
-      res = await postar(executar, teclas, { ...job, video: `${painel}${job.video}` });
+      res = rede === 'youtube'
+        ? await postarYoutube(executar, teclas, { ...job, video: `${painel}${job.video}`, capa: job.capa ? `${painel}${job.capa}` : null })
+        : await postar(executar, teclas, { ...job, video: `${painel}${job.video}` });
     } catch (e) {
-      res = { ok: false, etapa: 'abrir o TikTok Studio', erro: String(e.message || e).slice(0, 240), postou: false };
+      res = { ok: false, etapa: `abrir o ${nomeRede} Studio`, erro: String(e.message || e).slice(0, 240), postou: false };
     }
-    await fetch(`${painel}/api/tiktok-chrome/resultado`, { method: 'POST', headers: { 'content-type': 'application/json', ...auth }, body: JSON.stringify({ id: job.id, ...res }), credentials: 'omit' });
-    await chrome.storage.local.set({ ultimoPost: { em: Date.now(), ...res } });
-    await marcar(res.ok ? '' : '!', res.ok ? 'vídeo publicado' : res.saiu ? 'entre de novo no TikTok' : `parou em "${res.etapa}": ${res.erro}`);
+    await fetch(`${painel}/api/tiktok-chrome/${rede === 'youtube' ? 'yt-resultado' : 'resultado'}`, { method: 'POST', headers: { 'content-type': 'application/json', ...auth }, body: JSON.stringify({ id: job.id, ...res }), credentials: 'omit' });
+    await chrome.storage.local.set({ ultimoPost: { em: Date.now(), rede, ...res } });
+    await marcar(res.ok ? '' : '!', res.ok ? `vídeo publicado no ${nomeRede}` : res.saiu ? `entre de novo no ${nomeRede}` : `${nomeRede} parou em "${res.etapa}": ${res.erro}`);
   } catch (e) {
     await chrome.storage.local.set({ ultimoErro: `${new Date().toLocaleString('pt-BR')}: ${e.message}` });
     await marcar('!', `Erro: ${e.message}`);

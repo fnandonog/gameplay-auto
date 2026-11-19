@@ -177,3 +177,24 @@ test('proximoEnvio: YouTube only takes the best of the day when the quota is sho
   assert.equal(yt(2).post.id, 'principal/medio');
   assert.equal(yt(3).post.id, 'principal/fraco');
 });
+
+import { proximoJobYoutube, registrarResultadoYoutube } from '../src/youtubeChrome.js';
+test('YouTube by Chrome takes what the API quota leaves, never the same post', () => {
+  const base = tmp();
+  entregar(base, 'fraco', { titulo: 'F', nota: 5, agendarPara: '2026-11-19T15:00:00Z' });
+  entregar(base, 'forte', { titulo: 'B', nota: 9, agendarPara: '2026-11-19T16:00:00Z' });
+  fs.writeFileSync(path.join(base, 'principal', 'forte', 'capa.jpg'), 'jpg');
+  const j = proximoJobYoutube({ base, token: 'x'.repeat(40), agora: AGORA, apiLimite: 1 });
+  assert.equal(j.id, 'principal/fraco');
+  assert.match(j.titulo, /#shorts/);
+  assert.equal(proximoJobYoutube({ base, token: 'x'.repeat(40), agora: AGORA, apiLimite: 1 }), null); // forte is the API's; fraco is handed out
+  const posts = listarEntregues(base);
+  assert.equal(proximoEnvio(posts, { agora: AGORA, conectadas: ['youtube'], limites: { youtube: 2 } }).post.id, 'principal/forte'); // fraco is with Chrome
+  registrarResultadoYoutube(base, { id: 'principal/fraco', ok: true, link: 'https://youtube.com/shorts/abc' }, AGORA);
+  const p2 = listarEntregues(base);
+  assert.equal(p2.find((p) => p.id === 'principal/fraco').postado.links.youtube, 'https://youtube.com/shorts/abc');
+  assert.equal(contagemHoje(p2, AGORA).youtube, undefined); // does not use up the API count
+  const j2 = proximoJobYoutube({ base, token: 'x'.repeat(40), agora: AGORA, apiLimite: 0 });
+  assert.equal(j2.id, 'principal/forte');
+  assert.ok(j2.capa.startsWith('/api/tiktok-chrome/capa/'));
+});

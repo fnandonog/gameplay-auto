@@ -15,7 +15,8 @@ import { lerRadar, sincronizarRadar, lerEstadoRadar, salvarEstadoRadar, statusDa
 import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
 import { arquivoToken, garantirToken, bearerOk, assinaturaOk, proximoJob, arquivoDoVideo, registrarResultado } from './tiktokChrome.js';
 import { registrar } from './atividade.js';
-import { postarAgora, reagendarFila } from './postador.js';
+import { postarAgora, reagendarFila, redesConectadas } from './postador.js';
+import { proximoJobYoutube, registrarResultadoYoutube, arquivoDaCapa } from './youtubeChrome.js';
 import { limitesDe } from './canais.js';
 import { salvarRitmo } from './config.js';
 import crypto from 'node:crypto';
@@ -125,12 +126,38 @@ export function criarPainel(config) {
           const file = arquivoDoVideo(config.pastaEntrega, id);
           return file ? servirArquivo(req, res, file, CORS_TIKTOK) : json(res, 404, { erro: 'Não encontrado.' });
         }
+        if (req.method === 'GET' && rota.startsWith('capa/')) {
+          const id = decodeURIComponent(rota.slice('capa/'.length));
+          if (!assinaturaOk(token, id, url.searchParams.get('t')) && !bearerOk(req.headers.authorization, token)) return json(res, 401, { erro: 'Código inválido.' });
+          const file = arquivoDaCapa(config.pastaEntrega, id);
+          return file ? servirArquivo(req, res, file, { ...CORS_TIKTOK, 'content-type': 'image/jpeg' }) : json(res, 404, { erro: 'Não encontrado.' });
+        }
         if (!bearerOk(req.headers.authorization, token)) return json(res, 401, { erro: 'Código inválido: copie o código da aba Contas da central.' });
         contatoTiktok = new Date().toISOString(); // the central shows when the extension last checked in
         if (req.method === 'GET' && rota === 'proximo') {
           const job = proximoJob({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida), limite: limitesDe(config).tiktok });
           if (job) registrar(config.pastaSaida, 'agendador', 'trabalhando', `TikTok pelo Chrome: postando "${job.titulo}"`);
           return json(res, 200, { job });
+        }
+        // YouTube Studio by the same extension: what the API quota does not cover (src/youtubeChrome.js)
+        if (req.method === 'GET' && rota === 'yt-proximo') {
+          if (config.youtubeChrome === false) return json(res, 200, { job: null });
+          const apiOk = redesConectadas(lerCredenciais(arquivoCredenciais(config))).includes('youtube') && config.postadorLigado;
+          const job = proximoJobYoutube({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida), apiLimite: apiOk ? limitesDe(config).youtube : 0, limite: config.ritmo?.maxPorDia ? config.ritmo.maxPorDia + (config.ritmo.longosPorDia || 0) : 30 });
+          if (job) registrar(config.pastaSaida, 'agendador', 'trabalhando', `YouTube pelo Chrome: postando "${job.titulo}"`);
+          return json(res, 200, { job });
+        }
+        if (req.method === 'POST' && rota === 'yt-resultado') {
+          let body = '';
+          req.on('data', (d) => { body += d; if (body.length > 1e4) req.destroy(); });
+          req.on('end', () => {
+            try {
+              const r = registrarResultadoYoutube(config.pastaEntrega, JSON.parse(body || '{}'));
+              registrar(config.pastaSaida, 'agendador', r.ok ? 'pronto' : 'erro', r.ok ? 'YouTube pelo Chrome: vídeo publicado' : `YouTube pelo Chrome parou: ${r.estado.erro}`);
+              json(res, 200, r);
+            } catch (e) { json(res, 400, { erro: e.message }); }
+          });
+          return;
         }
         if (req.method === 'POST' && rota === 'resultado') {
           let body = '';

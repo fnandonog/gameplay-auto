@@ -211,7 +211,7 @@ export function argsCorte(job) {
   }
   g.push(`[${ultimo}][${barIn}]overlay=x='-W+W*t/${dur}':y=H-10:eval=frame:shortest=1[pb]`,
     `[pb]ass='${fp(job.ass)}':fontsdir='${fp(FONTS)}',format=yuv420p[v]`,
-    `[${audIn}]${entre ? `volume='if(${entre},0,1)':eval=frame,` : ''}afade=t=in:d=0.15,afade=t=out:st=${Math.max(0, dur - 0.3).toFixed(2)}:d=0.3,loudnorm=I=-14:TP=-1.5:LRA=11,aformat=sample_rates=48000:channel_layouts=stereo[a0]`);
+    `[${audIn}]${entre ? `volume='if(${entre},0,1)':eval=frame,` : ''}afade=t=in:d=0.15,afade=t=out:st=${Math.max(0, dur - 0.3).toFixed(2)}:d=0.3,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000,asetpts=N/SR/TB,aformat=sample_rates=48000:channel_layouts=stereo[a0]`);
   const mix = ['a0'];
   if (musIn) {
     // the music ducks under the voice (sidechain) and fades in and out

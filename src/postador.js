@@ -32,7 +32,7 @@ export function listarEntregues(base) {
       const dir = path.join(base, linha, pasta);
       const post = ler(path.join(dir, 'post.json'));
       if (!post || !fs.existsSync(path.join(dir, 'video.mp4'))) continue;
-      out.push({ id: `${linha}/${pasta}`, dir, post, postado: ler(path.join(dir, 'postado.json')) || {}, estado: ler(path.join(dir, '.postador.json')) || {} });
+      out.push({ id: `${linha}/${pasta}`, dir, post, postado: ler(path.join(dir, 'postado.json')) || {}, estado: ler(path.join(dir, '.postador.json')) || {}, ytChrome: ler(path.join(dir, '.youtube-chrome.json')) || null });
     }
   }
   return out;
@@ -46,6 +46,19 @@ export function contagemHoje(posts, agora) {
   return n;
 }
 
+// pure: the YouTube posts the API sends today: of the ones due today (or overdue) and not handed to the Chrome
+// extension, the best by nota (long videos and "Postar agora" first), as many as the quota still allows
+const CHROME_SEGURA_MS = 40 * 60000;
+export const comChrome = (p, agora) => !!(p.ytChrome && (p.ytChrome.postou || (p.ytChrome.em && agora - Date.parse(p.ytChrome.em) < CHROME_SEGURA_MS)));
+export const pesoYoutube = (post) => (post.postarJa ? 100 : 0) + (post.tipo === 'missao' || post.tipo === 'longo' || post.formato === 'horizontal' ? 50 : 0) + (Number(post.nota) || 0);
+export function selecaoApiYoutube(posts, agora, limite) {
+  const feitos = contagemHoje(posts, agora).youtube || 0;
+  const vagas = Math.max(0, limite - feitos);
+  return posts.filter((p) => (p.post.linha?.redes || []).includes('youtube') && !p.postado.links?.youtube && !p.post.aviso && !comChrome(p, agora)
+    && (p.estado.youtube?.tentativas || 0) < MAX_TENTATIVAS && (!p.post.agendarPara || dia(Date.parse(p.post.agendarPara)) <= dia(agora)))
+    .sort((a, b) => pesoYoutube(b.post) - pesoYoutube(a.post)).slice(0, vagas);
+}
+
 // pure: the next (post, network) to send, or null. conectadas = networks with working credentials.
 export function proximoEnvio(posts, { agora = Date.now(), conectadas = REDES_API, limites = {} } = {}) {
   const lim = { ...LIMITES_SEGUROS, ...limites };
@@ -53,17 +66,12 @@ export function proximoEnvio(posts, { agora = Date.now(), conectadas = REDES_API
   const fila = posts
     .filter((p) => !p.post.aviso && (!p.post.agendarPara || Date.parse(p.post.agendarPara) <= agora))
     .sort((a, b) => (b.post.postarJa ? 1 : 0) - (a.post.postarJa ? 1 : 0) || String(a.post.agendarPara || a.post.criadoEm || '').localeCompare(String(b.post.agendarPara || b.post.criadoEm || '')));
-  // YouTube has a small daily quota: of the videos due today (or overdue) it takes only the best by nota
-  // (long videos and "Postar agora" first), so the 6 a day are the strongest cuts
-  const naFilaYt = (p) => (p.post.linha?.redes || []).includes('youtube') && !p.postado.links?.youtube && !p.post.aviso
-    && (p.estado.youtube?.tentativas || 0) < MAX_TENTATIVAS && (!p.post.agendarPara || dia(Date.parse(p.post.agendarPara)) <= dia(agora));
-  const pesoYt = (p) => (p.post.postarJa ? 100 : 0) + (p.post.tipo === 'missao' || p.post.tipo === 'longo' || p.post.formato === 'horizontal' ? 50 : 0) + (Number(p.post.nota) || 0);
-  const vagasYt = Math.max(0, (lim.youtube ?? 3) - (feitos.youtube || 0));
-  const melhoresYt = new Set(posts.filter(naFilaYt).sort((a, b) => pesoYt(b) - pesoYt(a)).slice(0, vagasYt));
+  // YouTube has a small daily quota: the API takes the best of the day; the rest goes by Chrome (src/youtubeChrome.js)
+  const melhoresYt = new Set(selecaoApiYoutube(posts, agora, lim.youtube ?? 3).map((p) => p.id));
   for (const p of fila) {
     for (const rede of (p.post.linha?.redes || []).filter((r) => REDES_API.includes(r) && conectadas.includes(r))) {
       if (p.postado.links?.[rede]) continue;
-      if (rede === 'youtube' && !melhoresYt.has(p)) continue;
+      if (rede === 'youtube' && !melhoresYt.has(p.id)) continue;
       const e = p.estado[rede] || {};
       if (e.tentativas >= MAX_TENTATIVAS || (e.proximaEm && Date.parse(e.proximaEm) > agora)) continue;
       if ((feitos[rede] || 0) >= (lim[rede] ?? 3)) continue;
@@ -105,7 +113,7 @@ export function gravarFalha(dir, rede, err, agora = Date.now()) {
 const PUBLICAR = {
   instagram: (c, p) => publicarInstagram({ igUserId: c.meta.igUserId, token: c.meta.pageToken, arquivo: path.join(p.dir, 'video.mp4'), legenda: legendaMeta(p.post, 'instagram') }),
   facebook: (c, p) => publicarFacebook({ pageId: c.meta.pageId, token: c.meta.pageToken, arquivo: path.join(p.dir, 'video.mp4'), legenda: legendaMeta(p.post, 'facebook') }),
-  youtube: (c, p, config) => publicarYoutube(c.youtube, { arquivo: path.join(p.dir, 'video.mp4'), post: p.post, playlists: config.youtube?.playlists || {} }),
+  youtube: (c, p, config) => publicarYoutube(c.youtube, { arquivo: path.join(p.dir, 'video.mp4'), post: p.post, playlists: config.youtube?.playlists || {}, capa: path.join(p.dir, 'capa.jpg') }),
 };
 
 // One round. Returns what it did (for the log and the tests).

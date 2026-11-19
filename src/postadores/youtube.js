@@ -55,7 +55,20 @@ export async function tokenDeAcesso({ clientId, clientSecret, refreshToken }, { 
   return cache.token;
 }
 
-export async function publicarYoutube(cred, { arquivo, post, playlists = {} }, { fetchFn = fetch } = {}) {
+// custom thumbnail (thumbnails.set, 50 units). Needs a verified channel (phone) for custom thumbnails; a failure never
+// undoes the upload, it only comes back as thumbErro.
+export async function definirThumbYoutube(cred, videoId, capa, { fetchFn = fetch, token } = {}) {
+  if (!capa || !fs.existsSync(capa)) return { thumb: false };
+  const buf = fs.readFileSync(capa);
+  if (buf.length > 2 * 1024 * 1024) return { thumb: false, thumbErro: 'capa maior que 2 MB' };
+  token = token || await tokenDeAcesso(cred, { fetchFn });
+  const r = await fetchFn(`https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${encodeURIComponent(videoId)}`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'content-type': 'image/jpeg', 'content-length': String(buf.length) }, body: buf });
+  if (r.ok) return { thumb: true };
+  const j = await r.json().catch(() => ({}));
+  return { thumb: false, thumbErro: String(j.error?.message || r.status).slice(0, 200) };
+}
+
+export async function publicarYoutube(cred, { arquivo, post, playlists = {}, capa = null }, { fetchFn = fetch } = {}) {
   const token = await tokenDeAcesso(cred, { fetchFn });
   const tamanho = fs.statSync(arquivo).size;
   const meta = metadadosYoutube(post);
@@ -76,7 +89,9 @@ export async function publicarYoutube(cred, { arquivo, post, playlists = {} }, {
       if (a.ok) listas.push(pl);
     } catch {} // a playlist that failed never undoes the upload
   }
-  return { id: j.id, playlists: listas, link: longo ? `https://youtu.be/${j.id}` : `https://youtube.com/shorts/${j.id}`, travadoPrivado: privacidade === 'private' };
+  let th = {};
+  try { th = await definirThumbYoutube(cred, j.id, capa, { fetchFn, token }); } catch (e) { th = { thumb: false, thumbErro: e.message }; }
+  return { id: j.id, playlists: listas, ...th, link: longo ? `https://youtu.be/${j.id}` : `https://youtube.com/shorts/${j.id}`, travadoPrivado: privacidade === 'private' };
 }
 
 // ---------- connecting ----------
