@@ -22,7 +22,7 @@ export function estadoYoutube() {
   const progresso = (prog?.innerText || '').replace(/\s+/g, ' ').trim();
   const link = [...document.querySelectorAll('ytcp-uploads-dialog a[href*="youtu"], .video-url-fadeable a[href*="youtu"]')].map((a) => a.href).find((h) => /youtu\.be\/|youtube\.com\/(shorts|watch)/.test(h)) || null;
   const erro = (q('ytcp-uploads-dialog .error-area, .ytcp-uploads-dialog .error-message')?.innerText || '').trim();
-  const limite = /limite diário|daily upload limit/i.test(document.body?.innerText || '');
+  const limite = /limite di[aá]rio de envios|daily upload limit/i.test(document.body?.innerText || '');
   return { login, input: !!input, titulo: !!titulo, progresso, link, erro, limite, dialogo: !!q('ytcp-uploads-dialog'), passo: q('ytcp-uploads-dialog #step-badge-3[state="active"], ytcp-uploads-dialog [test-id="REVIEW"][state="active"]') ? 'visibilidade' : null };
 }
 
@@ -40,6 +40,17 @@ export function alvoYoutube(qual) {
 export function lerTextoYoutube(qual) {
   const el = document.querySelector(qual === 'descricao' ? '#description-textarea #textbox, #description-textarea [contenteditable="true"]' : '#title-textarea #textbox, #title-textarea [contenteditable="true"]');
   return el ? { texto: el.innerText } : null;
+}
+
+// Onde clicar num rádio do Studio (pelo name) e se ele já está marcado. O click() por script não marca esses rádios
+// (Polymer): o clique tem que ser de verdade (aba.clicar), igual a uma pessoa.
+export function alvoRadio(nome) {
+  const r = document.querySelector(`tp-yt-paper-radio-button[name="${nome}"]`);
+  if (!r) return null;
+  r.scrollIntoView({ block: 'center' });
+  const b = (r.querySelector('#radioContainer') || r).getBoundingClientRect();
+  const marcado = r.getAttribute('aria-checked') === 'true' || r.hasAttribute('checked');
+  return { x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2), marcado };
 }
 
 export function marcarNaoInfantil() {
@@ -103,6 +114,18 @@ export async function postarYoutube(executar, aba, job, { espera = 1 } = {}) {
     }
     return executar(anexarDosPedacos, [pedacos.length, seletor, nome, tipo]);
   };
+  // clica de verdade no rádio e confere que marcou (até 3 vezes)
+  const marcarRadio = async (nome) => {
+    for (let t = 0; t < 3; t++) {
+      const r = await executar(alvoRadio, [nome]);
+      if (!r) { await dormir(1000); continue; }
+      if (r.marcado) return true;
+      await aba.clicar(r.x, r.y);
+      await dormir(600);
+      if ((await executar(alvoRadio, [nome]))?.marcado) return true;
+    }
+    return false;
+  };
   try {
     let e = await esperar((s) => s.input, 60000);
     if (!e) return parar('a caixa de envio do YouTube Studio não abriu');
@@ -135,7 +158,8 @@ export async function postarYoutube(executar, aba, job, { espera = 1 } = {}) {
       await dormir(500);
     }
     const lido = await executar(lerTextoYoutube, ['titulo']);
-    if (!lido || !String(lido.texto || '').trim()) return parar('o título ficou vazio');
+    const tit = String(lido?.texto || '').replace(/\s+/g, ' ').trim();
+    if (!tit || tit === 'fnando' || !tit.startsWith(String(job.titulo || '').slice(0, 20).trim())) return parar(`o título não foi escrito (ficou "${tit.slice(0, 40)}")`);
 
     if (job.capa) {
       etapa = 'colocar a capa';
@@ -145,8 +169,7 @@ export async function postarYoutube(executar, aba, job, { espera = 1 } = {}) {
     }
 
     etapa = 'marcar que não é para crianças';
-    const k = await executar(marcarNaoInfantil, []);
-    if (!k?.ok) return parar('não achei "Não é conteúdo para crianças"');
+    if (!(await marcarRadio('VIDEO_MADE_FOR_KIDS_NOT_MFK'))) return parar('não consegui marcar "Não é conteúdo para crianças"');
     await dormir(800);
 
     etapa = 'avançar até a visibilidade';
@@ -158,8 +181,7 @@ export async function postarYoutube(executar, aba, job, { espera = 1 } = {}) {
     }
 
     etapa = 'marcar Público';
-    const pub = await executar(marcarPublico, []);
-    if (!pub?.ok) return parar('não achei a opção Público');
+    if (!(await marcarRadio('PUBLIC'))) return parar('não consegui marcar Público');
     await dormir(800);
 
     etapa = 'esperar o envio terminar';

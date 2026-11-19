@@ -30,8 +30,12 @@ export function disponivelYt(p, agora, apiIds) {
 }
 
 // The next post for YouTube Studio, or null. apiLimite = what the API may still send today (0 when not connected).
+// YouTube's daily upload limit (unverified channels): no new tries for 24 h, kept in <base>/.youtube-limite.json
+const LIMITE = '.youtube-limite.json';
+export const limiteAtivo = (base, agora = Date.now()) => { const l = ler(path.join(base, LIMITE)); return !!(l?.ate && Date.parse(l.ate) > agora); };
+
 export function proximoJobYoutube({ base, token, agora = Date.now(), pausa = null, apiLimite = 0, limite = 30 }) {
-  if (pausa) return null;
+  if (pausa || limiteAtivo(base, agora)) return null;
   const posts = listarEntregues(base);
   const hoje = posts.filter((p) => p.postado.emRede?.['youtube-chrome'] && dia(Date.parse(p.postado.emRede['youtube-chrome'])) === dia(agora)).length;
   if (hoje >= limite) return null;
@@ -76,6 +80,7 @@ export function registrarResultadoYoutube(base, { id, ok, link, erro, etapa, pos
   }
   // once the video was attached, YouTube keeps it as a draft: a retry would make a second draft, so it stops here
   const antesDoAnexo = /^(abrir|anexar)/.test(String(etapa || ''));
+  if (/limite di[aá]rio|daily upload limit/i.test(String(erro || ''))) fs.writeFileSync(path.join(base, LIMITE), JSON.stringify({ em, ate: new Date(agora + 24 * 3600000).toISOString(), erro: String(erro).slice(0, 200) }, null, 2));
   const novo = { ...estado, em, ok: false, rascunho: !antesDoAnexo || !!estado.rascunho, postou: !!postou || !!estado.postou, erro: String(erro || 'sem detalhe').slice(0, 300), etapa: etapa ? String(etapa).slice(0, 80) : null };
   fs.writeFileSync(path.join(dir, ESTADO), JSON.stringify(novo, null, 2));
   return { ok: false, estado: novo };
