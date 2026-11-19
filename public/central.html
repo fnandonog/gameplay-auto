@@ -564,9 +564,9 @@ const TELAS = {
     };
     const live = C?.live || [];
     const ia = `<div class="rede"><div class="cb"><span class="rx" style="--c:#8a7a00;width:36px;height:36px;font-size:12px;border-radius:10px">IA</span><div class="txt"><div style="font-weight:700">IA dos títulos e da escolha dos cortes</div>
-      <div class="estado" style="color:var(--${A?.ia?.temChave || A?.ia?.conta ? 'ok' : 'no'})">${A?.ia?.temChave ? 'Chave de API guardada: títulos e escolha dos cortes pela IA' : A?.ia?.conta ? 'Usando a sua conta Claude deste Mac (Claude Code)' : 'Falta: sem IA os títulos saem genéricos'}</div></div></div>
-      <div class="muted" style="font-size:13px">${A?.ia?.temChave ? 'A chave tem prioridade sobre a conta.' : 'Com a sua conta: no Terminal do Mac rode <code>claude</code> uma vez, digite <code>/login</code> e entre com a sua conta Claude. A central passa a usar essa conta, sem chave. Se preferir uma chave de API, cole abaixo.'}</div>
-      <div class="linha2"><input class="campo" type="password" autocomplete="off" data-cred="ia" data-campo="apiKey" placeholder="${A?.ia?.temChave ? 'Cole só para trocar' : 'sk-ant-...'}" style="flex:1"><button class="btn${A?.ia?.temChave ? ' sec' : ''}" data-salvar-cred="ia">Salvar</button></div></div>`;
+      <div class="estado" style="color:var(--${A?.ia?.temChave || A?.ia?.temToken || A?.ia?.conta ? 'ok' : 'no'})">${A?.ia?.temChave ? 'Chave de API guardada' : A?.ia?.temToken ? 'Token da sua conta Claude guardado' : A?.ia?.conta ? 'Usando a sua conta Claude deste Mac (Claude Code)' : 'Falta: sem IA os títulos saem genéricos'}</div></div></div>
+      <div class="muted" style="font-size:13px">Com a sua conta Claude: no Terminal do Mac rode <code>claude setup-token</code>, entre com a sua conta, copie o token que aparece (começa com <code>sk-ant-oat</code>) e cole aqui. Também aceita uma chave de API.</div>
+      <div class="linha2"><input class="campo" type="password" autocomplete="off" data-cred="ia" data-campo="apiKey" placeholder="${A?.ia?.temChave || A?.ia?.temToken ? 'Cole só para trocar' : 'sk-ant-oat01-...'}" style="flex:1"><button class="btn${A?.ia?.temChave ? ' sec' : ''}" data-salvar-cred="ia">Salvar</button></div></div>`;
     return `<div class="cab"><div><h1>Contas e conexões</h1><div class="sub">As chaves ficam só neste Mac (<code>~/Gameplay/.credenciais.json</code>) e nunca aparecem de novo na página.</div></div></div>
     <div class="redes">${R.map(card).join('')}${ia}</div>
     <h3 class="sub">Onde dá para fazer live</h3>

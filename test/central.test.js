@@ -190,3 +190,18 @@ test('postar agora: jumps the queue', async () => {
   const r = proximoEnvio([mk('velho', '2026-11-19T10:00:00Z'), mk('ja', '2026-11-19T16:00:00Z', true)], { agora: Date.parse('2026-11-19T16:01:00Z'), conectadas: ['youtube'] });
   assert.equal(r.post.id, 'ja');
 });
+
+test('IA: o token do claude setup-token vai para CLAUDE_CODE_OAUTH_TOKEN, não para a chave de API', async () => {
+  const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+  const { salvarCredenciais, aplicarChaveIa, lerCredenciais } = await import('../src/credenciais.js');
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'cred-')), 'c.json');
+  salvarCredenciais(f, 'ia', { apiKey: 'sk-ant-api03-' + 'a'.repeat(30) });
+  salvarCredenciais(f, 'ia', { apiKey: 'sk-ant-oat01-' + 'b'.repeat(30) });
+  const c = lerCredenciais(f).ia;
+  assert.equal(c.apiKey, undefined);
+  assert.match(c.oauthToken, /^sk-ant-oat01-/);
+  const env = {};
+  assert.equal(aplicarChaveIa(f, env), true);
+  assert.equal(env.ANTHROPIC_API_KEY, undefined);
+  assert.match(env.CLAUDE_CODE_OAUTH_TOKEN, /^sk-ant-oat01-/);
+});
