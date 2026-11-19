@@ -160,3 +160,15 @@ test('chave da IA colada na central vai para o processo e recusa o que não é c
   assert.match(env.ANTHROPIC_API_KEY, /^sk-ant-/);
   assert.equal((fs.statSync(f).mode & 0o777).toString(8), '600');
 });
+
+import { removerAlucinacoes } from '../src/transcricao.js';
+test('legenda: tira os créditos que o Whisper inventa e as repetições em loop', () => {
+  const w = (txt, t0 = 0, gap = 0.4) => txt.split(' ').map((text, i) => ({ text, start: t0 + i * gap, end: t0 + i * gap + 0.3 }));
+  const fala = [...w('olha que legal essa pia'), ...w('Legendado por Sônia Ruberti', 5), ...w('vamos lá', 10)];
+  assert.equal(removerAlucinacoes(fala).map((x) => x.text).join(' '), 'olha que legal essa pia vamos lá');
+  assert.equal(removerAlucinacoes(w('Legendas pela comunidade Amara.org')).length, 0);
+  assert.equal(removerAlucinacoes(w('obrigado por assistir galera')).map((x) => x.text).join(' '), 'galera');
+  assert.equal(removerAlucinacoes(w('vai vai vai corre')).length, 4); // single words are not loops
+  assert.equal(removerAlucinacoes(w('meu deus meu deus meu deus meu deus')).map((x) => x.text).join(' '), 'meu deus meu deus');
+  assert.equal(removerAlucinacoes(w('a legenda por enquanto tá boa')).length, 4); // known risk: "legenda por" itself goes
+});
