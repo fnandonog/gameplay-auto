@@ -57,6 +57,13 @@ O `post.json` é escrito por último: se ele existe, a pasta está completa. O c
 
 Para a postagem ser feita aqui pelo Upload-Post, use `postagem: "upload-post"`.
 
+## Filtro de palavrão, adesivos e música (src/efeitos.js)
+
+- **Palavrão:** com `filtroPalavroes: 'pesado'` (padrão), palavrão pesado e ofensa levam bipe no som e aparecem como "C******" na legenda. `'todos'` pega também os leves (porra, merda, puto...); `false` desliga. Palavras a mais em `palavroesExtras`.
+- **Adesivos estilo GTA:** quando a fala cita polícia/fuga, aparecem 5 estrelas de procurado; quando cita dinheiro/compra/assalto, um "$$$" verde. No máximo 4 por corte, um a cada 6 s, nunca no gancho nem no fim. São desenhos vetoriais próprios, sem arte oficial do jogo. `efeitos.adesivos: false` desliga.
+- **Música de fundo:** coloque faixas livres de direitos (YouTube Audio Library ou Pixabay Music, sem atribuição obrigatória) em `~/Gameplay/musicas`. Cada corte pega uma, baixinha (`musica.volume` 0.12), e ela abaixa sozinha quando você fala. Pasta vazia = sem música.
+- **Áudio do jogo x microfone:** o OBS grava os dois misturados na faixa 1, então o equilíbrio se acerta no mixer do OBS antes de gravar.
+
 ## Dinamismo (sem câmera)
 
 - **Título fixo**: o gancho fica em cima o vídeo todo (`estilo.ganchoSeg`; use `2.5` para só os primeiros segundos). A IA escreve como curiosidade ou pergunta ("DÁ ATÉ PRA...", "O JASON TEM O PODER DO FRANKLIN?").

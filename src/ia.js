@@ -48,6 +48,8 @@ Para cada trecho decida:
 - serie: se o corte cabe numa série que dá para continuar em outros vídeos, o nome curto dela
   ("Coisas que dá pra fazer no GTA 6", "Dicas de GTA 6", "Detalhes absurdos do GTA 6"); senão "".
 - descricao: 1 ou 2 frases e uma pergunta para puxar comentário.
+- Nunca use palavrão, ofensa ou xingamento no gancho, no título nem na descrição. Não escolha (usar: false) trecho em que a
+  fala tem ofensa racista, homofóbica ou contra alguém; palavrão comum na fala tudo bem, a edição coloca bipe.
 - hashtags: 3 a 5, do jogo e do formato (sem #, minúsculas).
 Responda só pelo esquema JSON.`;
 

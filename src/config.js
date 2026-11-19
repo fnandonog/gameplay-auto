@@ -61,6 +61,12 @@ export const PADRAO = {
   limites: {},
   // automatic pace chosen by the owner: per network per day up to maxPorDia, following the size of the queue
   ritmo: { automatico: false, maxPorDia: 15, minPorDia: 4, longosPorDia: 3, inicio: '09:00', fim: '23:30' },
+  // edit effects (src/efeitos.js): profanity 'pesado' (slurs and heavy words, default), 'todos' (every swear) or false;
+  // the beep goes in the sound and the word shows as "C******" in the caption
+  filtroPalavroes: 'pesado',
+  palavroesExtras: [],
+  // background music: royalty-free tracks dropped in pasta, low, ducking under the voice; none when the folder is empty
+  musica: { ligado: true, pasta: path.join(HOME, 'Gameplay', 'musicas'), volume: 0.12 },
   temCamera: false, // false: only the game-only formats (no webcam yet)
   postarAutomatico: false, // true: cuts with nota >= notaMinima are posted without approval
   notaMinima: 8,

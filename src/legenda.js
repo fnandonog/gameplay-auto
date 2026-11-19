@@ -47,7 +47,8 @@ export function wrap(text, max = 20) {
 // hook: text shown big at the top for hookSec seconds.
 // marca: { arroba: '@fnando', arrobaPos: { x, y }, chamada: 'SEGUE', fimSec: 2, dur } — the handle stays small the whole
 //   video; in the last fimSec seconds a big "SEGUE @fnando" card pops in the middle.
-export function assOf(cues, { layout, style = {}, hook = '', hookSec = 2.5, marca = null, selo = '' } = {}) {
+// extras: ready Dialogue lines appended at the end (pops from src/efeitos.js).
+export function assOf(cues, { layout, style = {}, hook = '', hookSec = 2.5, marca = null, selo = '', extras = [] } = {}) {
   const { W, H, seam } = layout;
   const font = style.font || 'Bricolage Grotesque';
   const hi = style.primary || '#FFE600', base = style.base || '#FFFFFF', ink = style.outline || '#000000';
@@ -97,5 +98,5 @@ export function assOf(cues, { layout, style = {}, hook = '', hookSec = 2.5, marc
       lines.push(`Dialogue: 4,${assTime(Math.max(0, marca.dur - fimSec))},${assTime(marca.dur)},Fim,,0,0,0,,{\\pos(${W / 2},${Math.round(H / 2)})\\fscx60\\fscy60\\t(0,120,\\fscx106\\fscy106)\\t(120,200,\\fscx100\\fscy100)}${txt}`);
     }
   }
-  return [...head, ...lines, ''].join('\n');
+  return [...head, ...lines, ...extras, ''].join('\n');
 }

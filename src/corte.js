@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run } from './run.js';
 import { assOf, cuesOf } from './legenda.js';
+import { filtrarPalavroes, adesivosDe, assAdesivos, escolherMusica } from './efeitos.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const FONTS = path.join(ROOT, 'fonts');
@@ -163,6 +164,12 @@ export function argsCorte(job) {
   const sons = (job.sons || []).filter((t) => t >= 0 && t < dur).slice(0, 12);
   let sfxIn = null;
   if (sons.length) { args.push('-f', 'lavfi', '-t', '0.45', '-i', 'anoisesrc=d=0.45:c=pink:a=0.6:r=48000'); sfxIn = `${n}:a`; n++; }
+  // profanity beep (job.bips: [a, b] in the final cut) and background music (job.musica: { arquivo, volume })
+  const bips = (job.bips || []).filter(([a, b]) => b > a && a < dur).slice(0, 40);
+  const entre = bips.map(([a, b]) => `between(t,${a},${b})`).join('+');
+  let bipIn = null, musIn = null;
+  if (bips.length) { args.push('-f', 'lavfi', '-t', String(dur), '-i', 'sine=frequency=1000:sample_rate=48000'); bipIn = `${n}:a`; n++; }
+  if (job.musica?.arquivo) { args.push('-stream_loop', '-1', '-t', String(dur), '-i', job.musica.arquivo); musIn = `${n}:a:0`; n++; }
   const g = [];
   let vIn = '0:v';
   if (manter) {
@@ -204,12 +211,21 @@ export function argsCorte(job) {
   }
   g.push(`[${ultimo}][${barIn}]overlay=x='-W+W*t/${dur}':y=H-10:eval=frame:shortest=1[pb]`,
     `[pb]ass='${fp(job.ass)}':fontsdir='${fp(FONTS)}',format=yuv420p[v]`,
-    `[${audIn}]afade=t=in:d=0.15,afade=t=out:st=${Math.max(0, dur - 0.3).toFixed(2)}:d=0.3,loudnorm=I=-14:TP=-1.5:LRA=11,aformat=sample_rates=48000:channel_layouts=stereo[${sfxIn ? 'a0' : 'a'}]`);
+    `[${audIn}]${entre ? `volume='if(${entre},0,1)':eval=frame,` : ''}afade=t=in:d=0.15,afade=t=out:st=${Math.max(0, dur - 0.3).toFixed(2)}:d=0.3,loudnorm=I=-14:TP=-1.5:LRA=11,aformat=sample_rates=48000:channel_layouts=stereo[a0]`);
+  const mix = ['a0'];
+  if (musIn) {
+    // the music ducks under the voice (sidechain) and fades in and out
+    g.push('[a0]asplit=2[a0v][a0s]', `[${musIn}]aformat=sample_rates=48000:channel_layouts=stereo,volume=${job.musica.volume ?? 0.12},afade=t=in:d=1,afade=t=out:st=${Math.max(0, dur - 1.5).toFixed(2)}:d=1.5[mu]`,
+      '[mu][a0s]sidechaincompress=threshold=0.015:ratio=12:attack=15:release=450:makeup=1[md]');
+    mix[0] = 'a0v'; mix.push('md');
+  }
+  if (bipIn) { g.push(`[${bipIn}]volume='if(${entre},2,0)':eval=frame,aformat=sample_rates=48000:channel_layouts=stereo[bp]`); mix.push('bp'); }
   if (sfxIn) {
     g.push(`[${sfxIn}]highpass=f=500,lowpass=f=5000,afade=t=in:d=0.18,afade=t=out:st=0.18:d=0.27,volume=0.5,aformat=sample_rates=48000:channel_layouts=stereo,asplit=${sons.length}${sons.map((_, i) => `[w${i}]`).join('')}`);
-    sons.forEach((t, i) => g.push(`[w${i}]adelay=${Math.round(Math.max(0, t - 0.2) * 1000)}|${Math.round(Math.max(0, t - 0.2) * 1000)}[x${i}]`));
-    g.push(`[a0]${sons.map((_, i) => `[x${i}]`).join('')}amix=inputs=${sons.length + 1}:duration=first:dropout_transition=0:normalize=0[a]`);
+    sons.forEach((t, i) => { g.push(`[w${i}]adelay=${Math.round(Math.max(0, t - 0.2) * 1000)}|${Math.round(Math.max(0, t - 0.2) * 1000)}[x${i}]`); mix.push(`x${i}`); });
   }
+  if (mix.length === 1) g.push('[a0]anull[a]');
+  else g.push(`${mix.map((m) => `[${m}]`).join('')}amix=inputs=${mix.length}:duration=first:dropout_transition=0:normalize=0${musIn ? ',alimiter=limit=0.89:level=0' : ''}[a]`);
   args.push('-filter_complex', g.join(';'), '-map', '[v]', '-map', '[a]', ...encoderArgs(job.encoder), '-r', String(fps),
     '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', job.out);
   return args;
@@ -237,14 +253,18 @@ export async function renderCorte({ jogo, camera, audio, start, end, palavras = 
   const ass = out.replace(/\.mp4$/, '.ass');
   // jump cuts first (they change the timeline), then framing on the new timeline
   const enx = config.cortarSilencio === false ? { manter: [[0, end - start]], palavras, dur: end - start } : encolherSilencios(palavras, end - start, config.cortarSilencio || {});
-  palavras = enx.palavras;
   const dur = enx.dur;
+  // profanity: masked in the captions and beeped in the sound (config.filtroPalavroes: 'pesado' default, 'todos', false)
+  const filtro = filtrarPalavroes(enx.palavras, { nivel: config.filtroPalavroes ?? 'pesado', extras: config.palavroesExtras || [] });
+  palavras = filtro.palavras;
+  const extras = config.efeitos?.adesivos === false ? [] : assAdesivos(adesivosDe(palavras, dur, config.efeitos?.adesivosOpcoes || {}), L, { cor: marca?.corBarra || '#FFE600' });
+  const arqMusica = escolherMusica(path.basename(path.dirname(out)) || out, config.musica);
   focos = focos ?? (config.enquadramento === false || !FORMATOS[fmt]?.semCamera ? null : focosDe(palavras, dur, config.enquadramento || {}));
   const sons = config.efeitos?.whoosh === false || !focos ? [] : focos.filter((f, i) => i > 0 && f.tipo !== 'normal').map((f) => f.de);
-  fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, selo, hookSec: Math.min(ganchoSeg ?? config.estilo?.ganchoSeg ?? 2.5, dur), marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null }));
+  fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, selo, hookSec: Math.min(ganchoSeg ?? config.estilo?.ganchoSeg ?? 2.5, dur), marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null, extras }));
   const logo = marca?.logo && fs.existsSync(marca.logo) ? marca.logo : null;
   const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo,
-    focos, manter: enx.manter, sons, encoder: config.encoder || await melhorEncoder() });
+    focos, manter: enx.manter, sons, bips: filtro.bips, musica: arqMusica ? { arquivo: arqMusica, volume: config.musica?.volume } : null, encoder: config.encoder || await melhorEncoder() });
   await run('ffmpeg', args, { timeoutMs: 30 * 60000 });
   return out;
 }
