@@ -44,7 +44,7 @@ test('servidor entrega o escritório, os dados e a marca', async () => {
   const srv = criarPainel({ pastaSaida: dir, linhas: LINHAS_SUGERIDAS }).listen(0);
   const base = `http://127.0.0.1:${srv.address().port}`;
   try {
-    assert.match(await (await fetch(`${base}/escritorio`)).text(), /<canvas/);
+    assert.match(await (await fetch(`${base}/escritorio`)).text(), /Linha de produção/);
     const q = await (await fetch(`${base}/api/escritorio`)).json();
     assert.equal(q.agentes.find((a) => a.id === 'vigia').estado, 'esperando');
     assert.equal(q.filas.length, 5);
