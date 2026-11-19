@@ -183,6 +183,8 @@
   .galeria a { aspect-ratio: 16/9; background: #000 center/cover; display: block; }
   .addfoto { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
   select.campo { appearance: auto; }
+  .ritmo .tg { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; cursor: pointer; } .ritmo .tg input { accent-color: var(--hi); }
+  .ritmo label.muted { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
   /* older tabs */
   .lista { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
   .item { background: var(--card); padding: 12px 14px; display: flex; gap: 12px; align-items: center; }
@@ -256,7 +258,7 @@
 </div>
 <dialog id="modal"></dialog>
 <script>
-let D = null, P = null, C = null, A = null;
+let D = null, P = null, C = null, A = null, RT = null;
 const ANTIGAS = { hoje: 'visao', inicio: 'visao', checklist: 'visao', longos: 'cortes', prontos: 'agenda', contas: 'redes', radar: 'ideias', roteiros: 'ideias', brutos: 'gravacoes' };
 let aba = (location.hash || '#visao').slice(1); aba = ANTIGAS[aba] || aba;
 const est = { medida: 'seguidores', dias: 30, semana: 0, ordem: 'data', radarFiltro: 'todas', radarTipo: '' };
@@ -285,7 +287,7 @@ const idYt = (l) => (/(?:youtu\.be\/|[?&]v=|\/shorts\/)([\w-]{11})/.exec(String(
 
 async function carregar() {
   const pega = (u) => fetch(u).then((r) => r.json()).catch(() => null);
-  [D, P, C, A] = await Promise.all([pega('/api/central'), pega('/api/prontidao'), pega('/api/contas'), pega('/api/apis')]);
+  [D, P, C, A, RT] = await Promise.all([pega('/api/central'), pega('/api/prontidao'), pega('/api/contas'), pega('/api/apis'), pega('/api/ritmo')]);
   desenhar();
 }
 
@@ -505,9 +507,19 @@ const TELAS = {
     const fim = dias[6];
     const titulo = `${dias[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} a ${fim.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`;
     const nSemana = dias.reduce((n, d) => n + doDia(d).length, 0);
-    return `<div class="cab"><div><h1>Agenda</h1><div class="sub">Horários 12:00, 18:30 e 21:00, dentro do limite seguro de cada conta. Clique num post para ver o vídeo.</div></div>
+    const rt = RT?.ritmo || {}, li = RT?.limites || {};
+    const ritmo = `<div class="caixa ritmo"><div class="topo"><h2>Ritmo de postagem</h2>
+      <label class="tg"><input type="checkbox" data-ritmo-auto${rt.automatico ? ' checked' : ''}> Automático pela quantidade</label>
+      <div class="dir"><button class="btn" data-despachar>Despachar a fila agora</button></div></div>
+      <div class="linha2"><label class="muted">Máximo por rede por dia <input class="campo" type="number" min="1" max="50" data-ritmo="maxPorDia" value="${esc(rt.maxPorDia ?? 15)}" style="width:80px"></label>
+        <label class="muted">Vídeos longos por dia <input class="campo" type="number" min="1" max="10" data-ritmo="longosPorDia" value="${esc(rt.longosPorDia ?? 3)}" style="width:80px"></label>
+        <button class="btn sec" data-salvar-ritmo>Salvar</button></div>
+      <p class="faint" style="margin:8px 0 0;font-size:12px">${rt.automatico ? `Hoje por dia: TikTok ${li.tiktok}, Instagram ${li.instagram}, Facebook ${li.facebook}, YouTube ${li.youtube} (o YouTube para em 6 envios por dia pela cota da API, curtos e longos juntos). Com a fila grande, posta mais; com pouca, menos.` : 'Desligado: 12:00, 18:30 e 21:00, no limite seguro de conta nova.'} "Despachar" põe tudo o que está esperando para sair a partir de agora, espaçado até 23:30, e o que passar do limite fica para amanhã. Conta nova postando muito por dia pode ter o alcance reduzido.</p>
+      <div data-ritmo-msg class="muted" style="font-size:13px"></div></div>`;
+    return `<div class="cab"><div><h1>Agenda</h1><div class="sub">Clique num post para ver o vídeo ou postar agora.</div></div>
       <div class="acoes"><button class="btn sec" data-semana="-1">‹</button><button class="btn sec" data-semana="0">Esta semana</button><button class="btn sec" data-semana="1">›</button></div></div>
-    <div class="topo" style="display:flex;gap:10px;align-items:baseline;margin-bottom:10px"><h2>${titulo}</h2><span class="muted">${nSemana} post(s)</span>
+    ${ritmo}
+    <div class="topo" style="display:flex;gap:10px;align-items:baseline;margin:18px 0 10px"><h2>${titulo}</h2><span class="muted">${nSemana} post(s)</span>
       <span class="legenda" style="margin-left:auto"><span><i class="sw" style="background:var(--ok)"></i>já publicado</span></span></div>
     <div class="cal">${dias.map((d) => { const l = doDia(d); return `<div class="cd${d.toDateString() === hj ? ' hoje' : ''}${d < ontem ? ' passado' : ''}${l.length ? '' : ' vazia'}">
       <div class="dh"><b>${d.getDate()}</b><span>${d.toLocaleDateString('pt-BR', { weekday: 'short' })}</span><i>${l.length || ''}</i></div>
@@ -686,6 +698,15 @@ document.addEventListener('click', async (e) => {
   const q = (s) => e.target.closest(s);
   if (q('[data-fechar]') || e.target.id === 'modal') { $('#modal').close(); return; }
   const post = q('[data-post]'); if (post) { abrirPost(post.dataset.post); return; }
+  const sr = q('[data-salvar-ritmo]');
+  if (sr) { const box = sr.closest('.ritmo'), dados = { automatico: $('[data-ritmo-auto]', box).checked };
+    box.querySelectorAll('[data-ritmo]').forEach((i) => { dados[i.dataset.ritmo] = i.value; });
+    const r = await fetch('/api/ritmo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(dados) }).then((x) => x.json()).catch(() => ({ erro: 'Não salvou.' }));
+    if (r.erro) { $('[data-ritmo-msg]', box).textContent = r.erro; return; } await carregar(); return; }
+  const dp = q('[data-despachar]');
+  if (dp) { dp.disabled = true; dp.textContent = 'Despachando...';
+    const r = await fetch('/api/reagendar', { method: 'POST' }).then((x) => x.json()).catch(() => ({ erro: 'A central não respondeu.' }));
+    await carregar(); const msg = $('[data-ritmo-msg]'); if (msg) msg.textContent = r.erro || `${(r.mudancas || []).length} post(s) com horário novo. O primeiro sai em uns 5 minutos.`; return; }
   const pj = q('[data-postar-ja]');
   if (pj) { pj.disabled = true; pj.textContent = 'Postando...'; const msg = $('[data-pj-msg]');
     const r = await fetch('/api/postar-agora', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: pj.dataset.postarJa }) }).then((x) => x.json()).catch(() => ({ erro: 'A central não respondeu.' }));

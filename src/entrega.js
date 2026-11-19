@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { listarSessoes } from './painel.js';
-import { linhasDe, linhaDoCorte, distribuirLinhas, horariosSeguros } from './canais.js';
+import { linhasDe, linhaDoCorte, distribuirLinhas, horariosDoDia, gerarHorarios } from './canais.js';
 import { autoAprovar, textos, proximoHorario } from './postagem.js';
 import { registrar } from './atividade.js';
 import { lerPausa } from './qualidade.js';
@@ -18,6 +18,19 @@ function slotsDaLinha(base, linhaId) {
   const dir = path.join(base, slug(linhaId || 'geral'));
   let ds = []; try { ds = fs.readdirSync(dir); } catch {}
   return ds.map((d) => { try { return JSON.parse(fs.readFileSync(path.join(dir, d, 'post.json'), 'utf8')).agendarPara; } catch { return null; } }).filter(Boolean);
+}
+
+// posts of a line still waiting to go out (no postado.json)
+export function filaDaLinha(base, linhaId) {
+  const dir = path.join(base, linhaId);
+  let ds = []; try { ds = fs.readdirSync(dir).filter((d) => !d.startsWith('.')); } catch { return 0; }
+  return ds.filter((d) => fs.existsSync(path.join(dir, d, 'post.json')) && !fs.existsSync(path.join(dir, d, 'postado.json'))).length;
+}
+// long videos: config.longo.horarios, or with the automatic pace 1 to ritmo.longosPorDia (default 3) a day by the queue
+export function horariosDoLongo(config, naFila = 0) {
+  const r = config.ritmo || {};
+  if (!r.automatico) return config.longo?.horarios || ['19:00'];
+  return gerarHorarios(Math.min(Number(r.longosPorDia) || 3, Math.max(1, Math.ceil(naFila / 2))), { inicio: '13:00', fim: '21:00' });
 }
 
 export function postDoCorte(c, { sessao, linha, duracao, agendarPara = null } = {}) {
@@ -70,7 +83,7 @@ export function entregarAprovados(config, { log = console.log } = {}) {
         fs.copyFileSync(path.join(config.pastaSaida, pasta, c.arquivo), path.join(destino, 'video.mp4'));
         if (c.capa && fs.existsSync(path.join(config.pastaSaida, pasta, c.capa))) fs.copyFileSync(path.join(config.pastaSaida, pasta, c.capa), path.join(destino, 'capa.jpg'));
         let agendarPara = null;
-        try { agendarPara = proximoHorario(Date.now(), horariosSeguros(linha, config.limites), slotsDaLinha(base, linha.id)); } catch {}
+        try { agendarPara = proximoHorario(Date.now(), horariosDoDia(linha, config, filaDaLinha(base, linha.id)), slotsDaLinha(base, linha.id)); } catch {}
         const post = postDoCorte(c, { sessao: dados.sessao || pasta, linha, agendarPara });
         fs.writeFileSync(path.join(destino, 'legenda.txt'), `${post.legendas.tiktok}\n`);
         // post.json last: the skill may take a folder as ready once it exists
@@ -89,7 +102,7 @@ export function entregarAprovados(config, { log = console.log } = {}) {
         fs.copyFileSync(path.join(config.pastaSaida, pasta, v.arquivo), path.join(destino, 'video.mp4'));
         if (v.thumb && fs.existsSync(path.join(config.pastaSaida, pasta, v.thumb))) fs.copyFileSync(path.join(config.pastaSaida, pasta, v.thumb), path.join(destino, 'capa.jpg'));
         let agendarPara = null;
-        try { agendarPara = proximoHorario(Date.now(), config.longo?.horarios || ['19:00'], slotsDaLinha(base, 'youtube-longo')); } catch {}
+        try { agendarPara = proximoHorario(Date.now(), horariosDoLongo(config, filaDaLinha(base, 'youtube-longo')), slotsDaLinha(base, 'youtube-longo')); } catch {}
         const post = postDoLongo(v, { sessao: dados.sessao || pasta, agendarPara });
         fs.writeFileSync(path.join(destino, 'post.json'), JSON.stringify(post, null, 2));
         v.status = 'entregue'; v.entregueEm = post.criadoEm; v.agendadoPara = agendarPara; v.pastaEntrega = destino; delete v.erroEntrega;
@@ -113,7 +126,8 @@ export function reordenarSeries(posts) {
   for (const p of posts) {
     const parte = parteDe(p);
     if (!parte || !p.agendarPara || p.postado || p.postarJa) continue;
-    const k = `${p.linha?.id || ''}|${p.serie ? `s:${String(p.serie).toLowerCase()}` : `g:${p.sessao || ''}`}`;
+    if (!p.serie) continue; // without the series name two series of the same recording would get mixed
+    const k = `${p.linha?.id || ''}|s:${String(p.serie).toLowerCase()}`;
     if (!grupos.has(k)) grupos.set(k, []);
     grupos.get(k).push({ ...p, parte });
   }

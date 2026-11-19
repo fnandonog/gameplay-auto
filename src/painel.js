@@ -15,7 +15,9 @@ import { lerRadar, sincronizarRadar, lerEstadoRadar, salvarEstadoRadar, statusDa
 import { listarBrutos, listarRoteiros, listarProntos, lerRedes, resumo, receberEnvio, prontidao } from './central.js';
 import { arquivoToken, garantirToken, bearerOk, assinaturaOk, proximoJob, arquivoDoVideo, registrarResultado } from './tiktokChrome.js';
 import { registrar } from './atividade.js';
-import { postarAgora } from './postador.js';
+import { postarAgora, reagendarFila } from './postador.js';
+import { limitesDe } from './canais.js';
+import { salvarRitmo } from './config.js';
 import crypto from 'node:crypto';
 import { arquivoCredenciais, lerCredenciais, salvarCredenciais, statusApis, aplicarChaveIa } from './credenciais.js';
 import * as metaApi from './postadores/meta.js';
@@ -126,7 +128,7 @@ export function criarPainel(config) {
         if (!bearerOk(req.headers.authorization, token)) return json(res, 401, { erro: 'Código inválido: copie o código da aba Contas da central.' });
         contatoTiktok = new Date().toISOString(); // the central shows when the extension last checked in
         if (req.method === 'GET' && rota === 'proximo') {
-          const job = proximoJob({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida), limite: { tiktok: 4, ...(config.limites || {}) }.tiktok });
+          const job = proximoJob({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida), limite: limitesDe(config).tiktok });
           if (job) registrar(config.pastaSaida, 'agendador', 'trabalhando', `TikTok pelo Chrome: postando "${job.titulo}"`);
           return json(res, 200, { job });
         }
@@ -257,6 +259,16 @@ export function criarPainel(config) {
         const nome = decodeURIComponent(ri[1]), file = path.join(pastaImagensRadar(config), nome);
         if (!imagemRadarSegura(nome) || !fs.existsSync(file)) return json(res, 404, { erro: 'Não encontrado.' });
         return servirArquivo(req, res, file, { 'content-type': /\.png$/i.test(nome) ? 'image/png' : /\.webp$/i.test(nome) ? 'image/webp' : 'image/jpeg' });
+      }
+      if (req.method === 'GET' && url.pathname === '/api/ritmo') return json(res, 200, { ritmo: config.ritmo, limites: limitesDe(config) });
+      if (req.method === 'POST' && url.pathname === '/api/ritmo') {
+        let body = '';
+        req.on('data', (d) => { body += d; if (body.length > 1e4) req.destroy(); });
+        req.on('end', () => { try { const r = salvarRitmo(config, JSON.parse(body || '{}')); json(res, 200, { ritmo: r, limites: limitesDe(config) }); } catch (e) { json(res, 400, { erro: e.message }); } });
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/api/reagendar') {
+        try { return json(res, 200, reagendarFila(config)); } catch (e) { return json(res, 400, { erro: e.message }); }
       }
       if (req.method === 'POST' && url.pathname === '/api/postar-agora') {
         let body = '';

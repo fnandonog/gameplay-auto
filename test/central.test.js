@@ -219,11 +219,43 @@ test('série: a Parte 1 nunca sai depois da Parte 2', async () => {
   const { reordenarSeries } = await import('../src/entrega.js');
   const L = { id: 'principal' };
   const posts = [
-    { id: 'pia', titulo: 'Desentupir pia (Parte 1)', sessao: 's1', linha: L, agendarPara: '2026-11-21T15:00:00Z' },
-    { id: 'supino', titulo: 'Supino (Parte 2)', sessao: 's1', linha: L, agendarPara: '2026-11-19T21:30:00Z' },
-    { id: 'cel', titulo: 'Celular (Parte 3)', sessao: 's1', linha: L, agendarPara: '2026-11-20T00:00:00Z' },
-    { id: 'ja', titulo: 'Velho (Parte 4)', sessao: 's1', linha: L, agendarPara: '2026-11-19T15:00:00Z', postado: true },
+    { id: 'pia', titulo: 'Desentupir pia (Parte 1)', serie: 'Coisas', linha: L, agendarPara: '2026-11-21T15:00:00Z' },
+    { id: 'supino', titulo: 'Supino (Parte 2)', serie: 'Coisas', linha: L, agendarPara: '2026-11-19T21:30:00Z' },
+    { id: 'cel', titulo: 'Celular (Parte 3)', serie: 'coisas', linha: L, agendarPara: '2026-11-20T00:00:00Z' },
+    { id: 'ja', titulo: 'Velho (Parte 4)', serie: 'Coisas', linha: L, agendarPara: '2026-11-19T15:00:00Z', postado: true },
+    { id: 'outra', titulo: 'Marcar destino (Parte 1)', linha: L, agendarPara: '2026-11-19T10:00:00Z' },
   ];
   assert.deepEqual(reordenarSeries(posts), [
     { id: 'pia', agendarPara: '2026-11-19T21:30:00Z' }, { id: 'supino', agendarPara: '2026-11-20T00:00:00Z' }, { id: 'cel', agendarPara: '2026-11-21T15:00:00Z' }]);
+});
+
+test('ritmo automático: horários seguem a fila e o limite', async () => {
+  const { gerarHorarios, horariosDoDia, limitesDe } = await import('../src/canais.js');
+  assert.deepEqual(gerarHorarios(3, { inicio: '09:00', fim: '21:00' }), ['09:00', '15:00', '21:00']);
+  const cfg = { ritmo: { automatico: true, maxPorDia: 15 } };
+  assert.equal(limitesDe(cfg).youtube, 6);
+  assert.equal(limitesDe(cfg).instagram, 15);
+  const L = { redes: ['tiktok', 'instagram', 'facebook', 'youtube'] };
+  assert.equal(horariosDoDia(L, cfg, 2).length, 4);
+  assert.equal(horariosDoDia(L, cfg, 20).length, 10);
+  assert.equal(horariosDoDia(L, cfg, 100).length, 15);
+  assert.equal(horariosDoDia(L, {}, 100).length, 3);
+});
+
+test('despachar a fila: hoje até o limite, espaçado, o resto amanhã', async () => {
+  const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+  const { reagendarFila } = await import('../src/postador.js');
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'fila-'));
+  const L = { id: 'principal', redes: ['tiktok', 'instagram'] };
+  for (let i = 0; i < 6; i++) {
+    const d = path.join(base, 'principal', `p${i}`); fs.mkdirSync(d, { recursive: true });
+    fs.writeFileSync(path.join(d, 'video.mp4'), ''); fs.writeFileSync(path.join(d, 'post.json'), JSON.stringify({ titulo: `p${i}`, linha: L, agendarPara: `2026-11-2${i}T15:00:00Z` }));
+  }
+  const agora = Date.parse('2026-11-19T20:00:00Z'); // 17:00 in São Paulo
+  const { mudancas } = reagendarFila({ pastaEntrega: base, limites: { tiktok: 4, instagram: 4 } }, { agora });
+  const q = Object.fromEntries(mudancas.map((m) => [m.titulo, m.agendarPara]));
+  assert.equal(q.p0, '2026-11-19T20:05:00Z');
+  assert.ok(Date.parse(q.p3) <= Date.parse('2026-11-20T02:30:00Z'));
+  assert.ok(Date.parse(q.p4) > Date.parse('2026-11-20T03:00:00Z'));
+  assert.ok(Date.parse(q.p1) - Date.parse(q.p0) >= 15 * 60000);
 });

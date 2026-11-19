@@ -59,6 +59,8 @@ export const PADRAO = {
   enquadramento: {},
   // posts per account per day, at most (src/canais.js LIMITES_SEGUROS: tiktok 4, instagram 3, youtube 4, facebook 3)
   limites: {},
+  // automatic pace chosen by the owner: per network per day up to maxPorDia, following the size of the queue
+  ritmo: { automatico: false, maxPorDia: 15, minPorDia: 4, longosPorDia: 3, inicio: '09:00', fim: '23:30' },
   temCamera: false, // false: only the game-only formats (no webcam yet)
   postarAutomatico: false, // true: cuts with nota >= notaMinima are posted without approval
   notaMinima: 8,
@@ -72,5 +74,18 @@ export const PADRAO = {
 export function carregarConfig(file = process.env.GAMEPLAY_CONFIG || path.join(ROOT, 'config.json')) {
   let user = {};
   if (fs.existsSync(file)) user = JSON.parse(fs.readFileSync(file, 'utf8'));
-  return { ...PADRAO, ...user, whisper: { ...PADRAO.whisper, ...(user.whisper || {}) }, estilo: { ...PADRAO.estilo, ...(user.estilo || {}) }, marca: { ...PADRAO.marca, ...(user.marca || {}) }, intro: { ...PADRAO.intro, ...(user.intro || {}) }, uploadPost: { ...PADRAO.uploadPost, ...(user.uploadPost || {}) }, aoVivo: { ...PADRAO.aoVivo, ...(user.aoVivo || {}) } };
+  return { ...PADRAO, ...user, whisper: { ...PADRAO.whisper, ...(user.whisper || {}) }, estilo: { ...PADRAO.estilo, ...(user.estilo || {}) }, marca: { ...PADRAO.marca, ...(user.marca || {}) }, intro: { ...PADRAO.intro, ...(user.intro || {}) }, uploadPost: { ...PADRAO.uploadPost, ...(user.uploadPost || {}) }, aoVivo: { ...PADRAO.aoVivo, ...(user.aoVivo || {}) }, ritmo: { ...PADRAO.ritmo, ...(user.ritmo || {}) } };
+}
+
+// the central saves the pace (ritmo) chosen by the owner into config.json and into the running config
+export function salvarRitmo(config, patch, file = process.env.GAMEPLAY_CONFIG || path.join(ROOT, 'config.json')) {
+  const r = { ...config.ritmo };
+  if ('automatico' in patch) r.automatico = !!patch.automatico;
+  for (const k of ['maxPorDia', 'longosPorDia', 'minPorDia']) if (patch[k] != null) { const n = Math.round(Number(patch[k])); if (!(n >= 1 && n <= 50)) throw new Error(`${k} precisa ser de 1 a 50.`); r[k] = n; }
+  let user = {};
+  try { user = JSON.parse(fs.readFileSync(file, 'utf8')); } catch {}
+  user.ritmo = r;
+  fs.writeFileSync(file, JSON.stringify(user, null, 2));
+  config.ritmo = r;
+  return r;
 }

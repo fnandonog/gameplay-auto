@@ -7,7 +7,9 @@
 // pulls the brake (.pausa.json) for everything; an expired token stops only that network until it is reconnected.
 import fs from 'node:fs';
 import path from 'node:path';
-import { LIMITES_SEGUROS } from './canais.js';
+import { LIMITES_SEGUROS, limitesDe, horariosDoDia } from './canais.js';
+import { proximoHorario } from './postagem.js';
+import { horariosDoLongo } from './entrega.js';
 import { lerPausa, pausar } from './qualidade.js';
 import { registrar } from './atividade.js';
 import { arquivoCredenciais, lerCredenciais, salvarCredenciais } from './credenciais.js';
@@ -107,7 +109,7 @@ export async function rodadaPostador(config, { agora = Date.now(), publicar = PU
   const conectadas = redesConectadas(cred);
   if (!conectadas.length) return { feito: 'sem redes conectadas' };
   const posts = listarEntregues(config.pastaEntrega);
-  const prox = proximoEnvio(posts, { agora, conectadas, limites: config.limites });
+  const prox = proximoEnvio(posts, { agora, conectadas, limites: limitesDe(config) });
   if (!prox) return { feito: 'nada vencido' };
   const { post: p, rede } = prox;
   registrar(config.pastaSaida, 'agendador', 'trabalhando', `Postando "${p.post.titulo}" no ${rede}`);
@@ -168,4 +170,47 @@ export function iniciarPostador(config, { intervaloMin = 5, log = console.log } 
   vez();
   const t = setInterval(vez, intervaloMin * 60000);
   return () => clearInterval(t);
+}
+
+// "Despachar a fila": everything waiting goes out as soon as the daily limits allow. Today: from now to 23:30, evenly
+// spaced (at least 15 min apart per line, 60 min for long videos); the rest from tomorrow on the normal pace.
+// The current order is kept (series parts were already put in order). Posts with a warning are left alone.
+export function reagendarFila(config, { agora = Date.now(), fusoHoras = -3 } = {}) {
+  const lim = limitesDe(config);
+  const todos = listarEntregues(config.pastaEntrega);
+  const local = new Date(agora + fusoHoras * 3600000);
+  const fimHoje = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), 23, 30) - fusoHoras * 3600000;
+  const porLinha = new Map();
+  for (const p of todos) { const k = p.id.split('/')[0]; if (!porLinha.has(k)) porLinha.set(k, []); porLinha.get(k).push(p); }
+  const mudancas = [];
+  for (const [linhaId, posts] of porLinha) {
+    const fila = posts.filter((p) => !Object.keys(p.postado.links || {}).length && !p.post.aviso)
+      .sort((a, b) => String(a.post.agendarPara || 'z').localeCompare(String(b.post.agendarPara || 'z')));
+    if (!fila.length) continue;
+    const longo = linhaId === 'youtube-longo';
+    const redes = fila[0].post.linha?.redes || [];
+    const feitos = contagemHoje(posts, agora);
+    const porDia = longo ? (Number(config.ritmo?.longosPorDia) || 3) : Math.min(...redes.map((r) => lim[r] ?? 3));
+    const jaHoje = Math.max(0, ...redes.map((r) => feitos[r] || 0));
+    const hoje = Math.max(0, Math.min(fila.length, porDia - jaHoje));
+    const inicio = agora + 5 * 60000;
+    const passo = hoje > 1 ? Math.max((longo ? 60 : 15) * 60000, (fimHoje - inicio) / (hoje - 1)) : 0;
+    const ocupados = [];
+    fila.forEach((p, i) => {
+      let quando;
+      const t = inicio + i * passo;
+      if (i < hoje && t <= fimHoje) quando = new Date(t).toISOString().replace(/\.\d{3}Z$/, 'Z');
+      else {
+        const horarios = longo ? horariosDoLongo(config, fila.length - i) : horariosDoDia(p.post.linha || {}, config, fila.length - i);
+        quando = proximoHorario(Math.max(agora, fimHoje + 60000), horarios, ocupados, { margemMin: 0 });
+      }
+      ocupados.push(quando);
+      if (quando !== p.post.agendarPara) {
+        fs.writeFileSync(path.join(p.dir, 'post.json'), JSON.stringify({ ...p.post, agendarPara: quando }, null, 2));
+        mudancas.push({ id: p.id, titulo: p.post.titulo, agendarPara: quando });
+      }
+    });
+  }
+  if (mudancas.length) registrar(config.pastaSaida, 'agendador', 'pronto', `Fila despachada: ${mudancas.length} post(s) com horário novo`);
+  return { mudancas };
 }
