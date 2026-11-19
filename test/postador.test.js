@@ -158,3 +158,10 @@ test('TikTok extension also skips warnings and respects its daily limit', () => 
   assert.equal(proximoJob({ base, token: 'a'.repeat(48), agora: AGORA }), null);
   assert.equal(proximoJob({ base, token: 'a'.repeat(48), agora: AGORA + 86400000 }).id, 'principal/livre');
 });
+
+test('cuts made without the AI never pass the automatic filter', () => {
+  const ok = { nota: 9.5, titulo: 'O celular do GTA 6 tem rede social', gancho: 'OLHA', inicio: 0, fim: 30 };
+  assert.equal(motivosRecusa(ok).length, 0);
+  assert.match(motivosRecusa({ ...ok, semIa: true }).join(), /sem a IA/);
+  assert.match(motivosRecusa({ ...ok, titulo: 'Não acredito no que aconteceu 😱' }).join(), /sem a IA/);
+});

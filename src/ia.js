@@ -73,8 +73,10 @@ export function aplicarDecisoes(cands, cortes) {
   return out;
 }
 
+// marked semIa: such cuts never pass the automatic filter (src/qualidade.js); the owner titles and approves them in /cortes
+export const TITULO_SEM_IA = 'Não acredito no que aconteceu 😱';
 export function semIa(cands) {
-  return cands.map((c) => ({ ...c, gancho: c.fixo ? 'OLHA ISSO' : 'NÃO ESPERAVA ESSA', titulo: 'Não acredito no que aconteceu 😱', descricao: 'Você teria feito igual? Comenta aí!', hashtags: ['gameplay', 'ps5', 'gamer'] }));
+  return cands.map((c) => ({ ...c, semIa: true, gancho: c.fixo ? 'OLHA ISSO' : 'NÃO ESPERAVA ESSA', titulo: TITULO_SEM_IA, descricao: 'Você teria feito igual? Comenta aí!', hashtags: ['gameplay', 'ps5', 'gamer'] }));
 }
 
 export async function decidirCortes(cands, words, opts = {}) {

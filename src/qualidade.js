@@ -16,6 +16,8 @@ export function motivosRecusa(c, { config = {}, linha = null, sessao = null } = 
   if (!String(c.titulo || '').trim()) m.push('sem título');
   if (!String(c.gancho || '').trim()) m.push('sem gancho');
   if (c.aviso) m.push(`aviso: ${c.aviso}`);
+  // made without the AI (generic title): the owner titles and approves it by hand
+  if (c.semIa || /^Não acredito no que aconteceu/.test(String(c.titulo || ''))) m.push('feito sem a IA: título genérico, aprove na mão');
   // stretches of a recording that must never go out on their own (nudity, gore...): config.trechosBloqueados
   for (const t of config.trechosBloqueados || []) {
     if (t.sessao && sessao && t.sessao !== sessao) continue;
