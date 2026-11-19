@@ -23,12 +23,28 @@ const tem = (nome, lista) => lista.some((p) => nome.toLowerCase().includes(p));
 
 // The session's files. OBS writes "2026-11-09 21-30-00.mp4" (the scene) and, with Source Record,
 // "2026-11-09 21-30-00 camera.mp4" and "... jogo.mp4". Without the extra files the scene is used for both.
+// "2026-11-09 21-30-00 camera.mp4" → { t: ms, resto: " camera" } (null when the name has no OBS timestamp)
+const RE_DATA = /^(\d{4})-(\d{2})-(\d{2})[ _](\d{2})-(\d{2})-(\d{2})(.*)$/;
+export function horaDoNome(nome) {
+  const m = RE_DATA.exec(String(nome).replace(VIDEO, ''));
+  return m ? { t: Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]), resto: m[7] } : null;
+}
+// another file of the same session: same name prefix, or (Source Record) a timestamp up to 5 s apart plus a suffix
+function eIrmao(principal, outro) {
+  const base = principal.replace(VIDEO, '');
+  if (outro !== principal && outro.startsWith(base)) return true;
+  const a = horaDoNome(principal), b = horaDoNome(outro);
+  return !!(a && b && !a.resto.trim() && b.resto.trim() && Math.abs(a.t - b.t) <= 5000);
+}
+
 export function arquivosDaSessao(principal, irmaos, config) {
-  const base = path.basename(principal).replace(VIDEO, '');
+  const nome = path.basename(principal);
+  const base = nome.replace(VIDEO, '');
   const dir = path.dirname(principal);
-  const daSessao = irmaos.filter((f) => VIDEO.test(f) && f !== path.basename(principal) && f.startsWith(base));
-  const camera = daSessao.find((f) => tem(f.slice(base.length), config.nomesCamera));
-  const jogo = daSessao.find((f) => tem(f.slice(base.length), config.nomesJogo));
+  const daSessao = irmaos.filter((f) => VIDEO.test(f) && f !== nome && eIrmao(nome, f));
+  const sufixo = (f) => (f.startsWith(base) ? f.slice(base.length) : horaDoNome(f)?.resto || f);
+  const camera = daSessao.find((f) => tem(sufixo(f), config.nomesCamera));
+  const jogo = daSessao.find((f) => tem(sufixo(f), config.nomesJogo));
   return {
     base,
     cena: principal,
@@ -40,8 +56,7 @@ export function arquivosDaSessao(principal, irmaos, config) {
 
 // a recording that is only the extra file of another one (Source Record) is not a session of its own
 export function ehArquivoExtra(nome, todos) {
-  const b = nome.replace(VIDEO, '');
-  return todos.some((o) => o !== nome && VIDEO.test(o) && b.length > o.replace(VIDEO, '').length && b.startsWith(o.replace(VIDEO, '')));
+  return todos.some((o) => o !== nome && VIDEO.test(o) && eIrmao(o, nome) && o.replace(VIDEO, '').length < nome.replace(VIDEO, '').length);
 }
 
 // which formats each cut is rendered in (config.formatos), only the known ones, never empty

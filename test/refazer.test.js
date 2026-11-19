@@ -65,3 +65,14 @@ test('a mic track silent most of the time is flagged', async () => {
   assert.equal(micMudo(Array(100).fill(-45)), 0);
   assert.equal(micMudo([-90, -90]), 0);
 });
+
+test('Source Record files a few seconds off the main recording still join the session', async () => {
+  const { arquivosDaSessao, ehArquivoExtra } = await import('../src/sessao.js');
+  const nomes = ['2026-11-19 21-00-00.mp4', '2026-11-19 21-00-02 camera.mp4', '2026-11-19 20-59-59 jogo.mp4', '2026-11-19 22-00-00.mp4'];
+  const cfg = { nomesCamera: ['camera'], nomesJogo: ['jogo'] };
+  const a = arquivosDaSessao('/in/2026-11-19 21-00-00.mp4', nomes, cfg);
+  assert.equal(a.camera, '/in/2026-11-19 21-00-02 camera.mp4'); assert.equal(a.jogo, '/in/2026-11-19 20-59-59 jogo.mp4'); assert.equal(a.separados, true);
+  assert.equal(ehArquivoExtra('2026-11-19 21-00-02 camera.mp4', nomes), true);
+  assert.equal(ehArquivoExtra('2026-11-19 21-00-00.mp4', nomes), false);
+  assert.equal(arquivosDaSessao('/in/2026-11-19 22-00-00.mp4', nomes, cfg).separados, false);
+});
