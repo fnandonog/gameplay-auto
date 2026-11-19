@@ -3,7 +3,7 @@
 // studio.js (vídeo, legenda digitada, Publicar), fecha e conta à central como foi. Um vídeo por vez, na hora marcada de
 // cada post (agendarPara do post.json em ~/Gameplay/prontos).
 // Nada do navegador é lido além da página do TikTok Studio que ela abriu, e nada vai a lugar nenhum além da central.
-// A cada 30 minutos confere na central qual é a versão da pasta extensao-tiktok: se for mais nova, recarrega sozinha.
+// A cada 4 minutos confere na central qual é a versão da pasta extensao-tiktok: se for mais nova, recarrega sozinha.
 // Lado do servidor: src/tiktokChrome.js (rotas /api/tiktok-chrome/... em src/painel.js).
 import { postar } from './studio.js';
 import { postarYoutube } from './youtube.js';
@@ -178,7 +178,7 @@ export async function conferirVersao() {
 
 if (globalThis.chrome?.alarms) {
   chrome.alarms.create('tiktok', { periodInMinutes: 2 });
-  chrome.alarms.create('versao', { periodInMinutes: 30 });
+  chrome.alarms.create('versao', { periodInMinutes: 4 });
   chrome.alarms.onAlarm.addListener((a) => { if (a.name === 'tiktok') rodada(); else if (a.name === 'versao') conferirVersao(); });
   chrome.runtime.onStartup.addListener(() => { rodada(); conferirVersao(); });
   chrome.runtime.onInstalled.addListener(rodada);
