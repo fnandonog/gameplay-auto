@@ -91,10 +91,45 @@ export function focosDe(palavras = [], dur, { minimapa = MINIMAPA_GTA, zoom = 1.
 // Jump cuts: a pause in the speech longer than maxGap shrinks to `fica` seconds, so the cut never sits still.
 // Only when the cut has speech (minPalavras); a quiet play is left whole. Pure: words relative to the cut →
 // { manter: [[a, b], ...] in the cut's time, palavras: remapped to the new time, dur: new length }.
-export function encolherSilencios(palavras = [], dur, { maxGap = 1.6, fica = 0.45, minPalavras = 5, inicioMax = 1.2 } = {}) {
+// pure: restarts and stutters in the speech ("vou chamar o mecânico, vou chamar o mecânico pra...", "o o carro",
+// "ééé", "hã"). Returns the stretches to cut: from the first try to the start of the one that goes on.
+const PREENCHE = /^(é{2,}|e{2,}|hã+|ã+|hum+|hmm+|uhm+|ahn+|an+h)$/;
+const ENFASE = new Set(['nao', 'sim', 'vai', 'corre', 'olha', 'calma', 'para', 'socorro', 'meu', 'mano', 'ai']); // "não, não!" is meaning, not a stutter
+export function repeticoes(palavras = [], { janela = 6, maxN = 6 } = {}) {
+  const n = palavras.map((w) => String(w.text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9éã]/g, ''));
+  const tira = new Set();
+  for (let i = 0; i < n.length; i++) {
+    if (!n[i]) continue;
+    if (PREENCHE.test(n[i])) { tira.add(i); continue; }
+    // the phrase restarts within a few words: same first two words again (or the same word twice in a row)
+    for (let j = i + 1; j <= Math.min(n.length - 1, i + janela); j++) {
+      const doisIguais = n[j] === n[i] && (j === i + 1 ? !ENFASE.has(n[i]) : !!n[i + 1] && (n[j + 1] || '').startsWith(n[i + 1]));
+      if (!doisIguais || palavras[j].start - palavras[i].start > 4) continue;
+      // a real repetition only: every word in between is a prefix of the retake (or a cut-off word)
+      const ok = Array.from({ length: j - i }, (_, k) => n[j + k] === n[i + k] || (n[j + k] || '').startsWith(n[i + k]) || k === j - i - 1).every(Boolean);
+      if (!ok || j - i > maxN) continue;
+      for (let k = i; k < j; k++) tira.add(k);
+      i = j - 1; // go on from the retake
+      break;
+    }
+  }
+  const out = [];
+  for (const k of [...tira].sort((a, b) => a - b)) {
+    const ini = +(palavras[k].start - 0.04).toFixed(2), fim = +((palavras[k + 1]?.start ?? palavras[k].end) - 0.04).toFixed(2);
+    const u = out.at(-1);
+    if (u && ini - u[1] < 0.1) u[1] = Math.max(u[1], fim); else if (fim > ini) out.push([Math.max(0, ini), fim]);
+  }
+  return out;
+}
+
+export function encolherSilencios(palavras = [], dur, { maxGap = 1.6, fica = 0.45, minPalavras = 5, inicioMax = 1.2, repeticoes: rep = true } = {}) {
+  // words cut out as restarts leave the caption too
+  const tirar = rep ? repeticoes(palavras) : [];
+  if (tirar.length) palavras = palavras.filter((w) => !tirar.some(([a, b]) => w.start >= a && w.end <= b + 0.05));
   const ws = palavras.filter((w) => w.end > 0 && w.start < dur);
-  if (ws.length < minPalavras) return { manter: [[0, dur]], palavras, dur };
-  const cortes = []; // [from, to] removed
+  if (!ws.length) return { manter: [[0, dur]], palavras, dur };
+  if (ws.length < minPalavras && !tirar.length) return { manter: [[0, dur]], palavras, dur };
+  const cortes = [...tirar.filter(([a, b]) => b > a && a < dur)]; // [from, to] removed
   let fim = 0;
   // dead start before the first word
   if (ws[0].start > inicioMax) cortes.push([0, ws[0].start - fica]);
@@ -104,6 +139,8 @@ export function encolherSilencios(palavras = [], dur, { maxGap = 1.6, fica = 0.4
     fim = Math.max(fim, w.end);
   }
   if (!cortes.length) return { manter: [[0, dur]], palavras, dur };
+  cortes.sort((a, b) => a[0] - b[0]);
+  for (let i = 1; i < cortes.length; i++) if (cortes[i][0] <= cortes[i - 1][1]) { cortes[i - 1][1] = Math.max(cortes[i - 1][1], cortes[i][1]); cortes.splice(i--, 1); }
   const manter = []; let t = 0;
   for (const [a, b] of cortes) { if (a > t) manter.push([+t.toFixed(2), +a.toFixed(2)]); t = b; }
   if (dur > t) manter.push([+t.toFixed(2), +dur.toFixed(2)]);

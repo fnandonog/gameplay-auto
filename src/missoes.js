@@ -115,7 +115,7 @@ async function textosDaMissao(m, words, { jogo = '', client }) {
 }
 
 // cuts each mission (stream copy: the OBS scene's video + track 1), writes the thumbnail and the texts
-export async function renderMissoes({ cena, words = [], missoes, pasta, config = {}, log = console.log, client = null }) {
+export async function renderMissoes({ cena, video = null, words = [], missoes, pasta, config = {}, log = console.log, client = null }) {
   missoes = missoes.filter((m) => !m.incompleta);
   if (!missoes.length) return [];
   let ia = client;
@@ -125,11 +125,11 @@ export async function renderMissoes({ cena, words = [], missoes, pasta, config =
   for (const [i, m] of missoes.entries()) {
     const nome = `missoes/${String(i + 1).padStart(2, '0')}-${slug(m.missao)}`;
     try {
-      await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String(m.inicio), '-to', String(m.fim), '-i', cena, '-map', '0:v:0', '-map', '0:a:0', '-c', 'copy', '-movflags', '+faststart', path.join(pasta, `${nome}.mp4`)], { timeoutMs: 30 * 60000 });
+      await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...(video && video !== cena ? ['-ss', String(m.inicio), '-to', String(m.fim), '-i', video] : []), '-ss', String(m.inicio), '-to', String(m.fim), '-i', cena, '-map', '0:v:0', '-map', video && video !== cena ? '1:a:0' : '0:a:0', '-c', 'copy', '-movflags', '+faststart', path.join(pasta, `${nome}.mp4`)], { timeoutMs: 30 * 60000 });
       const tx = await textosDaMissao(m, words, { jogo: config.jogo, client: ia }).catch(() => ({}));
       const ass = path.join(pasta, `${nome}.ass`);
       fs.writeFileSync(ass, assThumb(tx.thumb || m.missao, config.estilo));
-      await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String((m.inicio + m.fim) / 2), '-i', cena, '-frames:v', '1', '-vf', `scale=1280:720,eq=saturation=1.3:contrast=1.1,ass='${fp(ass)}':fontsdir='${fp(FONTS)}'`, '-q:v', '2', path.join(pasta, `${nome}.jpg`)], { timeoutMs: 120000 }).catch(() => null);
+      await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String((m.inicio + m.fim) / 2), '-i', video || cena, '-frames:v', '1', '-vf', `scale=1280:720,eq=saturation=1.3:contrast=1.1,ass='${fp(ass)}':fontsdir='${fp(FONTS)}'`, '-q:v', '2', path.join(pasta, `${nome}.jpg`)], { timeoutMs: 120000 }).catch(() => null);
       fs.rmSync(ass, { force: true });
       const caps = (tx.capitulos || []).filter((c) => c.t >= 0 && c.t < m.fim - m.inicio).map((c) => `${mmss(c.t)} ${c.nome}`);
       if (caps.length && !caps[0].startsWith('00:00')) caps.unshift('00:00 Início');

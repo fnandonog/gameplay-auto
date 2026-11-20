@@ -175,17 +175,19 @@ export async function processarSessao(principal, config, { log = console.log } =
   }
 
   at('editor', 'pronto', `${cortes.length} cortes montados`);
+  // without the webcam (temCamera false): the long videos use the clean game file when Source Record made one
+  const semRosto = !temCameraNaSessao(config, arq) && arq.jogo !== arq.cena;
   // 6. the full YouTube video
   let longo = null;
   if (config.videoLongo !== false && duracao >= 120) {
     at('montador', 'trabalhando', 'Montando o vídeo do YouTube');
-    try { longo = await renderLongo({ cena: arq.cena, words, duracao, momentos: decididos, pasta, config, remover: descartados, marca: marcaDaLinha(linhas.find((l) => !l.terceiros) || linhas[0], config), log }); at('montador', 'pronto', 'Vídeo longo pronto'); } catch (e) { log(`Vídeo longo falhou: ${e.message}`); at('montador', 'erro', `Vídeo longo falhou: ${e.message}`); }
+    try { longo = await renderLongo({ cena: arq.cena, video: semRosto ? arq.jogo : null, words, duracao, momentos: decididos, pasta, config, remover: descartados, marca: marcaDaLinha(linhas.find((l) => !l.terceiros) || linhas[0], config), log }); at('montador', 'pronto', 'Vídeo longo pronto'); } catch (e) { log(`Vídeo longo falhou: ${e.message}`); at('montador', 'erro', `Vídeo longo falhou: ${e.message}`); }
   }
 
   // 7. one YouTube video per mission
   let missoes = [];
   if (achadas.length) {
-    try { missoes = await renderMissoes({ cena: arq.cena, words, missoes: achadas, pasta, config, log }); }
+    try { missoes = await renderMissoes({ cena: arq.cena, video: semRosto ? arq.jogo : null, words, missoes: achadas, pasta, config, log }); }
     catch (e) { log(`Missões falharam: ${e.message}`); }
   }
 

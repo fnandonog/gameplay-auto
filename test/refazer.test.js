@@ -127,3 +127,19 @@ test('webcam fixes: tighter frame up on the face and a light color fix', async (
   assert.ok(f.includes("crop='iw/1.25':'ih/1.25':'(iw-iw/1.25)/2':'(ih-ih/1.25)*0.20'"));
   assert.ok(f.includes('colorbalance=gm=-0.080')); assert.ok(f.includes('eq=brightness=0.050:gamma=1.150'));
 });
+
+test('restarts and stutters are cut from the speech', async () => {
+  const { repeticoes, encolherSilencios } = await import('../src/corte.js');
+  const fala = (txt, t0 = 0) => txt.split(' ').map((text, i) => ({ text, start: t0 + i * 0.4, end: t0 + i * 0.4 + 0.3 }));
+  const w = fala('eu vou chamar o mecânico eu vou chamar o mecânico pra consertar o carro');
+  assert.deepEqual(repeticoes(w), [[0, 1.96]]);
+  assert.deepEqual(repeticoes(fala('vou cha vou chamar ele agora')), [[0, 0.76]]);
+  assert.deepEqual(repeticoes(fala('não não faz isso cara')), []);
+  assert.equal(repeticoes(fala('o o carro quebrou de novo')).length, 1);
+  assert.equal(repeticoes(fala('ééé então bora lá galera')).length, 1);
+  assert.deepEqual(repeticoes(fala('olha que carro bonito esse aqui')), []);
+  const r = encolherSilencios(w, 6);
+  assert.equal(r.palavras[0].text, 'eu'); assert.equal(r.palavras[5].text, 'pra');
+  assert.ok(r.dur < 6 - 1.9);
+  assert.equal(encolherSilencios(w, 6, { repeticoes: false }).dur, 6);
+});
