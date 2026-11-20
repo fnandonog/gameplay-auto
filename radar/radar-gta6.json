@@ -1,7 +1,7 @@
 {
   "versao": 1,
   "jogo": "GTA 6",
-  "atualizado_em": "2026-11-19T17:00:00Z",
+  "atualizado_em": "2026-11-20T13:30:00Z",
   "como_usar": "Cada item é um momento/curiosidade que viralizou fora do Brasil. A central cruza 'palavras_chave' com a transcrição (whisper) e os marcadores das gravações; se bater, o trecho vira corte com prioridade alta e usa 'titulo_short' e 'gancho'. Itens com coberto_no_br=true perdem prioridade.",
   "itens": [
     {
@@ -640,6 +640,79 @@
       "local": {
         "regiao": "Leonida (interior)",
         "referencia": "Cruzamento de estrada de terra cercado de mata",
+        "imagens": []
+      }
+    },
+    {
+      "id": "gta6-testemunha-processo",
+      "tipo": "missao_aleatoria",
+      "titulo": "NPC atropelado te chama pra ser testemunha (e você ganha grana)",
+      "o_que_e": "Depois de ajudar um NPC atropelado, ele processa uma megaempresa e te oferece parte da indenização se você testemunhar.",
+      "como_achar": "Evento aleatório: ajude um pedestre atropelado. Local e gatilho exatos não foram publicados (relato de review pré-lançamento).",
+      "palavras_chave": [
+        "atropelado",
+        "testemunha",
+        "processo",
+        "advogado",
+        "indenização",
+        "ajudei o cara",
+        "witness",
+        "lawyer"
+      ],
+      "titulo_short": "Ajudei um atropelado no GTA 6 e fiquei RICO",
+      "gancho": "O NPC ligando: 'preciso de você no tribunal'",
+      "fonte": "https://www.tweaktown.com/news/114772/gta-6-npc-gets-hit-by-car-calls-lawyer-and-player-gets-a-payout-for-being-a-witness/index.html",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-20",
+      "prioridade": 2,
+      "por_que_viraliza": "Consequência inesperada de uma boa ação: o tipo de 'o GTA 6 é insano' que todo mundo compartilha.",
+      "fontes": [
+        {
+          "url": "https://www.tweaktown.com/news/114772/gta-6-npc-gets-hit-by-car-calls-lawyer-and-player-gets-a-payout-for-being-a-witness/index.html",
+          "titulo": "NPC atropelado te chama pra ser testemunha (e você ganha grana)",
+          "plataforma": "TweakTown",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida",
+        "referencia": "Aleatório, em rua com pedestres",
+        "imagens": []
+      }
+    },
+    {
+      "id": "gta6-casa-san-andreas",
+      "tipo": "easter_egg",
+      "titulo": "A casa do GTA 6 que estava escondida no San Andreas de 2021",
+      "o_que_e": "Uma imagem escondida no San Andreas Definitive Edition (2021) bate com uma casa real do GTA 6.",
+      "como_achar": "Bairro de Belville. O endereço exato saiu num post do GTA Wiki.",
+      "palavras_chave": [
+        "casa do san andreas",
+        "san andreas",
+        "definitive edition",
+        "foto escondida",
+        "belville"
+      ],
+      "titulo_short": "O GTA 6 estava escondido no San Andreas desde 2021",
+      "gancho": "As duas imagens lado a lado",
+      "fonte": "https://www.videogameschronicle.com/news/gta-6-players-discover-our-real-first-look-at-the-game-was-likely-hidden-in-a-2021-remaster/",
+      "confirmado": false,
+      "coberto_no_br": true,
+      "encontrado_em": "2026-11-20",
+      "prioridade": 3,
+      "por_que_viraliza": "Teoria antiga confirmada: nostalgia e mistério juntos.",
+      "fontes": [
+        {
+          "url": "https://www.videogameschronicle.com/news/gta-6-players-discover-our-real-first-look-at-the-game-was-likely-hidden-in-a-2021-remaster/",
+          "titulo": "A casa do GTA 6 que estava escondida no San Andreas de 2021",
+          "plataforma": "VGC",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Belville",
+        "referencia": "Casa em Belville igual à foto do San Andreas DE",
         "imagens": []
       }
     }
