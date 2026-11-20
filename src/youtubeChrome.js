@@ -34,9 +34,14 @@ export function disponivelYt(p, agora, apiIds) {
 const LIMITE = '.youtube-limite.json';
 export const limiteAtivo = (base, agora = Date.now()) => { const l = ler(path.join(base, LIMITE)); return !!(l?.ate && Date.parse(l.ate) > agora); };
 
-export function proximoJobYoutube({ base, token, agora = Date.now(), pausa = null, apiLimite = 0, limite = 30 }) {
+// intervaloMin: minutes between two YouTube uploads (the owner asked for one per hour; 0 = one after the other)
+export function proximoJobYoutube({ base, token, agora = Date.now(), pausa = null, apiLimite = 0, limite = 30, intervaloMin = 0 }) {
   if (pausa || limiteAtivo(base, agora)) return null;
   const posts = listarEntregues(base);
+  if (intervaloMin > 0) {
+    const ultimo = Math.max(0, ...posts.map((p) => Math.max(Date.parse(p.postado.emRede?.['youtube-chrome'] || 0) || 0, Date.parse(p.ytChrome?.em || 0) || 0)));
+    if (agora - ultimo < intervaloMin * 60000) return null;
+  }
   const hoje = posts.filter((p) => p.postado.emRede?.['youtube-chrome'] && dia(Date.parse(p.postado.emRede['youtube-chrome'])) === dia(agora)).length;
   if (hoje >= limite) return null;
   const api = new Set(apiLimite > 0 ? selecaoApiYoutube(posts, agora, apiLimite).map((p) => p.id) : []);

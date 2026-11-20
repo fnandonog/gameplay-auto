@@ -144,7 +144,7 @@ export function criarPainel(config) {
         if (req.method === 'GET' && rota === 'yt-proximo') {
           if (config.youtubeChrome === false) return json(res, 200, { job: null });
           const apiOk = config.youtubeApi !== false && redesConectadas(lerCredenciais(arquivoCredenciais(config))).includes('youtube') && config.postadorLigado;
-          const job = proximoJobYoutube({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida), apiLimite: apiOk ? limitesDe(config).youtube : 0, limite: config.ritmo?.maxPorDia ? config.ritmo.maxPorDia + (config.ritmo.longosPorDia || 0) : 30 });
+          const job = proximoJobYoutube({ base: config.pastaEntrega, token, pausa: lerPausa(config.pastaSaida), apiLimite: apiOk ? limitesDe(config).youtube : 0, limite: config.ritmo?.maxPorDia ? config.ritmo.maxPorDia + (config.ritmo.longosPorDia || 0) : 30, intervaloMin: config.youtubeIntervaloMin ?? 60 });
           if (job) registrar(config.pastaSaida, 'agendador', 'trabalhando', `YouTube pelo Chrome: postando "${job.titulo}"`);
           return json(res, 200, { job });
         }
