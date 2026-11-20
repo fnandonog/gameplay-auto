@@ -120,14 +120,15 @@ Marque só o que deve SAIR para o corte ficar mais rápido e limpo:
 - frase repetida/recomeçada: quando a mesma ideia é dita de novo, tire a PRIMEIRA tentativa e mantenha a última (a mais completa);
 - começos falsos, travadas, "é...", "tipo assim", enrolação sem informação;
 - fala que não tem nada a ver com o que acontece no corte.
-Nunca tire a reação forte (o momento), nem o fim de uma frase que fica de pé sozinha, nem palavrão (é bipado depois). Na dúvida, não tire.
+Ao tirar uma tentativa repetida, tire ela INTEIRA (até onde a frase de novo começa), sem deixar pedaço solto.
+Nunca tire: a reação forte (o momento), piada ou comentário engraçado, opinião, uma frase completa que fica de pé sozinha, nem palavrão (é bipado depois). Corte pouco: o objetivo é tirar travada e repetição, não resumir. Na dúvida, não tire.
 Responda só com os intervalos de índices (inclusive) a remover.`;
 const SCHEMA_FALA = { type: 'object', additionalProperties: false, required: ['remover'], properties: { remover: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['de', 'ate'], properties: { de: { type: 'integer' }, ate: { type: 'integer' }, motivo: { type: 'string' } } } } } };
 
 export const montarFala = (palavras) => palavras.map((w, i) => `${i}:${String(w.text).trim()}`).join(' ');
 
 // pure: index ranges from the AI → seconds to cut. Drops bad ranges and gives up when it would cut too much.
-export function aplicarRevisaoFala(palavras, remover = [], { maxFracao = 0.35, protegerInicio = 3 } = {}) {
+export function aplicarRevisaoFala(palavras, remover = [], { maxFracao = 0.3, protegerInicio = 3 } = {}) {
   const tira = new Set();
   for (const r of remover || []) {
     const de = Math.max(protegerInicio, Math.floor(r.de)), ate = Math.min(palavras.length - 1, Math.floor(r.ate));
