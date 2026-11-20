@@ -22,8 +22,19 @@ export function estadoYoutube() {
   const progresso = (prog?.innerText || '').replace(/\s+/g, ' ').trim();
   const link = [...document.querySelectorAll('ytcp-uploads-dialog a[href*="youtu"], .video-url-fadeable a[href*="youtu"]')].map((a) => a.href).find((h) => /youtu\.be\/|youtube\.com\/(shorts|watch)/.test(h)) || null;
   const erro = (q('ytcp-uploads-dialog .error-area, .ytcp-uploads-dialog .error-message')?.innerText || '').trim();
-  const limite = /limite di[aá]rio( de envios)?|daily upload limit/i.test(document.body?.innerText || '');
-  return { login, input: !!input, titulo: !!titulo, progresso, link, erro, limite, dialogo: !!q('ytcp-uploads-dialog'), passo: q('ytcp-uploads-dialog #step-badge-3[state="active"], ytcp-uploads-dialog [test-id="REVIEW"][state="active"]') ? 'visibilidade' : null };
+  // the limit can show inside a dialog's shadow DOM, which body.innerText does not reach
+  const profundo = (raiz, n = { t: '' }) => {
+    for (const el of raiz.querySelectorAll('*')) {
+      if (n.t.length > 20000) break;
+      if (el.shadowRoot) profundo(el.shadowRoot, n);
+    }
+    if (raiz !== document && raiz.textContent) n.t += ' ' + raiz.textContent;
+    return n.t;
+  };
+  const dialogos = [...document.querySelectorAll('ytcp-uploads-dialog, tp-yt-paper-dialog, ytcp-dialog, [role="dialog"], [role="alertdialog"]')].filter(visivel);
+  const textoDialogo = dialogos.map((d) => `${d.innerText || ''} ${d.shadowRoot ? profundo(d.shadowRoot) : ''}`).join(' ').replace(/\s+/g, ' ').trim();
+  const limite = /limite (di[aá]rio|de envios)|daily upload limit|upload limit/i.test(`${document.body?.innerText || ''} ${textoDialogo}`);
+  return { login, pagina: `${location.host}${location.pathname}`.slice(0, 80), aviso: textoDialogo.slice(0, 160), input: !!input, titulo: !!titulo, progresso, link, erro, limite, dialogo: !!q('ytcp-uploads-dialog'), passo: q('ytcp-uploads-dialog #step-badge-3[state="active"], ytcp-uploads-dialog [test-id="REVIEW"][state="active"]') ? 'visibilidade' : null };
 }
 
 // Onde clicar para digitar no título ou na descrição (centro da caixa, em pixels CSS)
@@ -138,7 +149,11 @@ export async function postarYoutube(executar, aba, job, { espera = 1 } = {}) {
 
     etapa = 'esperar a tela de detalhes';
     e = await esperar((s) => s.titulo, 90000);
-    if (!e || !e.titulo) return parar(e?.limite ? 'limite diário de envios do YouTube' : 'a tela de detalhes não abriu');
+    if (e?.login) return { ...parar('não está logado no YouTube'), saiu: true };
+    if (!e || !e.titulo) {
+      const agora = e || await estado(); // say what the page shows, so the next failure is not a guess
+      return parar(agora.limite ? 'limite diário de envios do YouTube' : `a tela de detalhes não abriu (${agora.pagina || '?'}${agora.aviso ? `: ${agora.aviso}` : ''})`);
+    }
     await dormir(2500);
 
     etapa = 'escrever o título';
