@@ -178,6 +178,10 @@ export function argsCorte(job) {
   // the source sound on its own clock first: overlapping or missing stretches in the recording (OBS) are dropped/filled
   // so the sound always has exactly the picture's length, and the later steps can number the samples safely
   g.push(`[${audIn}]aresample=48000:async=1:first_pts=0[asrc]`);
+  // the voice alone (OBS track 2) drives the music ducking: the game sound never stops, so with the full mix as the key
+  // the music stayed down the whole time. Only when there is music and the recording has that track (job.faixaVoz).
+  const vozIn = musIn && Number.isInteger(job.faixaVoz) && job.faixaVoz > 0 ? `${audIn.split(':')[0]}:a:${job.faixaVoz}` : null;
+  if (vozIn) g.push(`[${vozIn}]aresample=48000:async=1:first_pts=0[ksrc]`);
   audIn = 'asrc';
   let vIn = '0:v';
   if (manter) {
@@ -185,6 +189,11 @@ export function argsCorte(job) {
     g.push(`[0:v]split=${k}${manter.map((_, i) => `[mv${i}]`).join('')}`, `[${audIn}]asplit=${k}${manter.map((_, i) => `[ma${i}]`).join('')}`);
     manter.forEach(([a, b], i) => g.push(`[mv${i}]trim=start=${a}:end=${b},setpts=PTS-STARTPTS[mw${i}]`, `[ma${i}]atrim=start=${a}:end=${b},asetpts=PTS-STARTPTS[mb${i}]`));
     g.push(`${manter.map((_, i) => `[mw${i}][mb${i}]`).join('')}concat=n=${k}:v=1:a=1[vm][am]`);
+    if (vozIn) {
+      g.push(`[ksrc]asplit=${k}${manter.map((_, i) => `[ka${i}]`).join('')}`);
+      manter.forEach(([a, b], i) => g.push(`[ka${i}]atrim=start=${a}:end=${b},asetpts=PTS-STARTPTS[kb${i}]`));
+      g.push(`${manter.map((_, i) => `[kb${i}]`).join('')}concat=n=${k}:v=0:a=1[ksrc2]`);
+    }
     vIn = 'vm'; audIn = 'am';
   }
   const camIn = mesmo ? vIn : '1:v';
@@ -225,9 +234,16 @@ export function argsCorte(job) {
   const mix = ['a0'];
   if (musIn) {
     // the music ducks under the voice (sidechain) and fades in and out
-    g.push('[a0]asplit=2[a0v][a0s]', `[${musIn}]aformat=sample_rates=48000:channel_layouts=stereo,volume=${job.musica.volume ?? 0.12},afade=t=in:d=1,afade=t=out:st=${Math.max(0, dur - 1.5).toFixed(2)}:d=1.5[mu]`,
-      '[mu][a0s]sidechaincompress=threshold=0.015:ratio=12:attack=15:release=450:makeup=1[md]');
-    mix[0] = 'a0v'; mix.push('md');
+    const mus = `[${musIn}]aformat=sample_rates=48000:channel_layouts=stereo,volume=${job.musica.volume ?? 0.12},afade=t=in:d=1,afade=t=out:st=${Math.max(0, dur - 1.5).toFixed(2)}:d=1.5[mu]`;
+    if (vozIn) {
+      // ducks under the voice only: up in the quiet stretches, down while you talk
+      g.push(mus, `[${manter ? 'ksrc2' : 'ksrc'}]aformat=sample_rates=48000:channel_layouts=stereo,apad=whole_dur=${dur},atrim=end=${dur}[key]`,
+        '[mu][key]sidechaincompress=threshold=0.02:ratio=6:attack=20:release=600:makeup=1[md]');
+    } else {
+      g.push('[a0]asplit=2[a0v][a0s]', mus, '[mu][a0s]sidechaincompress=threshold=0.015:ratio=12:attack=15:release=450:makeup=1[md]');
+      mix[0] = 'a0v';
+    }
+    mix.push('md');
   }
   if (boomIn) {
     g.push(`[${boomIn}]lowpass=f=180,volume=0.9,aformat=sample_rates=48000:channel_layouts=stereo,asplit=${impactos.length}${impactos.map((_, i) => `[bo${i}]`).join('')}`);
@@ -263,7 +279,7 @@ export async function melhorEncoder() {
 // Writes the ASS next to the output and renders one format.
 // marca: { arroba, chamada, logo } of the cut's channel line (see marcaDaLinha in src/marca.js)
 // ganchoSeg: how long the hook stays on top (default 2.5 s; Infinity keeps it the whole cut as a title)
-export async function renderCorte({ jogo, camera, audio, start, end, palavras = [], gancho = '', ganchoSeg, selo = '', out, formato, marca = null, config = {}, focos }) {
+export async function renderCorte({ jogo, camera, audio, faixaVoz = null, start, end, palavras = [], gancho = '', ganchoSeg, selo = '', out, formato, marca = null, config = {}, focos }) {
   const fmt = formato || config.formatoPadrao || 'camtopo';
   const L = layoutFormato(FORMATOS[fmt] ? fmt : 'camtopo', { camPct: fmt === 'camtopo' ? config.camPct : undefined });
   const ass = out.replace(/\.mp4$/, '.ass');
@@ -282,7 +298,7 @@ export async function renderCorte({ jogo, camera, audio, start, end, palavras = 
   fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, selo, hookSec: Math.min(ganchoSeg ?? config.estilo?.ganchoSeg ?? 2.5, dur), marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null, extras }));
   const logo = marca?.logo && fs.existsSync(marca.logo) ? marca.logo : null;
   const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo,
-    focos, manter: enx.manter, sons, impactos: imp.map((m) => m.t), boom: config.efeitos?.boom === true, bips: filtro.bips, musica: arqMusica ? { arquivo: arqMusica, volume: config.musica?.volume } : null, encoder: config.encoder || await melhorEncoder() });
+    focos, manter: enx.manter, sons, impactos: imp.map((m) => m.t), boom: config.efeitos?.boom === true, bips: filtro.bips, faixaVoz, musica: arqMusica ? { arquivo: arqMusica, volume: config.musica?.volume } : null, encoder: config.encoder || await melhorEncoder() });
   await run('ffmpeg', args, { timeoutMs: 30 * 60000 });
   // never hand out a cut whose sound and picture differ in length (it plays out of sync on the networks)
   const sin = await conferirSincronia(out);

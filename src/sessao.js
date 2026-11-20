@@ -163,7 +163,7 @@ export async function processarSessao(principal, config, { log = console.log } =
     for (const fmt of formatos) {
       at('editor', 'trabalhando', `Corte ${i + 1}/${decididos.length} (${FORMATOS[fmt].nome}): ${c.titulo}`);
       const out = path.join(pasta, `${nome}-${fmt}.mp4`);
-      await renderCorte({ jogo: arq.jogo, camera: arq.camera, audio: arq.cena, start: c.start, end: c.end, palavras, gancho: c.gancho, selo: c.parte ? `PARTE ${c.parte}` : '', out, formato: fmt, marca, config: c.obrigatorio ? { ...config, cortarSilencio: false } : config });
+      await renderCorte({ jogo: arq.jogo, camera: arq.camera, audio: arq.cena, faixaVoz: audios > faixaMic && faixaMic > 0 ? faixaMic : null, start: c.start, end: c.end, palavras, gancho: c.gancho, selo: c.parte ? `PARTE ${c.parte}` : '', out, formato: fmt, marca, config: c.obrigatorio ? { ...config, cortarSilencio: false } : config });
       if (config.intro?.nosCortes) await comIntro(out, { orientacao: 'vertical', marca, config, log });
       variantes[fmt] = path.basename(out);
       // one cover per format, so switching the format on the panel switches the cover too
@@ -189,7 +189,7 @@ export async function processarSessao(principal, config, { log = console.log } =
     catch (e) { log(`Missões falharam: ${e.message}`); }
   }
 
-  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, ...(avisoMic ? { avisoMic, micMudo: mudo } : {}), criadoEm: new Date().toISOString(), cortes, longo, missoes, descartados };
+  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, ...(avisoMic ? { avisoMic, micMudo: mudo } : {}), faixaVoz: audios > faixaMic && faixaMic > 0 ? faixaMic : null, criadoEm: new Date().toISOString(), cortes, longo, missoes, descartados };
   fs.writeFileSync(path.join(pasta, 'sessao.json'), JSON.stringify(manifesto, null, 2));
   log(`Pronto: ${cortes.length} cortes em ${pasta}`);
   return { pasta, manifesto };

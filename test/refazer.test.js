@@ -110,3 +110,12 @@ test('a recording still open by OBS is not ready, even with a steady size', asyn
   if (!aberto) return t.skip('lsof not available here');
   assert.equal(await arquivoAberto(f), false);
 });
+
+test('the music ducks under the voice track, not the whole mix', async () => {
+  const { argsCorte } = await import('../src/corte.js');
+  const base = { jogo: 'cena.mp4', camera: 'cena.mp4', audio: 'cena.mp4', start: 0, end: 10, ass: 'a.ass', out: 'o.mp4', formato: 'jogo', musica: { arquivo: 'm.mp3', volume: 0.22 } };
+  const comVoz = argsCorte({ ...base, faixaVoz: 1, manter: [[0, 4], [5, 10]] }).join(' ');
+  assert.ok(comVoz.includes('[0:a:1]aresample')); assert.ok(comVoz.includes('[mu][key]sidechaincompress')); assert.ok(comVoz.includes('[ksrc2]'));
+  const semVoz = argsCorte(base).join(' ');
+  assert.ok(semVoz.includes('[mu][a0s]sidechaincompress'));
+});

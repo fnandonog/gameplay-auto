@@ -86,7 +86,7 @@ export function refazerCorte(config, { pasta, arquivo, edicao }, { render = rend
       const out = path.join(dir, nome);
       const cfg = { ...config, ...(k.obrigatorio ? { cortarSilencio: false } : {}), ...(ed.musica === false ? { musica: { ...config.musica, ligado: false } } : {}) };
       const palavras = ed.legenda === false ? [] : palavrasEntre(words, k.inicio, k.fim);
-      await render({ jogo: atual.jogo || atual.gravacao, camera: atual.camera || atual.gravacao, audio: atual.gravacao, start: k.inicio, end: k.fim, palavras, gancho: k.gancho, selo: op.selo, out, formato: op.formato, marca: op.marca, config: cfg });
+      await render({ jogo: atual.jogo || atual.gravacao, camera: atual.camera || atual.gravacao, audio: atual.gravacao, faixaVoz: atual.faixaVoz ?? null, start: k.inicio, end: k.fim, palavras, gancho: k.gancho, selo: op.selo, out, formato: op.formato, marca: op.marca, config: cfg });
       await fazerCapa(out, out.replace(/\.mp4$/, '.jpg'), Math.min(k.fim - k.inicio - 0.5, (k.fim - k.inicio) * 0.4)).catch(() => null);
       k.versoes = [...(k.versoes || []), { arquivo: k.arquivo, formato: k.formato, em: new Date().toISOString() }];
       k.variantes = { ...(k.variantes || {}), [op.formato]: nome };

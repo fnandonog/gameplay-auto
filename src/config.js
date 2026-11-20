@@ -66,7 +66,7 @@ export const PADRAO = {
   filtroPalavroes: 'pesado',
   palavroesExtras: [],
   // background music: royalty-free tracks dropped in pasta, low, ducking under the voice; none when the folder is empty
-  musica: { ligado: true, pasta: path.join(HOME, 'Gameplay', 'musicas'), volume: 0.12 },
+  musica: { ligado: true, pasta: path.join(HOME, 'Gameplay', 'musicas'), volume: 0.22 },
   youtubeApi: false, // false: YouTube only through the Chrome extension (YouTube Studio); true: the API sends the best 6 a day
   // external SSD: OBS records there and processed recordings stay there when it is plugged in (src/disco.js)
   ssd: { pasta: '' }, // e.g. "/Volumes/FNANDO SSD/FNANDO"
