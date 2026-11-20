@@ -9,6 +9,7 @@ import { renderCorte, capa, FORMATOS } from './corte.js';
 import { marcaDaLinha } from './marca.js';
 import { linhasDe } from './canais.js';
 import { registrar } from './atividade.js';
+import { probe } from './run.js';
 
 // pure: the edit the owner picked, cleaned (unknown keys dropped)
 export function limparEdicao(e = {}) {
@@ -105,7 +106,13 @@ export function refazerCorte(config, { pasta, arquivo, edicao }, { render = rend
       const out = path.join(dir, nome);
       const cfg = { ...config, ...(k.obrigatorio ? { cortarSilencio: false } : {}), ...(ed.musica === false ? { musica: { ...config.musica, ligado: false } } : {}) };
       const palavras = ed.legenda === false ? [] : palavrasEntre(words, k.inicio, k.fim);
-      await render({ jogo: atual.jogo || atual.gravacao, camera: atual.camera || atual.gravacao, audio: atual.gravacao, faixaVoz: atual.faixaVoz ?? null, start: k.inicio, end: k.fim, palavras, gancho: k.gancho, selo: op.selo, out, formato: op.formato, marca: op.marca, config: cfg });
+      // sessions made before the voice track was saved: look at the recording's tracks
+      let faixaVoz = atual.faixaVoz ?? null;
+      if (faixaVoz == null && config.faixaMic > 0) {
+        const n = ((await probe(atual.gravacao).catch(() => ({}))).streams || []).filter((x) => x.codec_type === 'audio').length;
+        if (n > config.faixaMic) faixaVoz = config.faixaMic;
+      }
+      await render({ jogo: atual.jogo || atual.gravacao, camera: atual.camera || atual.gravacao, audio: atual.gravacao, faixaVoz, start: k.inicio, end: k.fim, palavras, gancho: k.gancho, selo: op.selo, out, formato: op.formato, marca: op.marca, config: cfg });
       await fazerCapa(out, out.replace(/\.mp4$/, '.jpg'), Math.min(k.fim - k.inicio - 0.5, (k.fim - k.inicio) * 0.4)).catch(() => null);
       k.versoes = [...(k.versoes || []), { arquivo: k.arquivo, formato: k.formato, em: new Date().toISOString() }];
       k.variantes = { ...(k.variantes || {}), [op.formato]: nome };

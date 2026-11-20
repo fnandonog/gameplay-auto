@@ -177,3 +177,12 @@ test('a dead start cut off (one piece) is applied to picture and sound too', asy
   const inteiro = argsCorte({ jogo: 'j.mp4', camera: 'c.mp4', audio: 'cena.mp4', start: 0, end: 10, ass: 'a.ass', out: 'o.mp4', formato: 'meio', manter: [[0, 10]] }).join(' ');
   assert.ok(!inteiro.includes('[cm]'));
 });
+
+test('AI speech review: index ranges become cuts, but never the hook nor too much', async () => {
+  const { aplicarRevisaoFala, montarFala } = await import('../src/ia.js');
+  const w = Array.from({ length: 20 }, (_, i) => ({ text: `p${i}`, start: i * 0.5, end: i * 0.5 + 0.4 }));
+  assert.equal(montarFala(w.slice(0, 2)), '0:p0 1:p1');
+  assert.deepEqual(aplicarRevisaoFala(w, [{ de: 5, ate: 7 }]), [[2.46, 3.96]]);
+  assert.deepEqual(aplicarRevisaoFala(w, [{ de: 0, ate: 4 }]), [[1.46, 2.46]]); // the first 3 words are the hook
+  assert.deepEqual(aplicarRevisaoFala(w, [{ de: 3, ate: 19 }]), []); // too much
+});

@@ -111,3 +111,55 @@ export async function decidirCortes(cands, words, opts = {}) {
     return semIa(cands);
   }
 }
+
+// Speech review of one cut (the owner asked: "deixa as IAs verem se precisa cortar algo"): the AI reads the numbered
+// words and returns what to drop — retakes said again later ("vamos ligar pro mecânico... vamos ligar pro nosso
+// mecânico"), false starts, stalling and talk that goes nowhere. Never the hook line nor more than 35 % of the words.
+export const SISTEMA_FALA = `Você é o editor de cortes curtos de gameplay de um canal brasileiro. Recebe a fala de UM corte, palavra por palavra, numerada.
+Marque só o que deve SAIR para o corte ficar mais rápido e limpo:
+- frase repetida/recomeçada: quando a mesma ideia é dita de novo, tire a PRIMEIRA tentativa e mantenha a última (a mais completa);
+- começos falsos, travadas, "é...", "tipo assim", enrolação sem informação;
+- fala que não tem nada a ver com o que acontece no corte.
+Nunca tire a reação forte (o momento), nem o fim de uma frase que fica de pé sozinha, nem palavrão (é bipado depois). Na dúvida, não tire.
+Responda só com os intervalos de índices (inclusive) a remover.`;
+const SCHEMA_FALA = { type: 'object', additionalProperties: false, required: ['remover'], properties: { remover: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['de', 'ate'], properties: { de: { type: 'integer' }, ate: { type: 'integer' }, motivo: { type: 'string' } } } } } };
+
+export const montarFala = (palavras) => palavras.map((w, i) => `${i}:${String(w.text).trim()}`).join(' ');
+
+// pure: index ranges from the AI → seconds to cut. Drops bad ranges and gives up when it would cut too much.
+export function aplicarRevisaoFala(palavras, remover = [], { maxFracao = 0.35, protegerInicio = 3 } = {}) {
+  const tira = new Set();
+  for (const r of remover || []) {
+    const de = Math.max(protegerInicio, Math.floor(r.de)), ate = Math.min(palavras.length - 1, Math.floor(r.ate));
+    for (let i = de; i <= ate; i++) tira.add(i);
+  }
+  if (!tira.size || tira.size > palavras.length * maxFracao) return [];
+  const out = [];
+  for (const i of [...tira].sort((a, b) => a - b)) {
+    const ini = +(palavras[i].start - 0.04).toFixed(2), fim = +((palavras[i + 1]?.start ?? palavras[i].end) - 0.04).toFixed(2);
+    const u = out.at(-1);
+    if (u && ini - u[1] < 0.1) u[1] = Math.max(u[1], fim); else if (fim > ini) out.push([Math.max(0, ini), fim]);
+  }
+  return out;
+}
+
+const cacheFala = new Map();
+export async function revisarFala(palavras, { client = null } = {}) {
+  if (!palavras || palavras.length < 12) return [];
+  const chave = palavras.map((w) => `${w.text}@${w.start}`).join('|');
+  if (cacheFala.has(chave)) return cacheFala.get(chave);
+  let ia = client;
+  try { ia ||= clienteIa(); } catch { return []; }
+  try {
+    const msg = await ia.messages.create({
+      model: MODELO, max_tokens: 4000,
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA_FALA } },
+      system: SISTEMA_FALA,
+      messages: [{ role: 'user', content: montarFala(palavras) }],
+    });
+    if (msg.stop_reason === 'refusal') return [];
+    const r = aplicarRevisaoFala(palavras, JSON.parse(msg.content.find((b) => b.type === 'text')?.text || '{}').remover);
+    cacheFala.set(chave, r);
+    return r;
+  } catch { return []; }
+}

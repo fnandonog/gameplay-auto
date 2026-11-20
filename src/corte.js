@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { run } from './run.js';
 import { assOf, cuesOf } from './legenda.js';
 import { filtrarPalavroes, adesivosDe, assAdesivos, escolherMusica, impactosDe, marcarEnfase, zoomDosImpactos } from './efeitos.js';
+import { revisarFala } from './ia.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const FONTS = path.join(ROOT, 'fonts');
@@ -122,9 +123,9 @@ export function repeticoes(palavras = [], { janela = 6, maxN = 6 } = {}) {
   return out;
 }
 
-export function encolherSilencios(palavras = [], dur, { maxGap = 1.6, fica = 0.45, minPalavras = 5, inicioMax = 1.2, repeticoes: rep = true } = {}) {
-  // words cut out as restarts leave the caption too
-  const tirar = rep ? repeticoes(palavras) : [];
+export function encolherSilencios(palavras = [], dur, { maxGap = 1.6, fica = 0.45, minPalavras = 5, inicioMax = 1.2, repeticoes: rep = true, remover = [] } = {}) {
+  // words cut out as restarts (and what the AI review marked, `remover` in seconds) leave the caption too
+  const tirar = [...(rep ? repeticoes(palavras) : []), ...remover].sort((a, b) => a[0] - b[0]);
   if (tirar.length) palavras = palavras.filter((w) => !tirar.some(([a, b]) => w.start >= a && w.end <= b + 0.05));
   const ws = palavras.filter((w) => w.end > 0 && w.start < dur);
   if (!ws.length) return { manter: [[0, dur]], palavras, dur };
@@ -341,7 +342,9 @@ export async function renderCorte({ jogo, camera, audio, faixaVoz = null, start,
   const L = layoutFormato(FORMATOS[fmt] ? fmt : 'camtopo', { camPct: fmt === 'camtopo' ? config.camPct : undefined });
   const ass = out.replace(/\.mp4$/, '.ass');
   // jump cuts first (they change the timeline), then framing on the new timeline
-  const enx = config.cortarSilencio === false ? { manter: [[0, end - start]], palavras, dur: end - start } : encolherSilencios(palavras, end - start, config.cortarSilencio || {});
+  // the AI reads the speech and marks retakes and stalling to cut (config.revisarFala false turns it off)
+  const remover = config.cortarSilencio === false || config.revisarFala === false || config.semIa ? [] : await revisarFala(palavras.map((w) => ({ ...w, start: +(w.start).toFixed(2) })));
+  const enx = config.cortarSilencio === false ? { manter: [[0, end - start]], palavras, dur: end - start } : encolherSilencios(palavras, end - start, { ...(config.cortarSilencio || {}), remover });
   const dur = enx.dur;
   // profanity: masked in the captions and beeped in the sound (config.filtroPalavroes: 'pesado' default, 'todos', false)
   const filtro = filtrarPalavroes(enx.palavras, { nivel: config.filtroPalavroes ?? 'pesado', extras: config.palavroesExtras || [] });
