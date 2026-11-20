@@ -42,6 +42,22 @@ export function nomeVersao(arquivo, formato, existe = () => false) {
   throw new Error('Versões demais deste corte.');
 }
 
+// the delivered folder of a cut (prontos/...) while it is still waiting to be posted on every network, else null
+function prontoEsperando(c) {
+  const d = c?.pastaEntrega;
+  if (!d || !fs.existsSync(path.join(d, 'post.json'))) return null;
+  let postado = {}; try { postado = JSON.parse(fs.readFileSync(path.join(d, 'postado.json'), 'utf8')); } catch {}
+  return Object.keys(postado.emRede || {}).length || Object.keys(postado.links || {}).length ? null : d;
+}
+const AVISO_AJUSTE = 'ajuste pedido por você';
+function avisoNoPronto(d, ligar) {
+  const f = path.join(d, 'post.json');
+  const post = JSON.parse(fs.readFileSync(f, 'utf8'));
+  if (ligar && !post.aviso) post.aviso = AVISO_AJUSTE;
+  if (!ligar && post.aviso === AVISO_AJUSTE) delete post.aviso;
+  fs.writeFileSync(f, JSON.stringify(post, null, 2));
+}
+
 const acharCorte = (s, arquivo) => s.cortes.find((x) => x.arquivo === arquivo || Object.values(x.variantes || {}).includes(arquivo));
 
 // writes the owner's note; status 'ajuste' keeps it out of posting until it is redone or approved
@@ -53,7 +69,10 @@ export function pedirAjuste(pastaSaida, { pasta, arquivo, texto }, agora = new D
   const t = String(texto || '').trim().slice(0, 2000);
   if (!t) throw new Error('Escreva o que precisa mudar.');
   c.ajustes = [...(c.ajustes || []), { texto: t, em: agora, feito: false }];
-  c.status = 'ajuste';
+  // already on the schedule: the post is held (an aviso never goes out alone) until it is redone
+  const pronto = prontoEsperando(c);
+  if (pronto) avisoNoPronto(pronto, true);
+  c.status = pronto ? c.status : 'ajuste';
   c.atualizadoEm = agora;
   fs.writeFileSync(file, JSON.stringify(s, null, 2));
   registrar(pastaSaida, 'editor', 'pronto', `Ajuste pedido: ${c.titulo || arquivo}`);
@@ -93,7 +112,14 @@ export function refazerCorte(config, { pasta, arquivo, edicao }, { render = rend
       k.formato = op.formato; k.arquivo = nome;
       if (fs.existsSync(out.replace(/\.mp4$/, '.jpg'))) k.capa = nome.replace(/\.mp4$/, '.jpg');
       for (const a of k.ajustes || []) a.feito = true;
-      k.status = 'aguardando';
+      // on the schedule and not out anywhere yet: the new version replaces the delivered video, same time slot
+      const pronto = prontoEsperando(k);
+      if (pronto) {
+        fs.copyFileSync(out, path.join(pronto, 'video.mp4'));
+        if (fs.existsSync(out.replace(/\.mp4$/, '.jpg'))) fs.copyFileSync(out.replace(/\.mp4$/, '.jpg'), path.join(pronto, 'capa.jpg'));
+        avisoNoPronto(pronto, false);
+        k.substituiuNoPronto = new Date().toISOString();
+      } else k.status = 'aguardando';
       delete k.erroRefazer;
       registrar(config.pastaSaida, 'editor', 'pronto', `Refeito: ${k.titulo || arquivo}`);
     } catch (e) {

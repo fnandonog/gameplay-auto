@@ -194,7 +194,8 @@ export function argsCorte(job) {
   const fps = job.fps || 60;
   const mesmo = semCam || job.camera === job.jogo;
   // jump cuts (encolherSilencios): only when the picture comes from one file
-  const manter = mesmo && Array.isArray(job.manter) && job.manter.length > 1 ? job.manter : null;
+  // jump cuts: the same trims go to the game, the sound and (separate file) the camera, so the captions stay in sync
+  const manter = Array.isArray(job.manter) && job.manter.length > 1 ? job.manter : null;
   const dur = manter ? +manter.reduce((n, [a, b]) => n + b - a, 0).toFixed(3) : durFonte;
   const args = ['-hide_banner', '-loglevel', 'error', '-y',
     '-ss', String(job.start), '-t', String(durFonte), '-i', job.jogo];
@@ -244,7 +245,14 @@ export function argsCorte(job) {
     }
     vIn = 'vm'; audIn = 'am';
   }
-  const camIn = mesmo ? vIn : '1:v';
+  let camIn = mesmo ? vIn : '1:v';
+  if (manter && !mesmo) {
+    const k = manter.length;
+    g.push(`[1:v]split=${k}${manter.map((_, i) => `[cv${i}]`).join('')}`);
+    manter.forEach(([a, b], i) => g.push(`[cv${i}]trim=start=${a}:end=${b},setpts=PTS-STARTPTS[cw${i}]`));
+    g.push(`${manter.map((_, i) => `[cw${i}]`).join('')}concat=n=${k}:v=1:a=0[cm]`);
+    camIn = 'cm';
+  }
   // game-only formats: each framing piece (job.focos, see focosDe) is cropped on its own and the pieces are joined
   const focos = semCam && Array.isArray(job.focos) && job.focos.some((f) => f.tipo !== 'normal') ? job.focos : null;
   const jogoEnquadrado = (entrada, gameH, saida) => {

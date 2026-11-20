@@ -110,6 +110,7 @@ function card(s, c) {
     : c.aviso ? `<div class="porque no">⚠️ ${esc(c.aviso)}. Este nunca sai sozinho.</div>` : c.erroPost ? `<div class="porque no">Erro ao postar: ${esc(c.erroPost)}</div>` : '';
   const botoes = c.refazendo ? '<button class="b-sec" disabled>Refazendo... (alguns minutos)</button>'
     : st === 'aguardando' || st === 'ajuste' ? '<button class="b-no" data-st="descartado">Descartar</button><button class="b-sec" data-ajuste>Pedir ajuste</button><button class="b-ok" data-st="aprovado">Aprovar</button>'
+    : st === 'entregue' || st === 'agendado' ? '<button class="b-sec" data-ajuste>Pedir ajuste</button>'
     : st === 'descartado' || st === 'aprovado' ? '<button class="b-sec" data-st="aguardando">Voltar para revisão</button>' : '';
   return `<article class="card${c.longo ? ' longo' : ''}" data-pasta="${esc(s.pasta)}" data-arquivo="${esc(c.arquivo)}">
     <video src="${midia(s.pasta, c.arquivo)}" ${c.capa ? `poster="${midia(s.pasta, c.capa)}"` : ''} controls playsinline preload="none"></video>
@@ -127,7 +128,7 @@ function card(s, c) {
       </div></details>
       ${(c.ajustes || []).length ? `<div class="ajustes">${c.ajustes.map((a) => `${a.feito ? '✓' : '•'} ${esc(a.texto)}`).join('<br>')}</div>` : ''}
       ${c.erroRefazer ? `<div class="porque no">Não consegui refazer: ${esc(c.erroRefazer)}</div>` : ''}
-      ${!c.longo && (st === 'aguardando' || st === 'ajuste') && !c.refazendo ? rapida(s, c) : ''}
+      ${!c.longo && ['aguardando', 'ajuste', 'aprovado', 'entregue', 'agendado'].includes(st) && !c.refazendo ? rapida(s, c) : ''}
       <div class="pedido" hidden><textarea class="txt-ajuste" placeholder="O que precisa mudar? Ex.: corta os 2 primeiros segundos, a legenda tampa o carro, som atrasado..."></textarea>
         <div class="acoes"><button class="b-sec" data-cancelar>Cancelar</button><button class="b-ok" data-enviar-ajuste>Enviar pedido</button></div></div>
       ${botoes ? `<div class="acoes">${botoes}</div>` : ''}
@@ -147,7 +148,7 @@ function rapida(s, c) {
     <div class="lin"><span>Redes</span><label><input type="checkbox" class="o-arroba"${e.arroba === false ? '' : ' checked'}>@ na tela</label><label><input type="checkbox" class="o-chamada"${e.chamada === false ? '' : ' checked'}>"Segue" no fim</label></div>
     <div class="lin"><span>Extras</span><label><input type="checkbox" class="o-legenda"${e.legenda === false ? '' : ' checked'}>Legenda</label><label><input type="checkbox" class="o-musica"${e.musica === false ? '' : ' checked'}>Música de fundo</label></div>
     <button class="b-ok" data-refazer style="border:0;border-radius:10px;padding:9px;font-weight:700;cursor:pointer">Refazer com essas opções</button>
-    <div class="s">Sai uma versão nova para você comparar. A antiga fica guardada.</div>
+    <div class="s">Sai uma versão nova (a antiga fica guardada). Se já está na agenda e ainda não saiu, a nova entra no lugar, no mesmo horário.</div>
   </div></details>`;
 }
 

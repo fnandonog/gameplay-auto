@@ -143,3 +143,29 @@ test('restarts and stutters are cut from the speech', async () => {
   assert.ok(r.dur < 6 - 1.9);
   assert.equal(encolherSilencios(w, 6, { repeticoes: false }).dur, 6);
 });
+
+test('a scheduled cut can still be adjusted: held while redone, then the new video takes its slot', async () => {
+  const base = sessao();
+  const pronto = path.join(base, 'prontos', 'fnando', 's1_01-pia');
+  fs.mkdirSync(pronto, { recursive: true });
+  fs.writeFileSync(path.join(pronto, 'post.json'), JSON.stringify({ titulo: 'Pia', agendarPara: '2026-11-21T12:00:00Z' }));
+  fs.writeFileSync(path.join(pronto, 'video.mp4'), 'velho');
+  const f = path.join(base, 's1', 'sessao.json');
+  const j = JSON.parse(fs.readFileSync(f, 'utf8')); j.cortes[0].status = 'entregue'; j.cortes[0].pastaEntrega = pronto; fs.writeFileSync(f, JSON.stringify(j));
+  const c = pedirAjuste(base, { pasta: 's1', arquivo: '01-pia-meio.mp4', texto: 'legenda adiantada' });
+  assert.equal(c.status, 'entregue');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(pronto, 'post.json'), 'utf8')).aviso, 'ajuste pedido por você');
+  const render = async (job) => { fs.writeFileSync(job.out, 'novo'); return job.out; };
+  const r = refazerCorte({ pastaSaida: base, linhas: [{ id: 'fnando' }] }, { pasta: 's1', arquivo: '01-pia-meio.mp4', edicao: {} }, { render, fazerCapa: async () => null, log: () => {} });
+  await r.fila;
+  assert.equal(fs.readFileSync(path.join(pronto, 'video.mp4'), 'utf8'), 'novo');
+  const post = JSON.parse(fs.readFileSync(path.join(pronto, 'post.json'), 'utf8'));
+  assert.equal(post.aviso, undefined); assert.equal(post.agendarPara, '2026-11-21T12:00:00Z');
+  assert.equal(JSON.parse(fs.readFileSync(f, 'utf8')).cortes[0].status, 'entregue');
+});
+
+test('jump cuts also trim a separate camera file, so the captions stay in sync', async () => {
+  const { argsCorte } = await import('../src/corte.js');
+  const a = argsCorte({ jogo: 'j.mp4', camera: 'c.mp4', audio: 'cena.mp4', start: 0, end: 10, ass: 'a.ass', out: 'o.mp4', formato: 'meio', manter: [[0, 3], [4, 10]] }).join(' ');
+  assert.ok(a.includes('[1:v]split=2')); assert.ok(a.includes('concat=n=2:v=1:a=0[cm]')); assert.ok(a.includes('[cm]'));
+});
