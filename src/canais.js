@@ -42,3 +42,44 @@ export function distribuirLinhas(cortes, linhas) {
 }
 
 export const linhaDoCorte = (c, linhas) => linhas.find((l) => l.id === c.linha) || linhas.find((l) => !l.terceiros) || linhas[0];
+
+// Safe volume per account per day. Above this TikTok, Instagram and YouTube treat the account as spam (reach drops to
+// zero, "unoriginal content" flags, posting blocks). More volume = more accounts (lines), never more posts per account.
+export const LIMITES_SEGUROS = { tiktok: 4, instagram: 3, youtube: 4, facebook: 3 };
+
+// the peak hours a line really uses: no more per day than its strictest network allows (pure)
+export function horariosSeguros(linha = {}, limites = {}) {
+  const lim = { ...LIMITES_SEGUROS, ...limites };
+  const max = Math.min(...(linha.redes || []).map((r) => lim[r] ?? 3), 24);
+  return [...(linha.horarios || ['12:00', '18:30', '21:00'])].sort().slice(0, Math.max(1, max));
+}
+
+// Automatic pace (config.ritmo.automatico): the owner chose volume. Per network per day up to ritmo.maxPorDia
+// (YouTube capped by the API quota: 10,000 units a day, 1,600 per upload = 6 uploads, shorts and long videos together).
+export const COTA_YOUTUBE_DIA = 6;
+export function limitesDe(config = {}) {
+  const r = config.ritmo || {};
+  const base = r.automatico ? (() => { const m = Number(r.maxPorDia) || 15; return { tiktok: m, instagram: m, facebook: m, youtube: Math.min(m, COTA_YOUTUBE_DIA) }; })() : {};
+  // the automatic pace is the owner's own choice: it wins over the old fixed limits in config.json
+  return r.automatico ? { ...LIMITES_SEGUROS, ...(config.limites || {}), ...base } : { ...LIMITES_SEGUROS, ...(config.limites || {}) };
+}
+// pure: n times spread evenly between inicio and fim ("HH:MM")
+export function gerarHorarios(n, { inicio = '09:00', fim = '23:30' } = {}) {
+  const m = (h) => { const [a, b] = h.split(':').map(Number); return a * 60 + b; };
+  const a = m(inicio), b = m(fim);
+  n = Math.max(1, Math.round(n));
+  return Array.from({ length: n }, (_, i) => { const t = Math.round(n === 1 ? a : a + (i * (b - a)) / (n - 1)); return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; });
+}
+// pure: the times a line uses per day. With the automatic pace it follows the queue: about half of what is waiting
+// goes out per day, never fewer than ritmo.minPorDia nor more than the strictest network allows.
+export function horariosDoDia(linha = {}, config = {}, naFila = 0) {
+  const r = config.ritmo || {};
+  if (!r.automatico) return horariosSeguros(linha, limitesDe(config));
+  const lim = limitesDe(config);
+  const max = Math.min(...(linha.redes || []).filter((x) => x !== 'youtube' || (linha.redes || []).length === 1).map((x) => lim[x] ?? 3), 48);
+  const n = Math.min(max, Math.max(Number(r.minPorDia) || 4, Math.ceil(naFila / (Number(r.diasDeFila) || 2))));
+  return gerarHorarios(n, { inicio: r.inicio || '09:00', fim: r.fim || '23:30' });
+}
+
+// posts per day the whole operation can do safely (pure)
+export const capacidadeDiaria = (linhas, limites = {}) => linhas.reduce((n, l) => n + horariosSeguros(l, limites).length, 0);

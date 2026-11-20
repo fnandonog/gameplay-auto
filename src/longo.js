@@ -68,8 +68,15 @@ export function assThumb(texto, estilo = {}) {
     `Dialogue: 0,${assTime(0)},${assTime(5)},T,,0,0,0,,${wrap(String(texto).toUpperCase(), 12).replace(/\n/g, '\\N')}`, ''].join('\n');
 }
 
-export async function renderLongo({ cena, words, duracao, momentos, pasta, config = {}, titulo, marca = null, log = console.log }) {
-  const segs = segmentosLongos({ words, duracao, protegidos: momentos, silencioMax: config.silencioMax ?? 20 });
+// pure: segments minus the stretches that must not appear (abandoned mission attempts); pieces under minSeg drop
+export function subtrair(segs, remover = [], minSeg = 2) {
+  let out = segs.map((s) => ({ ...s }));
+  for (const r of remover) out = out.flatMap((s) => (r.fim <= s.start || r.inicio >= s.end ? [s] : [{ ...s, end: r.inicio }, { ...s, start: r.fim }]));
+  return out.filter((s) => s.end - s.start >= minSeg);
+}
+
+export async function renderLongo({ cena, video: arqVideo = null, words, duracao, momentos, pasta, config = {}, titulo, marca = null, remover = [], log = console.log }) {
+  const segs = subtrair(segmentosLongos({ words, duracao, protegidos: momentos, silencioMax: config.silencioMax ?? 20 }), remover);
   const melhor = [...momentos].sort((a, b) => b.nota - a.nota)[0];
   const previa = melhor ? { start: Math.max(melhor.start, melhor.end - 10), end: melhor.end } : null;
   const durPrevia = previa ? previa.end - previa.start : 0;
@@ -81,7 +88,9 @@ export async function renderLongo({ cena, words, duracao, momentos, pasta, confi
   log(`Vídeo longo: ${Math.round(duracao / 60)} min viram ${Math.round(total / 60)} min.`);
   const enc = config.encoder || await melhorEncoder();
   const fps = config.fps || 60;
-  const saida = ['-map', '0:v:0', '-map', '0:a:0', ...encoderArgs(enc), '-r', String(fps), '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart'];
+  // picture from the clean game file (Source Record, no webcam) when given; the sound is always the scene's mix
+  const sep = arqVideo && arqVideo !== cena;
+  const saida = ['-map', '0:v:0', '-map', sep ? '1:a:0' : '0:a:0', ...encoderArgs(enc), '-r', String(fps), '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart'];
   const video = 'scale=1920:1080:flags=lanczos,format=yuv420p,setsar=1';
   const audio = 'loudnorm=I=-14:TP=-1.5:LRA=11,aformat=sample_rates=48000:channel_layouts=stereo';
   const partes = [];
@@ -89,13 +98,13 @@ export async function renderLongo({ cena, words, duracao, momentos, pasta, confi
   const p1 = path.join(pasta, '.previa.mp4'), p2 = path.join(pasta, '.corpo.mp4');
   try {
     if (previa) {
-      await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String(previa.start), '-t', String(durPrevia), '-i', cena,
+      await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...(sep ? ['-ss', String(previa.start), '-t', String(durPrevia), '-i', arqVideo] : []), '-ss', String(previa.start), '-t', String(durPrevia), '-i', cena,
         '-vf', `fps=${fps},${video}`, '-af', audio, ...saida, p1], { timeoutMs: 30 * 60000 });
       partes.push(p1);
     }
     if (intro) partes.push(intro);
     const sel = filtrosSelecao(segs);
-    await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', cena, '-vf', `fps=${fps},${sel.vf},${video}`, '-af', `${sel.af},${audio}`, ...saida, p2], { timeoutMs: 6 * 3600000 });
+    await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...(sep ? ['-i', arqVideo] : []), '-i', cena, '-vf', `fps=${fps},${sel.vf},${video}`, '-af', `${sel.af},${audio}`, ...saida, p2], { timeoutMs: 6 * 3600000 });
     partes.push(p2);
     if (partes.length > 1) await juntar(partes, out); else fs.renameSync(p2, out);
   } finally { fs.rmSync(p1, { force: true }); fs.rmSync(p2, { force: true }); }
@@ -105,7 +114,7 @@ export async function renderLongo({ cena, words, duracao, momentos, pasta, confi
   if (melhor) {
     const ass = path.join(pasta, 'thumb.ass');
     fs.writeFileSync(ass, assThumb(melhor.gancho || 'OLHA ISSO', config.estilo));
-    await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String(melhor.end - 3), '-i', cena, '-frames:v', '1',
+    await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String(melhor.end - 3), '-i', sep ? arqVideo : cena, '-frames:v', '1',
       '-vf', `scale=1280:720,eq=saturation=1.3:contrast=1.1,ass='${fp(ass)}':fontsdir='${fp(FONTS)}'`, '-q:v', '2', thumb], { timeoutMs: 120000 }).catch(() => null);
   }
   const caps = capitulos(momentos, segs, durPrevia + durIntro);

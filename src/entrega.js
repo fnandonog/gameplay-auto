@@ -5,15 +5,35 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { listarSessoes } from './painel.js';
-import { linhasDe, linhaDoCorte, distribuirLinhas } from './canais.js';
-import { autoAprovar, textos } from './postagem.js';
+import { linhasDe, linhaDoCorte, distribuirLinhas, horariosDoDia, gerarHorarios } from './canais.js';
+import { autoAprovar, textos, proximoHorario } from './postagem.js';
 import { registrar } from './atividade.js';
 import { lerPausa } from './qualidade.js';
 
 const slug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
 
 // what goes in post.json (pure)
-export function postDoCorte(c, { sessao, linha, duracao } = {}) {
+// slots already given to delivered posts of a line (their agendarPara), so the next cut takes the next free one
+function slotsDaLinha(base, linhaId) {
+  const dir = path.join(base, slug(linhaId || 'geral'));
+  let ds = []; try { ds = fs.readdirSync(dir); } catch {}
+  return ds.map((d) => { try { return JSON.parse(fs.readFileSync(path.join(dir, d, 'post.json'), 'utf8')).agendarPara; } catch { return null; } }).filter(Boolean);
+}
+
+// posts of a line still waiting to go out (no postado.json)
+export function filaDaLinha(base, linhaId) {
+  const dir = path.join(base, linhaId);
+  let ds = []; try { ds = fs.readdirSync(dir).filter((d) => !d.startsWith('.')); } catch { return 0; }
+  return ds.filter((d) => fs.existsSync(path.join(dir, d, 'post.json')) && !fs.existsSync(path.join(dir, d, 'postado.json'))).length;
+}
+// long videos: config.longo.horarios, or with the automatic pace 1 to ritmo.longosPorDia (default 3) a day by the queue
+export function horariosDoLongo(config, naFila = 0) {
+  const r = config.ritmo || {};
+  if (!r.automatico) return config.longo?.horarios || ['19:00'];
+  return gerarHorarios(Math.min(Number(r.longosPorDia) || 3, Math.max(1, Math.ceil(naFila / 2))), { inicio: '13:00', fim: '21:00' });
+}
+
+export function postDoCorte(c, { sessao, linha, duracao, agendarPara = null } = {}) {
   const t = textos(c);
   return {
     titulo: c.titulo || '', descricao: c.descricao || '', hashtags: c.hashtags || [], gancho: c.gancho || '',
@@ -21,7 +41,20 @@ export function postDoCorte(c, { sessao, linha, duracao } = {}) {
     linha: linha ? { id: linha.id, nome: linha.nome, perfil: linha.perfil, redes: linha.redes, horarios: linha.horarios } : null,
     arroba: c.arroba || linha?.arroba || '', formato: c.formato || null, outrosFormatos: Object.keys(c.variantes || {}).filter((f) => f !== c.formato),
     nota: c.nota ?? null, duracao: duracao ?? (c.fim != null && c.inicio != null ? +(c.fim - c.inicio).toFixed(2) : null),
-    credito: c.credito || null, sessao, criadoEm: new Date().toISOString(),
+    credito: c.credito || null, aviso: c.aviso || null, sessao, criadoEm: new Date().toISOString(),
+    serie: c.serie || null, parte: c.parte ?? null,
+    // when the posting skill should publish it: the line's next free peak hour, within the safe daily limit
+    agendarPara,
+  };
+}
+
+// post.json of a long video: YouTube only, title ≤100, description with the chapters (pure)
+export function postDoLongo(v, { sessao, agendarPara = null } = {}) {
+  return {
+    tipo: v.missao ? 'missao' : 'longo', missao: v.missao || null, titulo: String(v.titulo || '').slice(0, 100), descricao: String(v.descricao || '').slice(0, 4900),
+    hashtags: v.tags || v.hashtags || [], legendas: { youtube: { titulo: String(v.titulo || '').slice(0, 100), descricao: String(v.descricao || '').slice(0, 4900) } },
+    linha: { id: 'youtube-longo', nome: 'YouTube (vídeo longo)', redes: ['youtube'] }, formato: 'horizontal',
+    duracao: v.duracao ?? null, aviso: v.aviso || null, sessao, criadoEm: new Date().toISOString(), agendarPara,
   };
 }
 
@@ -40,7 +73,7 @@ export function entregarAprovados(config, { log = console.log } = {}) {
     const file = path.join(config.pastaSaida, pasta, 'sessao.json');
     const antes = JSON.stringify(dados.cortes.map((c) => [c.linha, c.status]));
     distribuirLinhas(dados.cortes, linhas);
-    if (config.postarAutomatico) autoAprovar(dados.cortes, config, linhas);
+    if (config.postarAutomatico) autoAprovar(dados.cortes, config, linhas, pasta);
     let mudou = JSON.stringify(dados.cortes.map((c) => [c.linha, c.status])) !== antes;
     for (const c of dados.cortes.filter((x) => x.status === 'aprovado')) {
       const linha = linhaDoCorte(c, linhas);
@@ -49,18 +82,76 @@ export function entregarAprovados(config, { log = console.log } = {}) {
         fs.mkdirSync(destino, { recursive: true });
         fs.copyFileSync(path.join(config.pastaSaida, pasta, c.arquivo), path.join(destino, 'video.mp4'));
         if (c.capa && fs.existsSync(path.join(config.pastaSaida, pasta, c.capa))) fs.copyFileSync(path.join(config.pastaSaida, pasta, c.capa), path.join(destino, 'capa.jpg'));
-        const post = postDoCorte(c, { sessao: dados.sessao || pasta, linha });
+        let agendarPara = null;
+        try { agendarPara = proximoHorario(Date.now(), horariosDoDia(linha, config, filaDaLinha(base, linha.id)), slotsDaLinha(base, linha.id)); } catch {}
+        const post = postDoCorte(c, { sessao: dados.sessao || pasta, linha, agendarPara });
         fs.writeFileSync(path.join(destino, 'legenda.txt'), `${post.legendas.tiktok}\n`);
         // post.json last: the skill may take a folder as ready once it exists
         fs.writeFileSync(path.join(destino, 'post.json'), JSON.stringify(post, null, 2));
-        c.status = 'entregue'; c.entregueEm = post.criadoEm; c.pastaEntrega = destino; c.linha = linha.id; delete c.erroEntrega;
+        c.status = 'entregue'; c.entregueEm = post.criadoEm; c.agendadoPara = agendarPara; c.pastaEntrega = destino; c.linha = linha.id; delete c.erroEntrega;
         registrar(config.pastaSaida, 'agendador', 'trabalhando', `Entregue "${c.titulo}" para ${linha.nome}`);
         log(`Entregue: ${c.titulo} → ${destino}`); n++;
       } catch (e) { c.erroEntrega = e.message; log(`Não entregou "${c.titulo}": ${e.message}`); }
       mudou = true;
     }
+    // long YouTube videos (the whole session and one per mission): prontos/youtube-longo/<sessão>_<vídeo>/
+    for (const v of [dados.longo, ...(dados.missoes || [])].filter((x) => x?.status === 'aprovado')) {
+      const destino = pastaDoCorte(base, { linha: { id: 'youtube-longo' }, sessao: dados.sessao || pasta, arquivo: path.basename(v.arquivo) });
+      try {
+        fs.mkdirSync(destino, { recursive: true });
+        fs.copyFileSync(path.join(config.pastaSaida, pasta, v.arquivo), path.join(destino, 'video.mp4'));
+        if (v.thumb && fs.existsSync(path.join(config.pastaSaida, pasta, v.thumb))) fs.copyFileSync(path.join(config.pastaSaida, pasta, v.thumb), path.join(destino, 'capa.jpg'));
+        let agendarPara = null;
+        try { agendarPara = proximoHorario(Date.now(), horariosDoLongo(config, filaDaLinha(base, 'youtube-longo')), slotsDaLinha(base, 'youtube-longo')); } catch {}
+        const post = postDoLongo(v, { sessao: dados.sessao || pasta, agendarPara });
+        fs.writeFileSync(path.join(destino, 'post.json'), JSON.stringify(post, null, 2));
+        v.status = 'entregue'; v.entregueEm = post.criadoEm; v.agendadoPara = agendarPara; v.pastaEntrega = destino; delete v.erroEntrega;
+        registrar(config.pastaSaida, 'agendador', 'trabalhando', `Entregue o vídeo longo "${v.titulo}"`);
+        log(`Entregue: ${v.titulo} → ${destino}`); n++;
+      } catch (e) { v.erroEntrega = e.message; log(`Não entregou "${v.titulo}": ${e.message}`); }
+      mudou = true;
+    }
     if (mudou) fs.writeFileSync(file, JSON.stringify(dados, null, 2));
   }
   if (n) registrar(config.pastaSaida, 'agendador', 'pronto', `${n} corte(s) entregue(s) para a postagem`);
+  try { const r = reordenarSeriesNaPasta(base); if (r) log(`Agenda: ${r} parte(s) de série trocaram de horário para sair em ordem.`); } catch {}
   return n;
+}
+
+// pure: a part of a series never goes out before an earlier part. Within each series (same line), the posts not yet
+// posted keep the same set of time slots, handed out again in part order. Returns [{ id, agendarPara }] to change.
+const parteDe = (p) => Number(p.parte) || Number((/parte\s*(\d+)/i.exec(p.titulo || '') || [])[1]) || null;
+export function reordenarSeries(posts) {
+  const grupos = new Map();
+  for (const p of posts) {
+    const parte = parteDe(p);
+    if (!parte || !p.agendarPara || p.postado || p.postarJa) continue;
+    if (!p.serie) continue; // without the series name two series of the same recording would get mixed
+    const k = `${p.linha?.id || ''}|s:${String(p.serie).toLowerCase()}`;
+    if (!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push({ ...p, parte });
+  }
+  const mudar = [];
+  for (const g of grupos.values()) {
+    const slots = g.map((p) => p.agendarPara).sort();
+    g.sort((a, b) => a.parte - b.parte).forEach((p, i) => { if (p.agendarPara !== slots[i]) mudar.push({ id: p.id, agendarPara: slots[i] }); });
+  }
+  return mudar;
+}
+function reordenarSeriesNaPasta(base) {
+  const posts = [];
+  for (const l of fs.readdirSync(base).filter((d) => !d.startsWith('.'))) {
+    let ds = []; try { ds = fs.readdirSync(path.join(base, l)).filter((d) => !d.startsWith('.')); } catch { continue; }
+    for (const d of ds) {
+      const dir = path.join(base, l, d);
+      try { posts.push({ ...JSON.parse(fs.readFileSync(path.join(dir, 'post.json'), 'utf8')), id: dir, postado: fs.existsSync(path.join(dir, 'postado.json')) }); } catch {}
+    }
+  }
+  const mudar = reordenarSeries(posts);
+  for (const m of mudar) {
+    const f = path.join(m.id, 'post.json');
+    const post = JSON.parse(fs.readFileSync(f, 'utf8'));
+    fs.writeFileSync(f, JSON.stringify({ ...post, agendarPara: m.agendarPara }, null, 2));
+  }
+  return mudar.length;
 }

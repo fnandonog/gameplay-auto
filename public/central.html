@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Central FNANDO</title>
+<style>
+  :root {
+    --bg: #0c0d11; --side: #111218; --card: #16181f; --card2: #1e212a; --line: #262935; --text: #f2f3f5; --muted: #9aa0ad; --faint: #646a78;
+    --hi: #ffe600; --ok: #2ecc71; --no: #ff6b6b; --cy: #00e0ff;
+    --tiktok: #0fa3ba; --instagram: #e8457f; --facebook: #5b8ff9; --youtube: #f0564c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; }
+  a { color: var(--hi); }
+  button { font: inherit; color: inherit; }
+  .app { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+  /* sidebar */
+  aside { background: var(--side); border-right: 1px solid var(--line); padding: 18px 12px; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 4px; }
+  .logo { display: flex; align-items: center; gap: 10px; padding: 2px 10px 18px; font-weight: 800; font-size: 16px; letter-spacing: .02em; }
+  .logo small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); letter-spacing: 0; }
+  aside .sec { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); padding: 14px 10px 6px; font-weight: 700; }
+  .nav { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; color: var(--muted); text-decoration: none; background: none; border: 0; cursor: pointer; text-align: left; width: 100%; font-size: 14px; }
+  .nav:hover { background: var(--card); color: var(--text); }
+  .nav.on { background: var(--card2); color: var(--text); font-weight: 600; }
+  .nav svg { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .nav .n { margin-left: auto; font-size: 11px; font-weight: 800; background: var(--hi); color: var(--bg); border-radius: 999px; padding: 1px 7px; }
+  .nav .n:empty { display: none; }
+  .rodape { margin-top: auto; font-size: 12px; color: var(--faint); padding: 10px; }
+  /* content */
+  main { padding: 24px 28px 70px; max-width: 1240px; width: 100%; min-width: 0; }
+  .cab { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .cab h1 { margin: 0; font-size: 22px; }
+  .cab .sub { color: var(--muted); font-size: 13px; }
+  .cab .acoes { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  h2 { font-size: 15px; margin: 0; }
+  .caixa { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .caixa > .topo { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .caixa > .topo .dir { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .bloco { margin-top: 18px; }
+  .muted { color: var(--muted); } .faint { color: var(--faint); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; background: var(--hi); color: #111; font-weight: 700; text-decoration: none; padding: 8px 14px; border-radius: 9px; border: 0; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .btn.sec { background: var(--card2); color: var(--text); border: 1px solid var(--line); font-weight: 600; }
+  .btn:disabled { opacity: .6; cursor: default; }
+  .seg { display: inline-flex; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 2px; }
+  .seg button { background: none; border: 0; padding: 5px 11px; border-radius: 7px; font-size: 12px; color: var(--muted); cursor: pointer; font-weight: 600; }
+  .seg button.on { background: var(--card2); color: var(--text); }
+  .pill { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--card2); color: var(--muted); white-space: nowrap; display: inline-flex; gap: 5px; align-items: center; text-decoration: none; }
+  .pill.ok { color: var(--ok); } .pill.hi { color: var(--hi); } .pill.no { color: var(--no); } .pill.cy { color: var(--cy); }
+  .sw { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex: none; }
+  /* alerts */
+  .alertas { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--hi); border-radius: 14px; margin-bottom: 18px; overflow: hidden; }
+  .ah { display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--hi); }
+  .ah .luz { width: 8px; height: 8px; border-radius: 50%; background: var(--hi); }
+  .alerta { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+  .alerta .txt { flex: 1; min-width: 0; } .alerta b { display: block; font-size: 14px; } .alerta span { color: var(--muted); font-size: 13px; }
+  /* KPI */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .kpi .rot { color: var(--muted); font-size: 12px; font-weight: 600; }
+  .kpi .val { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.01em; margin: 2px 0; }
+  .kpi .d { font-size: 12px; color: var(--muted); }
+  .kpi .d b { color: var(--ok); font-weight: 700; }
+  /* chart */
+  .grafico { position: relative; }
+  .grafico svg { display: block; width: 100%; overflow: visible; }
+  .grafico text { fill: var(--faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .grafico .lbl { fill: var(--text); font-size: 11px; font-weight: 600; }
+  .dica { position: absolute; pointer-events: none; background: #0b0c10; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; min-width: 150px; box-shadow: 0 8px 24px rgba(0,0,0,.4); z-index: 2; }
+  .dica .l { display: flex; align-items: center; gap: 6px; } .dica .l b { margin-left: auto; padding-left: 14px; font-variant-numeric: tabular-nums; }
+  .legenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  .legenda span { display: inline-flex; gap: 6px; align-items: center; }
+  .semdados { color: var(--muted); text-align: center; padding: 44px 16px; border: 1px dashed var(--line); border-radius: 12px; }
+  /* networks */
+  .redesgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .rd { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 8px; position: relative; overflow: hidden; }
+  .rd::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--c); }
+  .rd .linha { display: flex; align-items: center; gap: 8px; }
+  .rd .ico { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; font-weight: 800; font-size: 11px; color: #fff; background: var(--c); flex: none; }
+  .rd .nome { font-weight: 700; } .rd .arr { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rd .big { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .rd .mini { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 12px; color: var(--muted); }
+  .rd .mini b { display: block; color: var(--text); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .rd .mais { color: var(--ok); font-weight: 700; }
+  /* post cards */
+  .diafila + .diafila { margin-top: 18px; }
+  .dfh { display: flex; gap: 10px; align-items: baseline; margin-bottom: 10px; } .dfh b { font-size: 15px; text-transform: capitalize; }
+  .fila { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; align-items: flex-start; }
+  .pc { flex: none; width: 200px; background: var(--card2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; cursor: pointer; text-align: left; padding: 0; display: flex; flex-direction: column; }
+  .pc.h { width: 632px; }
+  .pc:hover { border-color: #3a3e4c; }
+  .pc .cv { position: relative; height: 356px; background: #000 center/cover; }
+  .pc .cv .hora { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.75); border-radius: 8px; padding: 3px 9px; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .pc .cv .tipo { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,.75); border-radius: 7px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+  .pc .cv .avs { position: absolute; top: 10px; right: 10px; background: var(--no); color: #fff; border-radius: 7px; padding: 2px 8px; font-size: 11px; font-weight: 800; }
+  .pc .cv .play { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; transition: opacity .15s; background: rgba(0,0,0,.25); }
+  .pc:hover .play { opacity: 1; }
+  .redinhas { display: flex; gap: 4px; }
+  .rx { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; font-size: 9px; font-weight: 800; color: #fff; background: var(--c); border: 1px solid rgba(0,0,0,.4); }
+  .rx.off { opacity: .35; }
+  .pc .hr { padding: 10px 12px 0; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; } .pc .hr .ok { font-size: 12px; color: var(--ok); }
+  .pc .tt { padding: 2px 12px 4px; font-size: 14px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .pc .dd { padding: 4px 12px 12px; font-size: 12px; color: var(--muted); margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
+  /* calendar */
+  .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+  .cd { background: var(--card); border: 1px solid var(--line); border-radius: 12px; min-height: 260px; padding: 8px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .cd.hoje { border-color: var(--hi); }
+  .cd.passado { opacity: .7; }
+  .cd .dh { display: flex; align-items: baseline; gap: 6px; padding: 2px 4px 6px; border-bottom: 1px solid var(--line); }
+  .cd .dh b { font-size: 20px; font-variant-numeric: tabular-nums; } .cd .dh span { color: var(--muted); font-size: 12px; text-transform: capitalize; }
+  .cd .dh i { margin-left: auto; font-style: normal; font-size: 11px; color: var(--faint); }
+  .ev { display: flex; gap: 7px; background: var(--card2); border: 1px solid var(--line); border-radius: 9px; padding: 5px; cursor: pointer; text-align: left; width: 100%; }
+  .ev:hover { border-color: #3a3e4c; }
+  .ev .th { width: 30px; height: 53px; border-radius: 5px; background: #000 center/cover; flex: none; }
+  .ev .ti { min-width: 0; font-size: 12px; line-height: 1.3; }
+  .ev .ti b { display: block; font-variant-numeric: tabular-nums; }
+  .ev .ti span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #cfd2d8; }
+  .ev.feito { border-left: 3px solid var(--ok); }
+  .ev .ok { color: var(--ok); }
+  .cd .vz { color: var(--faint); font-size: 12px; text-align: center; margin: auto 0; }
+  /* table */
+  .tab { width: 100%; border-collapse: collapse; }
+  .tab th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); font-weight: 700; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .tab th.n, .tab td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .tab td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .tab tr:last-child td { border-bottom: 0; }
+  .tab tr.click { cursor: pointer; } .tab tr.click:hover td { background: var(--card2); }
+  .tab .vid { display: flex; gap: 10px; align-items: center; min-width: 220px; }
+  .tab .vid .th { width: 36px; height: 64px; border-radius: 6px; background: #000 center/cover; flex: none; }
+  .tab .vid b { display: block; font-size: 13px; }
+  .tab .chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  /* modal */
+  dialog { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 16px; padding: 0; max-width: 820px; width: calc(100% - 32px); }
+  dialog::backdrop { background: rgba(0,0,0,.7); }
+  .md { display: grid; grid-template-columns: 300px 1fr; }
+  .md video { width: 100%; aspect-ratio: 9/16; background: #000; display: block; border-radius: 16px 0 0 16px; }
+  .md.h { grid-template-columns: 1fr; } .md.h video { aspect-ratio: 16/9; border-radius: 16px 16px 0 0; }
+  dialog:has(.md.h) { max-width: 960px; }
+  .md .info { padding: 18px; display: grid; gap: 12px; align-content: start; }
+  .md h3 { margin: 0; font-size: 17px; padding-right: 30px; }
+  .md .fechar { position: absolute; top: 10px; right: 10px; background: var(--card2); border: 1px solid var(--line); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; }
+  .md .rot { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); font-weight: 700; margin-bottom: 4px; }
+  .md .txt { white-space: pre-wrap; font-size: 13px; color: #d9dbe0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; max-height: 140px; overflow: auto; }
+  .md .lr { display: grid; gap: 6px; }
+  .md .lr div { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .md .lr .v { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .aviso { background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.35); color: #ffb3b3; border-radius: 10px; padding: 8px 10px; font-size: 13px; }
+  /* radar */
+  .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filtros .seg { flex-wrap: wrap; }
+  .feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .idc { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  .idc.ign { opacity: .55; }
+  .idc-capa { position: relative; border: 0; padding: 0; background: none; cursor: pointer; display: block; width: 100%; }
+  .capa { aspect-ratio: 16/9; background: #000 center/cover; position: relative; }
+  .capa.g { aspect-ratio: 16/8; border-radius: 16px 16px 0 0; }
+  .capa.vazia { background: radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--c) 40%, transparent), transparent 60%), repeating-linear-gradient(45deg, #1a1c24 0 10px, #16181f 10px 20px); display: grid; place-content: center; text-align: center; gap: 2px; }
+  .capa.vazia span { font-weight: 800; font-size: 18px; } .capa.vazia small { color: var(--muted); font-size: 12px; }
+  .nfotos { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,.7); border-radius: 6px; padding: 1px 7px; font-size: 11px; font-weight: 700; }
+  .selos { position: absolute; left: 8px; top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .selo { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,.72); color: var(--cy); }
+  .selo.fogo { background: var(--hi); color: #111; } .selo.cinza { color: var(--muted); }
+  .stp { position: absolute; right: 8px; top: 8px; background: rgba(0,0,0,.72); }
+  .idc-c { padding: 12px 14px 14px; display: grid; gap: 7px; flex: 1; align-content: start; }
+  .tp { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; font-weight: 600; }
+  .idc h3 { margin: 0; font-size: 16px; line-height: 1.3; cursor: pointer; }
+  .idc p { margin: 0; font-size: 13px; color: #cfd2d8; }
+  .idc .oq { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .idc .pq b, .idc .onde b { color: var(--text); }
+  .idc .onde { color: var(--muted); }
+  .tsug { display: flex; gap: 8px; align-items: center; background: rgba(255,230,0,.07); border: 1px dashed rgba(255,230,0,.35); border-radius: 9px; padding: 7px 9px; font-size: 13px; font-weight: 700; }
+  .tsug span { flex: 1; }
+  .copiar { background: none; border: 0; color: var(--hi); font-size: 12px; font-weight: 700; cursor: pointer; }
+  .acoes-i { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .mk { background: var(--card2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); }
+  .mk.on { background: var(--hi); color: #111; border-color: var(--hi); } .mk.mais { margin-left: auto; color: var(--text); }
+  .mi .info { padding: 18px; display: grid; gap: 14px; } .mi h3 { margin: 0; font-size: 19px; padding-right: 30px; }
+  .mi p { margin: 0; font-size: 14px; color: #d4d7dd; white-space: pre-wrap; }
+  .mi .rot { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); font-weight: 700; margin-bottom: 5px; }
+  .mi .chips { display: flex; gap: 5px; flex-wrap: wrap; } .mi .fonte { font-size: 13px; padding: 3px 0; }
+  .mi .fechar { position: absolute; top: 10px; right: 10px; z-index: 2; background: rgba(0,0,0,.6); border: 1px solid var(--line); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; }
+  .galeria { display: grid; grid-auto-flow: column; grid-auto-columns: 80%; gap: 6px; overflow-x: auto; border-radius: 16px 16px 0 0; }
+  .galeria a { aspect-ratio: 16/9; background: #000 center/cover; display: block; }
+  .addfoto { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  select.campo { appearance: auto; }
+  .ritmo .tg { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; cursor: pointer; } .ritmo .tg input { accent-color: var(--hi); }
+  .ritmo label.muted { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+  /* older tabs */
+  .lista { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .item { background: var(--card); padding: 12px 14px; display: flex; gap: 12px; align-items: center; }
+  .item .txt { flex: 1; min-width: 0; } .item .t { font-weight: 600; overflow-wrap: anywhere; } .item .s { color: var(--muted); font-size: 13px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--muted); }
+  .dot.ok { background: var(--ok); } .dot.no { background: var(--no); } .dot.hi { background: var(--hi); }
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+  .corte { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  .corte video { width: 100%; aspect-ratio: 9/16; object-fit: contain; background: #000; display: block; }
+  .corte.longo video { aspect-ratio: 16/9; }
+  .corte .c { padding: 10px 12px 12px; display: grid; gap: 6px; } .corte .t { font-weight: 600; font-size: 14px; }
+  .corte .s { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+  .corte .por { font-size: 12px; color: var(--hi); }
+  .rede { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+  .rede .cb { display: flex; gap: 12px; align-items: center; } .rede .cb .txt { flex: 1; min-width: 0; }
+  .rede .estado { font-size: 13px; }
+  .rede details summary { cursor: pointer; color: var(--muted); font-size: 13px; list-style: none; }
+  .rede details summary::-webkit-details-marker { display: none; }
+  .rede details[open] summary { margin-bottom: 8px; }
+  .redes { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .campo { background: var(--card2); border: 1px solid var(--line); color: var(--text); border-radius: 9px; padding: 8px 10px; font: inherit; font-size: 14px; min-width: 0; width: 100%; }
+  .linha2 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .passo { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; padding: 3px 0; }
+  .passo input { margin-top: 4px; accent-color: var(--hi); } .passo.feito span { color: var(--muted); text-decoration: line-through; }
+  .anon { font-size: 11px; color: var(--cy); font-weight: 700; margin-left: 4px; }
+  .vazio { color: var(--muted); text-align: center; padding: 30px 16px; background: var(--card); border: 1px dashed var(--line); border-radius: 14px; }
+  .envio { border: 2px dashed var(--line); border-radius: 14px; padding: 22px 16px; text-align: center; color: var(--muted); }
+  .envio.sobre { border-color: var(--hi); color: var(--text); } .envio label { color: var(--hi); font-weight: 600; cursor: pointer; }
+  .barra { height: 6px; background: var(--card2); border-radius: 3px; overflow: hidden; margin-top: 10px; } .barra i { display: block; height: 100%; width: 0; background: var(--hi); transition: width .2s; }
+  details.ideia { background: var(--card); }
+  details.ideia summary { padding: 12px 14px; cursor: pointer; display: flex; gap: 10px; align-items: center; list-style: none; }
+  details.ideia summary::-webkit-details-marker { display: none; } details.ideia summary .t { flex: 1; font-weight: 600; }
+  details.ideia .corpo { padding: 0 14px 14px; color: #d9dbe0; font-size: 14px; white-space: pre-wrap; }
+  h3.sub { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 24px 0 10px; }
+  code { background: var(--card2); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  @media (max-width: 1100px) { .redesgrid { grid-template-columns: repeat(2, 1fr); } .cal { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    aside { position: sticky; top: 0; height: auto; z-index: 5; flex-direction: row; overflow-x: auto; padding: 8px 10px; border-right: 0; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+    aside .sec, .rodape { display: none; } .logo { padding: 0 8px 0 2px; } .logo small { display: none; } .logo span { display: none; }
+    .nav { width: auto; flex: none; padding: 7px 10px; } .nav svg { display: none; }
+    main { padding: 18px 16px 60px; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .cal { grid-template-columns: 1fr; } .cd { min-height: 0; } .cd.vazia { display: none; }
+    .md { grid-template-columns: 1fr; } .md video { border-radius: 16px 16px 0 0; max-height: 60vh; }
+    .tab .esconde { display: none; }
+    .pc { width: 170px; } .pc .cv { height: 302px; } .pc.h { width: calc(100vw - 64px); } .pc.h .cv { height: calc((100vw - 64px) * 9 / 16); }
+    .md.h video { max-height: none; }
+  }
+  @media (max-width: 520px) { .redesgrid { grid-template-columns: 1fr; } .redes { grid-template-columns: 1fr; } .kpi .val { font-size: 23px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside id="menu">
+    <div class="logo"><img src="/marca/fnando-simbolo.svg" alt="" width="28" height="28"><span>FNANDO<small>Central de conteúdo</small></span></div>
+    <button class="nav" data-a="visao"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 9h8V3h-8z"/></svg>Visão geral<span class="n" data-n="visao"></span></button>
+    <button class="nav" data-a="agenda"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Agenda<span class="n" data-n="agenda"></span></button>
+    <button class="nav" data-a="publicados"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>Publicados</button>
+    <div class="sec">Produção</div>
+    <button class="nav" data-a="cortes"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg>Cortes<span class="n" data-n="cortes"></span></button>
+    <a class="nav" href="/cortes"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Revisar e aprovar</a>
+    <button class="nav" data-a="gravacoes"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/></svg>Gravações</button>
+    <button class="nav" data-a="ideias"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Radar</button>
+    <div class="sec">Ajustes</div>
+    <button class="nav" data-a="redes"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>Contas e conexões<span class="n" data-n="redes"></span></button>
+    <a class="nav" href="/escritorio"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>Escritório</a>
+    <div class="rodape" id="rodape"></div>
+  </aside>
+  <main id="tela"><p class="vazio">Carregando...</p></main>
+</div>
+<dialog id="modal"></dialog>
+<script>
+let D = null, P = null, C = null, A = null, RT = null;
+const ANTIGAS = { hoje: 'visao', inicio: 'visao', checklist: 'visao', longos: 'cortes', prontos: 'agenda', contas: 'redes', radar: 'ideias', roteiros: 'ideias', brutos: 'gravacoes' };
+let aba = (location.hash || '#visao').slice(1); aba = ANTIGAS[aba] || aba;
+const est = { medida: 'seguidores', dias: 30, semana: 0, ordem: 'data', radarFiltro: 'todas', radarTipo: '' };
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const midia = (p, a) => `/midia/${encodeURIComponent(p)}/${String(a).split('/').map(encodeURIComponent).join('/')}`;
+const pronto = (p, f) => `/pronto/${encodeURIComponent(p.linha)}/${encodeURIComponent(p.pasta)}/${f}`;
+const num = (n) => Number(n || 0).toLocaleString('pt-BR');
+const curto = (n) => { n = Number(n || 0); return n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' mi' : n >= 1e4 ? Math.round(n / 1e3) + ' mil' : n >= 1e3 ? (n / 1e3).toFixed(1).replace('.', ',') + ' mil' : String(Math.round(n)); };
+const mb = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + ' GB' : Math.round(b / 1e6) + ' MB';
+const hora = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+const quando = (iso) => iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+const diaDe = (iso) => { const d = new Date(iso), h = new Date(); const am = new Date(h.getTime() + 864e5), on = new Date(h.getTime() - 864e5);
+  if (d.toDateString() === h.toDateString()) return 'Hoje'; if (d.toDateString() === am.toDateString()) return 'Amanhã'; if (d.toDateString() === on.toDateString()) return 'Ontem';
+  return d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }); };
+const ha = (iso) => { const m = Math.round((Date.now() - Date.parse(iso)) / 6e4); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.round(m / 60)} h` : `há ${Math.round(m / 1440)} dias`; };
+const dur = (s) => s ? (s >= 60 ? `${Math.floor(s / 60)} min ${String(Math.round(s % 60)).padStart(2, '0')} s` : `${Math.round(s)} s`) : '';
+const REDES = ['tiktok', 'instagram', 'facebook', 'youtube'];
+const NOME = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', facebook: 'Facebook', twitch: 'Twitch' };
+const SIG = { youtube: 'YT', tiktok: 'TT', instagram: 'IG', facebook: 'FB', twitch: 'TW' };
+const cor = (r) => `var(--${REDES.includes(r) ? r : 'muted'})`;
+const ROTULO = { aguardando: ['esperando você', 'hi'], aprovado: ['aprovado', 'ok'], agendado: ['agendado', 'cy'], entregue: ['na agenda', 'cy'], postado: ['postado', 'ok'], descartado: ['descartado', 'no'], 'esperando a postagem': ['na agenda', 'cy'] };
+const pill = (s) => { const [t, c] = ROTULO[s] || [s, '']; return `<span class="pill ${c}">${esc(t)}</span>`; };
+const rx = (r, off) => `<span class="rx${off ? ' off' : ''}" style="--c:${cor(r)}" title="${esc(NOME[r] || r)}">${SIG[r] || '?'}</span>`;
+const idYt = (l) => (/(?:youtu\.be\/|[?&]v=|\/shorts\/)([\w-]{11})/.exec(String(l || '')) || [])[1];
+
+async function carregar() {
+  const pega = (u) => fetch(u).then((r) => r.json()).catch(() => null);
+  [D, P, C, A, RT] = await Promise.all([pega('/api/central'), pega('/api/prontidao'), pega('/api/contas'), pega('/api/apis'), pega('/api/ritmo')]);
+  desenhar();
+}
+
+// numbers of one post on each network (YouTube by video id, Instagram by permalink)
+function numerosDoPost(p) {
+  const M = D?.redes?.posts || {}, out = {};
+  for (const [r, l] of Object.entries(p.links || {})) {
+    const m = r === 'youtube' ? M[idYt(l)] : M[l];
+    out[r] = { link: /^https:\/\//.test(l) ? l : '', ...(m || {}) };
+  }
+  return out;
+}
+const viewsDoPost = (p) => Object.values(numerosDoPost(p)).reduce((n, m) => n + (m.views || 0), 0);
+const curtidasDoPost = (p) => Object.values(numerosDoPost(p)).reduce((n, m) => n + (m.curtidas || 0), 0);
+const comentDoPost = (p) => Object.values(numerosDoPost(p)).reduce((n, m) => n + (m.comentarios || 0), 0);
+
+// status of each network: API / extension + the account checklist
+function redes() {
+  const conta = (rede) => (C?.contas || []).find((c) => c.rede === rede && !c.soPara) || (C?.contas || []).find((c) => c.rede === rede);
+  const met = (rede) => (D?.redes?.contas || []).find((c) => c.rede === rede && c.conectada);
+  return REDES.map((rede) => {
+    const c = conta(rede), m = met(rede);
+    let estado, cr, acao;
+    if (rede === 'tiktok') {
+      const u = A?.tiktok?.ultimoContato, min = u ? (Date.now() - Date.parse(u)) / 6e4 : Infinity;
+      if (min < 15) { estado = `Extensão do Chrome ligada (falou com a central ${ha(u)})`; cr = 'ok'; }
+      else { estado = u ? `A extensão não fala com a central ${ha(u)}: abra o Chrome fnando.gameplay` : 'A extensão ainda não falou com a central: abra o Chrome fnando.gameplay'; cr = 'hi'; }
+    }
+    else {
+      const st = A?.[rede] || { status: 'falta credencial' };
+      if (st.status === 'conectada') { estado = rede === 'youtube' && st.privado ? 'Conectado, mas sobe privado (falta a auditoria do Google)' : 'Conectado: posta sozinho'; cr = rede === 'youtube' && st.privado ? 'hi' : 'ok'; }
+      else if (st.status === 'erro') { estado = `Parou: ${st.motivo}`; cr = 'no'; acao = 'Conectar de novo'; }
+      else if (st.status === 'falta conectar') { estado = 'Falta conectar'; cr = 'no'; acao = 'Conectar'; }
+      else { estado = 'Falta colar a chave do app'; cr = 'no'; }
+    }
+    return { rede, c, m, estado, cor: cr, acao, conta: (rede !== 'tiktok' && A?.[rede]?.conta) || c?.arroba || m?.arroba || '' };
+  });
+}
+
+function alertas() {
+  const out = [];
+  const esperando = D.sessoes.flatMap((s) => s.cortes).filter((c) => c.status === 'aguardando').length;
+  if (esperando) out.push([`${esperando} corte(s) esperando você`, 'Os que o filtro não aprovou sozinho estão lá com o motivo. Nada é descartado sem você.', '<a class="btn" href="/cortes">Revisar</a>']);
+  for (const r of redes().filter((x) => x.cor !== 'ok')) out.push([`${NOME[r.rede]}: ${r.estado}`, '', '<button class="btn sec" data-ir="redes">Resolver</button>']);
+  if (A?.postador?.pausa) out.push(['A postagem está pausada', A.postador.pausa.motivo || '', '<a class="btn sec" href="/escritorio">Ver</a>']);
+  for (const i of (P?.itens || []).filter((i) => !i.ok && !/^conta-/.test(i.id) && i.id !== 'postagem')) out.push([i.titulo, i.comoFazer, i.id === 'ia' ? '<button class="btn" data-ir="redes">Como ligar</button>' : '']);
+  for (const [r, e] of Object.entries(D.redes?.erros || {})) out.push([`Não li os números do ${NOME[r] || r}`, e, '']);
+  return out;
+}
+
+// ---------- chart: one line per network, crosshair + tooltip ----------
+function grafico(el) {
+  const H = (D.redes?.historico || []).slice(-est.dias);
+  const box = $('.grafico', el);
+  if (H.length < 2) { box.innerHTML = '<div class="semdados">O gráfico aparece depois de dois dias de números. A central lê as redes a cada 3 horas.</div>'; return; }
+  const series = REDES.filter((r) => H.some((h) => h.porRede?.[r]));
+  const W = box.clientWidth || 800, AH = W < 500 ? 220 : 260, pl = 8, pr = W < 500 ? 40 : 92, pt = 12, pb = 26;
+  const val = (h, r) => h.porRede?.[r]?.[est.medida] || 0;
+  const max = Math.max(1, ...H.flatMap((h) => series.map((r) => val(h, r))));
+  const passo = Math.pow(10, Math.floor(Math.log10(max))), topo = Math.ceil(max / passo) * passo;
+  const x = (i) => pl + (i / (H.length - 1)) * (W - pl - pr), y = (v) => pt + (1 - v / topo) * (AH - pt - pb);
+  const grid = [0, .25, .5, .75, 1].map((f) => `<line x1="${pl}" x2="${W - pr}" y1="${y(topo * f)}" y2="${y(topo * f)}" stroke="var(--line)" stroke-width="1"${f ? ' stroke-dasharray="2 4"' : ''}/><text x="${W - pr + 8}" y="${y(topo * f) + 4}">${curto(topo * f)}</text>`).join('');
+  const nx = Math.min(W < 500 ? 3 : 6, H.length), xs = [...new Set(Array.from({ length: nx }, (_, k) => Math.round(k * (H.length - 1) / (nx - 1))))];
+  const eixo = xs.map((i) => `<text x="${x(i)}" y="${AH - 6}" text-anchor="${i === 0 ? 'start' : i === H.length - 1 ? 'end' : 'middle'}">${H[i].dia.slice(8, 10)}/${H[i].dia.slice(5, 7)}</text>`).join('');
+  // end labels, nudged apart so they never overlap
+  const fins = series.map((r) => ({ r, y: y(val(H.at(-1), r)) })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < fins.length; i++) if (fins[i].y - fins[i - 1].y < 14) fins[i].y = fins[i - 1].y + 14;
+  const linhas = series.map((r) => `<path d="${H.map((h, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(val(h, r)).toFixed(1)}`).join('')}" fill="none" stroke="${cor(r)}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(H.length - 1)}" cy="${y(val(H.at(-1), r))}" r="4" fill="${cor(r)}" stroke="var(--card)" stroke-width="2"/>`).join('');
+  const rot = fins.map((f) => `<text class="lbl" x="${W - pr + 8}" y="${f.y + 4}" style="display:none">${NOME[f.r]}</text>`).join('');
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${AH}" height="${AH}" role="img" aria-label="${est.medida} por rede">${grid}${eixo}${linhas}${rot}
+    <line class="mira" y1="${pt}" y2="${AH - pb}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/>${series.map((r) => `<circle class="pm" data-r="${r}" r="5" fill="${cor(r)}" stroke="var(--card)" stroke-width="2" visibility="hidden"/>`).join('')}
+    <rect x="${pl}" y="0" width="${W - pl - pr}" height="${AH}" fill="transparent" class="alvo"/></svg><div class="dica" hidden></div>`;
+  const svg = $('svg', box), dica = $('.dica', box), mira = $('.mira', box);
+  $('.alvo', box).onmousemove = (e) => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * (W / r.width);
+    const i = Math.max(0, Math.min(H.length - 1, Math.round(((px - pl) / (W - pl - pr)) * (H.length - 1))));
+    mira.setAttribute('x1', x(i)); mira.setAttribute('x2', x(i)); mira.setAttribute('visibility', 'visible');
+    box.querySelectorAll('.pm').forEach((c) => { c.setAttribute('cx', x(i)); c.setAttribute('cy', y(val(H[i], c.dataset.r))); c.setAttribute('visibility', 'visible'); });
+    const ord = [...series].sort((a, b) => val(H[i], b) - val(H[i], a));
+    dica.innerHTML = `<div style="color:var(--muted);margin-bottom:4px">${new Date(H[i].dia + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}</div>${ord.map((s) => `<div class="l"><span class="sw" style="background:${cor(s)}"></span>${NOME[s]}<b>${num(val(H[i], s))}</b></div>`).join('')}`;
+    dica.hidden = false;
+    const left = x(i) / W * r.width;
+    dica.style.left = `${left > r.width / 2 ? left - dica.offsetWidth - 12 : left + 12}px`; dica.style.top = '10px';
+  };
+  $('.alvo', box).onmouseleave = () => { dica.hidden = true; mira.setAttribute('visibility', 'hidden'); box.querySelectorAll('.pm').forEach((c) => c.setAttribute('visibility', 'hidden')); };
+}
+
+function sparkline(r) {
+  const H = (D.redes?.historico || []).slice(-14).map((h) => h.porRede?.[r]?.seguidores ?? null).filter((v) => v !== null);
+  if (H.length < 2) return '<div class="faint" style="font-size:12px;height:34px;display:flex;align-items:center">Sem histórico ainda</div>';
+  const mn = Math.min(...H), mx = Math.max(...H), W = 200, h = 34;
+  const pts = H.map((v, i) => `${(i / (H.length - 1)) * W},${h - 3 - ((v - mn) / Math.max(1, mx - mn)) * (h - 6)}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${h}" preserveAspectRatio="none" style="width:100%;height:${h}px;display:block" aria-label="seguidores em 14 dias"><polyline points="${pts}" fill="none" stroke="${cor(r)}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
+}
+
+const deitado = (p) => p.formato === 'horizontal' || p.tipo === 'missao' || p.tipo === 'longo';
+function cardPost(p) {
+  const feito = !!p.postadoEm, t = p.postadoEm || p.agendarPara;
+  return `<button class="pc${deitado(p) ? ' h' : ''}" data-post="${esc(p.linha + '/' + p.pasta)}">
+    <div class="cv" style="${p.temCapa ? `background-image:url('${pronto(p, 'capa.jpg')}')` : ''}">
+      ${deitado(p) ? `<span class="tipo">${p.tipo === 'missao' ? 'Missão completa' : 'Vídeo longo'}${p.duracao ? ' · ' + dur(p.duracao) : ''}</span>` : p.duracao ? `<span class="tipo">${dur(p.duracao)}</span>` : ''}
+      <span class="play"><svg width="52" height="52" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,.6)"/><path d="M10 8l6 4-6 4z" fill="#fff"/></svg></span>
+      ${p.aviso ? '<span class="avs">não sai sozinho</span>' : ''}
+    </div>
+    <div class="hr">${t ? (feito ? `${diaDe(t)} ${hora(t)}` : hora(t)) : 'sem horário'}${feito ? ' <span class="ok">✓ publicado</span>' : ''}</div>
+    <div class="tt">${esc(p.titulo)}</div>
+    <div class="dd"><span class="redinhas">${(p.redes || []).map((r) => rx(r, feito && !p.emRede?.[r])).join('')}</span>${feito ? `<span>${curto(viewsDoPost(p))} views</span>` : ''}</div>
+  </button>`;
+}
+function proximosPorDia(prox) {
+  const g = new Map();
+  for (const p of prox) { const k = p.agendarPara ? diaDe(p.agendarPara) : 'Sem horário'; if (!g.has(k)) g.set(k, []); g.get(k).push(p); }
+  return [...g.entries()].slice(0, 4).map(([d, l]) => `<div class="diafila"><div class="dfh"><b>${esc(d)}</b><span class="muted">${l.length} post(s)</span></div><div class="fila">${l.map(cardPost).join('')}</div></div>`).join('');
+}
+
+const TIPO = { easter_egg: ['Easter eggs', '#a855f7', 'Easter egg'], arma: ['Armas', '#f0564c', 'Arma'], carro: ['Carros', '#5b8ff9', 'Carro'], dica: ['Dicas', '#2ecc71', 'Dica'], dinheiro: ['Dinheiro', '#e3b341', 'Dinheiro'], momento_engracado: ['Engraçados', '#e8457f', 'Momento engraçado'] };
+const ST_IDEIA = { nova: ['nova', 'hi'], 'quero gravar': ['quero gravar', 'cy'], 'tem corte': ['já tem corte', 'ok'], gravado: ['gravado', 'ok'], postado: ['postado', 'ok'], ignorado: ['ignorada', ''] };
+function capaIdeia(i, grande) {
+  const cor = TIPO[i.tipo]?.[1] || '#646a78';
+  return i.fotos?.length ? `<div class="capa${grande ? ' g' : ''}" style="background-image:url('${esc(i.fotos[0])}')">${i.fotos.length > 1 ? `<span class="nfotos">${i.fotos.length} fotos</span>` : ''}</div>`
+    : `<div class="capa vazia${grande ? ' g' : ''}" style="--c:${cor}"><span>${esc(i.local?.regiao || 'Leonida')}</span><small>Sem foto do local ainda</small></div>`;
+}
+function cardIdeia(i) {
+  const [st, sc] = ST_IDEIA[i.status] || [i.status, ''];
+  const tit = i.tituloSugerido || i.titulo_short || '';
+  return `<article class="idc${i.status === 'ignorado' ? ' ign' : ''}">
+    <button class="idc-capa" data-ideia="${esc(i.id)}">${capaIdeia(i)}
+      <span class="selos">${i.prioridade <= 1 ? '<span class="selo fogo">Bombando</span>' : ''}${!i.coberto_no_br ? '<span class="selo">Ninguém fez no BR</span>' : ''}${i.confirmado === false ? '<span class="selo cinza">não confirmado</span>' : ''}</span>
+</button>
+    <div class="idc-c">
+      <div class="tp"><span class="sw" style="background:${TIPO[i.tipo]?.[1] || 'var(--faint)'}"></span>${esc(TIPO[i.tipo]?.[2] || i.tipo || '')}${i.local?.regiao ? ` · ${esc(i.local.regiao)}` : ''}<span class="pill ${sc}" style="margin-left:auto">${esc(st)}</span></div>
+      <h3 data-ideia="${esc(i.id)}">${esc(i.titulo)}</h3>
+      <p class="oq">${esc(i.o_que_e || i.resumo || '')}</p>
+      ${i.por_que_viraliza ? `<p class="pq"><b>Por que viraliza:</b> ${esc(i.por_que_viraliza)}</p>` : ''}
+      <p class="onde"><b>Onde:</b> ${esc(i.local?.referencia || i.como_achar || 'local ainda não publicado')}</p>
+      ${tit ? `<div class="tsug"><span>${esc(tit)}</span><button class="copiar" data-copiar="${esc(tit)}" title="Copiar título">Copiar</button></div>` : ''}
+      <div class="acoes-i">
+        <button class="mk${i.marcado === 'salvo' ? ' on' : ''}" data-marcar="${esc(i.id)}" data-estado="salvo">Quero gravar</button>
+        <button class="mk${i.marcado === 'gravado' ? ' on' : ''}" data-marcar="${esc(i.id)}" data-estado="gravado">Já gravei</button>
+        <button class="mk${i.marcado === 'ignorado' ? ' on' : ''}" data-marcar="${esc(i.id)}" data-estado="ignorado">Ignorar</button>
+        <button class="mk mais" data-ideia="${esc(i.id)}">Detalhes</button>
+      </div>
+    </div></article>`;
+}
+function abrirIdeia(id) {
+  const i = (D.radar?.itens || []).find((x) => x.id === id);
+  if (!i) return;
+  const fontes = (i.fontes?.length ? i.fontes : i.fonte ? [{ url: i.fonte }] : []).filter((f) => /^https:\/\//.test(f.url || ''));
+  const grav = D.brutos.filter((b) => b.onde === 'gravacoes' || b.status === 'processado');
+  const m = $('#modal');
+  m.innerHTML = `<div class="mi" style="position:relative"><button class="fechar" data-fechar aria-label="Fechar">✕</button>
+    ${i.fotos?.length ? `<div class="galeria" style="grid-auto-columns:${i.fotos.length > 1 ? '80%' : '100%'}">${i.fotos.map((f) => `<a href="${esc(f)}" target="_blank" rel="noopener" style="background-image:url('${esc(f)}')"></a>`).join('')}</div>` : capaIdeia(i, true)}
+    <div class="info">
+      <div class="tp"><span class="sw" style="background:${TIPO[i.tipo]?.[1] || 'var(--faint)'}"></span>${esc(TIPO[i.tipo]?.[2] || i.tipo || '')}${i.local?.regiao ? ` · ${esc(i.local.regiao)}` : ''} · ${esc((ST_IDEIA[i.status] || [i.status])[0])}</div>
+      <h3>${esc(i.titulo)}</h3>
+      <div><div class="rot">O que é</div><p>${esc(i.o_que_e || i.resumo || '')}</p></div>
+      ${i.por_que_viraliza ? `<div><div class="rot">Por que viraliza</div><p>${esc(i.por_que_viraliza)}</p></div>` : ''}
+      <div><div class="rot">Onde fica e como achar</div><p>${esc([i.local?.referencia, i.como_achar].filter(Boolean).join('\n\n') || 'Local ainda não publicado.')}</p></div>
+      ${i.tituloSugerido || i.gancho ? `<div><div class="rot">Para o vídeo</div>${i.tituloSugerido ? `<div class="tsug"><span>${esc(i.tituloSugerido)}</span><button class="copiar" data-copiar="${esc(i.tituloSugerido)}">Copiar</button></div>` : ''}${i.gancho ? `<p style="margin-top:6px"><b>Gancho:</b> ${esc(i.gancho)}</p>` : ''}</div>` : ''}
+      ${[...(i.palavras || []), ...(i.frases || [])].length ? `<div><div class="rot">Fale isso na gravação que a central acha o trecho sozinha</div><div class="chips">${[...(i.frases || []), ...(i.palavras || [])].slice(0, 14).map((k) => `<span class="pill">${esc(k)}</span>`).join('')}</div></div>` : ''}
+      ${fontes.length ? `<div><div class="rot">Fontes lá fora</div>${fontes.map((f) => `<div class="fonte"><a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.titulo || new URL(f.url).hostname)}</a>${f.plataforma ? ` <span class="faint">· ${esc(f.plataforma)}</span>` : ''}${f.views ? ` <span class="faint">· ${num(f.views)} views</span>` : ''}</div>`).join('')}</div>` : ''}
+      ${i.cortes?.length ? `<div><div class="rot">Cortes que saíram disso</div>${i.cortes.map((c) => `<div class="fonte">${esc(c.titulo)} ${pill(c.status)}</div>`).join('')}</div>` : ''}
+      <div class="addfoto"><div class="rot">Foto do local exato</div>
+        <p class="faint" style="margin:0 0 8px">Quando achar o lugar, abra o mapa do jogo por 2 segundos. Depois diga aqui a gravação e o minuto, ou mande um print.</p>
+        <div class="linha2"><select class="campo" data-fgrav style="flex:2">${grav.map((b) => `<option>${esc(b.nome)}</option>`).join('') || '<option value="">nenhuma gravação</option>'}</select>
+          <input class="campo" data-ftempo placeholder="min:seg" style="flex:1;min-width:80px"><button class="btn sec" data-quadro="${esc(i.id)}">Pegar da gravação</button></div>
+        <div class="linha2" style="margin-top:8px"><label class="btn sec" style="cursor:pointer">Enviar print<input type="file" accept="image/jpeg,image/png" hidden data-fupload="${esc(i.id)}"></label><span class="faint" data-fmsg></span></div>
+      </div>
+    </div></div>`;
+  m.showModal();
+}
+
+const TELAS = {
+  visao() {
+    const R = redes(), T = D.redes?.total || {}, H = D.redes?.historico || [];
+    const ganho7 = (c) => { if (H.length < 2) return 0; const ini = H[Math.max(0, H.length - 8)]; return Math.max(0, (H.at(-1)[c] || 0) - (ini[c] || 0)); };
+    const viewsTot = (D.redes?.contas || []).reduce((n, c) => n + (c.views || 0), 0);
+    const prox = D.prontos.filter((p) => !p.postadoEm).sort((a, b) => String(a.agendarPara || 'z').localeCompare(String(b.agendarPara || 'z')));
+    const pub = D.prontos.filter((p) => p.postadoEm);
+    const top = [...pub].sort((a, b) => viewsDoPost(b) - viewsDoPost(a)).slice(0, 5);
+    const hoje = prox.filter((p) => p.agendarPara && new Date(p.agendarPara).toDateString() === new Date().toDateString()).length;
+    const al = alertas();
+    return `<div class="cab"><div><h1>Visão geral</h1><div class="sub">${D.redes?.atualizadoEm ? `Números ${ha(D.redes.atualizadoEm)} · lidos das redes a cada 3 horas` : 'Os números aparecem quando as redes estiverem conectadas'}</div></div>
+      <div class="acoes"><button class="btn sec" data-atualizar>Atualizar números</button></div></div>
+    ${al.length ? `<div class="alertas"><div class="ah"><span class="luz"></span>Precisa de você · ${al.length}</div>${al.map(([t, s, b]) => `<div class="alerta"><div class="txt"><b>${esc(t)}</b>${s ? `<span>${esc(s)}</span>` : ''}</div>${b}</div>`).join('')}</div>` : ''}
+    <div class="kpis">
+      <div class="kpi"><div class="rot">Seguidores e inscritos</div><div class="val">${num(T.seguidores)}</div><div class="d"><b>+${num(ganho7('seguidores'))}</b> em 7 dias</div></div>
+      <div class="kpi"><div class="rot">Visualizações</div><div class="val">${curto(viewsTot)}</div><div class="d"><b>+${curto(ganho7('views'))}</b> em 7 dias</div></div>
+      <div class="kpi"><div class="rot">Vídeos publicados</div><div class="val">${num(pub.length)}</div><div class="d">${num(pub.reduce((n, p) => n + Object.keys(p.emRede || {}).length, 0))} posts nas redes</div></div>
+      <div class="kpi"><div class="rot">Na agenda</div><div class="val">${num(prox.length)}</div><div class="d">${hoje ? `${hoje} sai${hoje > 1 ? 'em' : ''} hoje` : 'nada hoje'}${prox[0]?.agendarPara ? ` · próximo ${diaDe(prox[0].agendarPara).toLowerCase()} ${hora(prox[0].agendarPara)}` : ''}</div></div>
+    </div>
+    <div class="caixa bloco" id="cxg"><div class="topo"><h2>Crescimento por rede</h2>
+      <div class="legenda">${REDES.map((r) => `<span><i class="sw" style="background:${cor(r)}"></i>${NOME[r]}</span>`).join('')}</div>
+      <div class="dir"><div class="seg">${[['seguidores', 'Seguidores'], ['views', 'Views']].map(([k, t]) => `<button data-medida="${k}" class="${est.medida === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+      <div class="seg">${[7, 30, 90].map((d) => `<button data-dias="${d}" class="${est.dias === d ? 'on' : ''}">${d} dias</button>`).join('')}</div></div></div>
+      <div class="grafico"></div></div>
+    <div class="redesgrid bloco">${R.map((r) => { const m = r.m; return `<div class="rd" style="--c:${cor(r.rede)}">
+      <div class="linha"><span class="ico">${SIG[r.rede]}</span><div style="min-width:0"><div class="nome">${NOME[r.rede]}</div><div class="arr">${esc(r.conta || '')}</div></div>
+        <span class="pill ${r.cor}" style="margin-left:auto" title="${esc(r.estado)}">${r.cor === 'ok' ? 'ativa' : r.cor === 'hi' ? 'atenção' : 'parada'}</span></div>
+      <div><div class="big">${m ? num(m.seguidores) : '—'}</div><div class="muted" style="font-size:12px">${r.rede === 'youtube' ? 'inscritos' : 'seguidores'}${m?.ganho7d ? ` · <span class="mais">+${num(m.ganho7d)}</span> em 7 dias` : ''}</div></div>
+      ${sparkline(r.rede)}
+      <div class="mini"><div><b>${m ? curto(m.views) : '—'}</b>views</div><div><b>${m ? curto(m.views7d) : '—'}</b>views em 7 dias</div></div>
+    </div>`; }).join('')}</div>
+    <div class="caixa bloco"><div class="topo"><h2>Próximos posts</h2><span class="muted">${prox.length} na fila</span><div class="dir"><button class="btn sec" data-ir="agenda">Ver calendário</button></div></div>
+      ${prox.length ? proximosPorDia(prox) : '<div class="semdados">Nada na fila. O que você gravar vira corte e entra aqui sozinho.</div>'}</div>
+    <div class="caixa bloco"><div class="topo"><h2>Melhores vídeos</h2><div class="dir"><button class="btn sec" data-ir="publicados">Ver todos</button></div></div>
+      ${top.length ? tabelaPosts(top) : '<div class="semdados">Quando os primeiros vídeos saírem, os que mais deram views aparecem aqui.</div>'}</div>`;
+  },
+  agenda() {
+    const base = new Date(); base.setHours(0, 0, 0, 0); base.setDate(base.getDate() - ((base.getDay() + 6) % 7) + est.semana * 7);
+    const dias = Array.from({ length: 7 }, (_, i) => new Date(base.getTime() + i * 864e5));
+    const t = (p) => p.postadoEm || p.agendarPara;
+    const doDia = (d) => D.prontos.filter((p) => t(p) && new Date(t(p)).toDateString() === d.toDateString()).sort((a, b) => t(a).localeCompare(t(b)));
+    const hj = new Date().toDateString(), ontem = new Date(); ontem.setHours(0, 0, 0, 0);
+    const sem = D.prontos.filter((p) => !t(p));
+    const fim = dias[6];
+    const titulo = `${dias[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} a ${fim.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`;
+    const nSemana = dias.reduce((n, d) => n + doDia(d).length, 0);
+    const rt = RT?.ritmo || {}, li = RT?.limites || {};
+    const ritmo = `<div class="caixa ritmo"><div class="topo"><h2>Ritmo de postagem</h2>
+      <label class="tg"><input type="checkbox" data-ritmo-auto${rt.automatico ? ' checked' : ''}> Automático pela quantidade</label>
+      <div class="dir"><button class="btn" data-despachar>Despachar a fila agora</button></div></div>
+      <div class="linha2"><label class="muted">Máximo por rede por dia <input class="campo" type="number" min="1" max="50" data-ritmo="maxPorDia" value="${esc(rt.maxPorDia ?? 15)}" style="width:80px"></label>
+        <label class="muted">Vídeos longos por dia <input class="campo" type="number" min="1" max="10" data-ritmo="longosPorDia" value="${esc(rt.longosPorDia ?? 3)}" style="width:80px"></label>
+        <button class="btn sec" data-salvar-ritmo>Salvar</button></div>
+      <p class="faint" style="margin:8px 0 0;font-size:12px">${rt.automatico ? `Hoje por dia: TikTok ${li.tiktok}, Instagram ${li.instagram}, Facebook ${li.facebook}, YouTube ${li.youtube} (o YouTube para em 6 envios por dia pela cota da API, curtos e longos juntos). Com a fila grande, posta mais; com pouca, menos.` : 'Desligado: 12:00, 18:30 e 21:00, no limite seguro de conta nova.'} "Despachar" põe tudo o que está esperando para sair a partir de agora, espaçado até 23:30, e o que passar do limite fica para amanhã. Conta nova postando muito por dia pode ter o alcance reduzido.</p>
+      <div data-ritmo-msg class="muted" style="font-size:13px"></div></div>`;
+    return `<div class="cab"><div><h1>Agenda</h1><div class="sub">Clique num post para ver o vídeo ou postar agora.</div></div>
+      <div class="acoes"><button class="btn sec" data-semana="-1">‹</button><button class="btn sec" data-semana="0">Esta semana</button><button class="btn sec" data-semana="1">›</button></div></div>
+    ${ritmo}
+    <div class="topo" style="display:flex;gap:10px;align-items:baseline;margin:18px 0 10px"><h2>${titulo}</h2><span class="muted">${nSemana} post(s)</span>
+      <span class="legenda" style="margin-left:auto"><span><i class="sw" style="background:var(--ok)"></i>já publicado</span></span></div>
+    <div class="cal">${dias.map((d) => { const l = doDia(d); return `<div class="cd${d.toDateString() === hj ? ' hoje' : ''}${d < ontem ? ' passado' : ''}${l.length ? '' : ' vazia'}">
+      <div class="dh"><b>${d.getDate()}</b><span>${d.toLocaleDateString('pt-BR', { weekday: 'short' })}</span><i>${l.length || ''}</i></div>
+      ${l.length ? l.map((p) => `<button class="ev${p.postadoEm ? ' feito' : ''}" data-post="${esc(p.linha + '/' + p.pasta)}"><span class="th" style="${p.temCapa ? `background-image:url('${pronto(p, 'capa.jpg')}')` : ''}"></span>
+        <span class="ti"><b>${hora(t(p))} ${p.postadoEm ? '<span class="ok">✓</span>' : ''}</b><span>${esc(p.titulo)}</span>
+        <span style="display:flex;gap:3px;margin-top:4px">${(p.redes || []).map((r) => rx(r, p.postadoEm && !p.emRede?.[r])).join('')}</span></span></button>`).join('') : '<div class="vz">livre</div>'}
+    </div>`; }).join('')}</div>
+    ${sem.length ? `<h3 class="sub">Sem horário ainda · ${sem.length}</h3><div class="fila">${sem.map(cardPost).join('')}</div>` : ''}`;
+  },
+  publicados() {
+    let pub = D.prontos.filter((p) => p.postadoEm);
+    pub = est.ordem === 'views' ? pub.sort((a, b) => viewsDoPost(b) - viewsDoPost(a)) : pub.sort((a, b) => b.postadoEm.localeCompare(a.postadoEm));
+    const tv = pub.reduce((n, p) => n + viewsDoPost(p), 0), tc = pub.reduce((n, p) => n + curtidasDoPost(p), 0), tm = pub.reduce((n, p) => n + comentDoPost(p), 0);
+    return `<div class="cab"><div><h1>Publicados</h1><div class="sub">Tudo que já foi ao ar, com os números de cada rede. Clique para abrir.</div></div>
+      <div class="acoes"><div class="seg"><button data-ordem="data" class="${est.ordem === 'data' ? 'on' : ''}">Mais recentes</button><button data-ordem="views" class="${est.ordem === 'views' ? 'on' : ''}">Mais vistos</button></div></div></div>
+    <div class="kpis" style="margin-bottom:18px">
+      <div class="kpi"><div class="rot">Vídeos</div><div class="val">${num(pub.length)}</div></div>
+      <div class="kpi"><div class="rot">Views (YouTube)</div><div class="val">${curto(tv)}</div></div>
+      <div class="kpi"><div class="rot">Curtidas</div><div class="val">${curto(tc)}</div></div>
+      <div class="kpi"><div class="rot">Comentários</div><div class="val">${curto(tm)}</div></div>
+    </div>
+    <div class="caixa">${pub.length ? tabelaPosts(pub) : '<div class="semdados">Nada publicado ainda.</div>'}</div>
+    <p class="faint" style="font-size:12px;margin-top:10px">Views por vídeo vêm do YouTube; o Instagram manda curtidas e comentários. TikTok e Facebook mostram o link do post.</p>`;
+  },
+  cortes() {
+    const todos = D.sessoes.flatMap((s) => s.cortes.map((c) => ({ ...c, pasta: s.pasta, sessao: s.sessao })));
+    const esp = todos.filter((c) => c.status === 'aguardando'), ok = todos.filter((c) => !['aguardando', 'descartado'].includes(c.status));
+    const longos = D.sessoes.flatMap((s) => [...(s.longo ? [{ ...s.longo, pasta: s.pasta, tipo: 'Gravação inteira' }] : []), ...(s.missoes || []).map((m) => ({ ...m, pasta: s.pasta, tipo: 'Missão' }))]);
+    return `<div class="cab"><div><h1>Cortes</h1><div class="sub">Tudo o que saiu das gravações. Nada é descartado sem você.</div></div><div class="acoes"><a class="btn" href="/cortes">Revisar e aprovar</a></div></div>
+    <h3 class="sub">Esperando você · ${esp.length}</h3>${esp.length ? `<div class="grade">${esp.map(cardCorte).join('')}</div>` : '<div class="vazio">Nenhum corte esperando.</div>'}
+    <h3 class="sub">Aprovados · ${ok.length}</h3>${ok.length ? `<div class="grade">${ok.map(cardCorte).join('')}</div>` : '<div class="vazio">Nenhum aprovado ainda.</div>'}
+    <h3 class="sub">Vídeos longos e missões · ${longos.length}</h3>${longos.length ? `<div class="grade" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${longos.map((v) => `<div class="corte longo">
+      <video src="${midia(v.pasta, v.arquivo)}" ${v.thumb ? `poster="${midia(v.pasta, v.thumb)}"` : ''} controls playsinline preload="none"></video>
+      <div class="c"><div class="t">${esc(v.titulo || v.missao)}</div><div class="s"><span>${esc(v.tipo)} · ${dur(v.duracao)}</span>${pill(v.status || 'aguardando')}</div>${v.aviso ? `<div class="por">${esc(v.aviso)}</div>` : ''}</div></div>`).join('')}</div>` : '<div class="vazio">Aparecem aqui depois que uma gravação é processada.</div>'}`;
+  },
+  redes() {
+    const R = redes();
+    const card = (r) => {
+      const c = r.c;
+      const ajustes = r.rede === 'tiktok' ? `<div class="muted" style="font-size:13px">A extensão <b>FNANDO: TikTok pelo Chrome</b> posta no horário, no Chrome logado no TikTok.</div><div class="linha2"><button class="btn sec" data-codigo-tiktok>Mostrar o código da extensão</button><code data-codigo-saida style="user-select:all;word-break:break-all"></code></div>`
+        : r.rede === 'youtube' ? `<input class="campo" data-cred="youtube" data-campo="clientId" placeholder="${A?.google?.clientId ? 'ID do cliente guardado: ' + esc(A.google.clientId.slice(0, 18)) + '…' : 'ID do cliente OAuth do Google'}">
+          <input class="campo" type="password" autocomplete="off" data-cred="youtube" data-campo="clientSecret" placeholder="${A?.google?.temSegredo ? 'Chave secreta guardada (cole só para trocar)' : 'Chave secreta do cliente OAuth'}">
+          <div class="linha2"><button class="btn sec" data-salvar-cred="youtube">Salvar</button><a class="btn" href="/oauth/youtube/iniciar">${r.acao || 'Conectar'}</a></div>`
+        : `<input class="campo" type="password" autocomplete="off" data-cred="meta" data-campo="appSecret" placeholder="${A?.meta?.temSegredo ? 'Chave secreta do app guardada (cole só para trocar)' : 'Chave secreta do app da Meta'}">
+          <div class="linha2"><button class="btn sec" data-salvar-cred="meta">Salvar</button><a class="btn" href="/oauth/meta/iniciar">${r.acao || 'Conectar'}</a></div><div class="muted" style="font-size:13px">Instagram e Página conectam juntos.</div>`;
+      const passos = c ? `<details><summary>Configuração da conta · ${c.feitos} de ${c.total} ▾</summary><div data-chave="${esc(c.chave)}">
+          ${c.passos.map((p) => `<label class="passo${p.feito ? ' feito' : ''}"><input type="checkbox" data-passo="${p.id}"${p.feito ? ' checked' : ''}><span>${esc(p.t)}${p.anonimo ? '<span class="anon">anonimato</span>' : ''}</span></label>`).join('')}
+          <input class="campo" data-arroba placeholder="@ da conta" value="${esc(c.arroba)}" style="margin-top:6px"></div></details>` : '';
+      return `<div class="rede">
+        <div class="cb"><span class="rx" style="--c:${cor(r.rede)};width:36px;height:36px;font-size:12px;border-radius:10px">${SIG[r.rede]}</span>
+          <div class="txt"><div style="font-weight:700">${esc(NOME[r.rede])}${r.conta ? ` <span class="muted" style="font-weight:400">${esc(r.conta)}</span>` : ''}</div>
+          <div class="estado" style="color:var(--${r.cor === 'ok' ? 'ok' : r.cor === 'hi' ? 'hi' : 'no'})">${esc(r.estado)}</div></div>
+          ${r.m ? `<div style="text-align:right"><b>${num(r.m.seguidores)}</b><div class="muted" style="font-size:12px">seguidores</div></div>` : ''}</div>
+        ${r.acao && r.rede !== 'tiktok' ? `<a class="btn" href="/oauth/${r.rede === 'youtube' ? 'youtube' : 'meta'}/iniciar">${esc(r.acao)}</a>` : ''}
+        <details${r.cor !== 'ok' && !r.acao ? ' open' : ''}><summary>Ajustes de conexão ▾</summary><div style="display:grid;gap:8px">${ajustes}</div></details>
+        ${passos}
+      </div>`;
+    };
+    const live = C?.live || [];
+    const ia = `<div class="rede"><div class="cb"><span class="rx" style="--c:#8a7a00;width:36px;height:36px;font-size:12px;border-radius:10px">IA</span><div class="txt"><div style="font-weight:700">IA dos títulos e da escolha dos cortes</div>
+      <div class="estado" style="color:var(--${A?.ia?.temChave || A?.ia?.temToken || A?.ia?.conta ? 'ok' : 'no'})">${A?.ia?.temChave ? 'Chave de API guardada' : A?.ia?.temToken ? 'Token da sua conta Claude guardado' : A?.ia?.conta ? 'Usando a sua conta Claude deste Mac (Claude Code)' : 'Falta: sem IA os títulos saem genéricos'}</div></div></div>
+      <div class="muted" style="font-size:13px">Com a sua conta Claude: no Terminal do Mac rode <code>claude setup-token</code>, entre com a sua conta, copie o token que aparece (começa com <code>sk-ant-oat</code>) e cole aqui. Também aceita uma chave de API.</div>
+      <div class="linha2"><input class="campo" type="password" autocomplete="off" data-cred="ia" data-campo="apiKey" placeholder="${A?.ia?.temChave || A?.ia?.temToken ? 'Cole só para trocar' : 'sk-ant-oat01-...'}" style="flex:1"><button class="btn${A?.ia?.temChave ? ' sec' : ''}" data-salvar-cred="ia">Salvar</button></div></div>`;
+    return `<div class="cab"><div><h1>Contas e conexões</h1><div class="sub">As chaves ficam só neste Mac (<code>~/Gameplay/.credenciais.json</code>) e nunca aparecem de novo na página.</div></div></div>
+    <div class="redes">${R.map(card).join('')}${ia}</div>
+    <h3 class="sub">Onde dá para fazer live</h3>
+    <div class="lista">${live.map((v) => `<div class="item"><span class="dot ${v.pode ? 'ok' : 'no'}"></span><div class="txt"><div class="t">${esc(v.nome)} · ${v.pode ? 'dá hoje' : 'ainda não'}</div><div class="s">${esc(v.resumo)}</div></div></div>`).join('')}</div>`;
+  },
+  ideias() {
+    const R = D.radar || { itens: [] };
+    const todos = R.itens;
+    const F = { todas: (i) => i.status !== 'ignorado', gravar: (i) => ['nova', 'quero gravar'].includes(i.status), salvas: (i) => i.status === 'quero gravar', feitas: (i) => ['tem corte', 'gravado'].includes(i.status), postadas: (i) => i.status === 'postado', ignoradas: (i) => i.status === 'ignorado' };
+    const NF = [['todas', 'Todas'], ['gravar', 'Para gravar'], ['salvas', 'Quero gravar'], ['feitas', 'Já gravei'], ['postadas', 'Postadas'], ['ignoradas', 'Ignoradas']];
+    const tipos = [...new Set(todos.map((i) => i.tipo).filter(Boolean))];
+    const ORD = { 'quero gravar': 0, nova: 1, 'tem corte': 2, gravado: 3, postado: 4, ignorado: 5 };
+    const lista = todos.filter(F[est.radarFiltro] || F.todas).filter((i) => !est.radarTipo || i.tipo === est.radarTipo)
+      .sort((a, b) => ORD[a.status] - ORD[b.status] || a.prioridade - b.prioridade || (a.coberto_no_br ? 1 : 0) - (b.coberto_no_br ? 1 : 0));
+    return `<div class="cab"><div><h1>Radar</h1><div class="sub">O que bombou lá fora e ainda não tem no Brasil. Se você falar disso enquanto grava, o trecho vira corte com prioridade e com o título sugerido.${R.atualizadoEm ? ` Atualizado ${ha(R.atualizadoEm)}.` : ''}</div></div></div>
+    <div class="filtros"><div class="seg">${NF.map(([k, t]) => `<button data-rfiltro="${k}" class="${(est.radarFiltro || 'todas') === k ? 'on' : ''}">${t} <span class="faint">${todos.filter(F[k]).length}</span></button>`).join('')}</div>
+      <div class="seg"><button data-rtipo="" class="${!est.radarTipo ? 'on' : ''}">Tudo</button>${tipos.map((t) => `<button data-rtipo="${esc(t)}" class="${est.radarTipo === t ? 'on' : ''}">${esc(TIPO[t]?.[0] || t)}</button>`).join('')}</div></div>
+    ${lista.length ? `<div class="feed">${lista.map(cardIdeia).join('')}</div>` : `<div class="semdados">${todos.length ? 'Nada nesse filtro.' : 'O radar ainda não mandou nada.'}</div>`}
+    ${D.roteiros.length ? `<h3 class="sub">Roteiros</h3><div class="lista">${D.roteiros.map((r) => `<details class="ideia"><summary><span class="t">${esc(r.titulo || r.arquivo)}</span><span class="pill">${esc(r.tipo)}</span></summary><div class="corpo">${esc(r.texto)}</div></details>`).join('')}</div>` : ''}`;
+  },
+  gravacoes() {
+    return `<div class="cab"><div><h1>Gravações</h1><div class="sub">Grave no OBS que a gravação entra sozinha.</div></div></div>
+    <div class="envio" id="envio">Para mandar outro vídeo, arraste aqui ou <label>escolha no computador<input type="file" accept="video/*" hidden id="arquivo"></label>.<div class="barra" hidden><i></i></div><div id="envioMsg"></div></div>
+    <h3 class="sub">Gravações</h3>
+    ${D.brutos.length ? `<div class="lista">${D.brutos.map((b) => `<div class="item"><div class="txt"><div class="t">${esc(b.nome)}</div><div class="s">${quando(b.modificadoEm)}${b.duracao ? ' · ' + dur(b.duracao) : ''} · ${mb(b.bytes)}${b.sessao ? ` · ${b.cortes} corte(s)${b.longo ? ' + vídeo longo' : ''}` : ''}</div></div><span class="pill ${b.status === 'processado' ? 'ok' : b.status === 'processando' ? 'cy' : 'hi'}">${esc(b.status)}</span></div>`).join('')}</div>` : '<div class="vazio">Nenhuma gravação ainda.</div>'}`;
+  },
+};
+
+function tabelaPosts(lista) {
+  return `<div style="overflow-x:auto"><table class="tab"><thead><tr><th>Vídeo</th><th class="esconde">Publicado</th><th>Redes</th><th class="n">Views</th><th class="n">Curtidas</th><th class="n esconde">Coment.</th></tr></thead><tbody>
+    ${lista.map((p) => { const N = numerosDoPost(p); return `<tr class="click" data-post="${esc(p.linha + '/' + p.pasta)}">
+      <td><div class="vid"><span class="th" style="${p.temCapa ? `background-image:url('${pronto(p, 'capa.jpg')}')` : ''}"></span><div><b>${esc(p.titulo)}</b>${p.aviso ? `<span class="pill no">${esc(p.aviso)}</span>` : ''}</div></div></td>
+      <td class="esconde muted" style="white-space:nowrap">${diaDe(p.postadoEm)} ${hora(p.postadoEm)}</td>
+      <td><div class="chips">${(p.redes || []).map((r) => rx(r, !p.emRede?.[r] && !N[r])).join('')}</div></td>
+      <td class="n">${num(viewsDoPost(p))}</td><td class="n">${num(curtidasDoPost(p))}</td><td class="n esconde">${num(comentDoPost(p))}</td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+
+function abrirPost(chave) {
+  const p = D.prontos.find((x) => `${x.linha}/${x.pasta}` === chave);
+  if (!p) return;
+  const N = numerosDoPost(p), t = p.postadoEm || p.agendarPara;
+  const m = $('#modal');
+  const podeJa = !p.postadoEm && !p.aviso && p.temVideo;
+  m.innerHTML = `<div class="md${deitado(p) ? ' h' : ''}" style="position:relative">
+    ${p.temVideo ? `<video src="${pronto(p, 'video.mp4')}" ${p.temCapa ? `poster="${pronto(p, 'capa.jpg')}"` : ''} controls playsinline autoplay></video>` : '<div class="semdados">Vídeo não encontrado</div>'}
+    <div class="info"><button class="fechar" data-fechar aria-label="Fechar">✕</button>
+      <h3>${esc(p.titulo)}</h3>
+      <div>${p.postadoEm ? `<span class="pill ok">publicado ${diaDe(p.postadoEm).toLowerCase()} às ${hora(p.postadoEm)}</span>` : t ? `<span class="pill cy">sai ${diaDe(t).toLowerCase()} às ${hora(t)}</span>` : '<span class="pill hi">sem horário</span>'} ${p.duracao ? `<span class="pill">${dur(p.duracao)}</span>` : ''}</div>
+      ${p.aviso ? `<div class="aviso">${esc(p.aviso)}: este não sai sozinho.</div>` : ''}
+      ${podeJa ? `<div class="linha2"><button class="btn" data-postar-ja="${esc(p.linha + '/' + p.pasta)}">Postar agora</button><span class="faint" data-pj-msg style="font-size:12px">Sai agora no Instagram, Facebook e YouTube; o TikTok pega pela extensão em poucos minutos.</span></div>` : ''}
+      <div><div class="rot">Redes</div><div class="lr">${(p.redes || []).map((r) => { const n = N[r] || {}; const em = p.emRede?.[r];
+        return `<div>${rx(r, p.postadoEm && !em)}<span>${NOME[r]}</span>${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">abrir</a>` : ''}${n.privado ? '<span class="pill hi">privado</span>' : ''}
+          <span class="v">${em || n.link ? [n.views != null ? `${num(n.views)} views` : '', n.curtidas != null ? `${num(n.curtidas)} ♥` : '', n.comentarios != null ? `${num(n.comentarios)} coment.` : ''].filter(Boolean).join(' · ') || 'publicado' : 'na fila'}</span></div>`; }).join('')}</div></div>
+      ${p.legenda ? `<div><div class="rot">Legenda</div><div class="txt">${esc(p.legenda)}</div></div>` : ''}
+      ${p.hashtags?.length ? `<div><div class="rot">Hashtags</div><div class="muted" style="font-size:13px">${esc(p.hashtags.join(' '))}</div></div>` : ''}
+    </div></div>`;
+  m.showModal();
+}
+
+function cardCorte(c) {
+  return `<div class="corte"><video src="${midia(c.pasta, c.arquivo)}" ${c.capa ? `poster="${midia(c.pasta, c.capa)}"` : ''} controls playsinline preload="none"></video>
+    <div class="c"><div class="t">${esc(c.titulo)}</div><div class="s"><span>${dur((c.fim || 0) - (c.inicio || 0))}</span>${pill(c.status)}</div>
+    ${c.status === 'aguardando' && c.filtro ? `<div class="por">O filtro achou: ${esc(c.filtro.join('; '))}</div>` : ''}</div></div>`;
+}
+
+function contadores() {
+  const esp = D.sessoes.flatMap((s) => s.cortes).filter((c) => c.status === 'aguardando').length;
+  const rr = redes().filter((r) => r.cor !== 'ok').length;
+  const fila = D.prontos.filter((p) => !p.postadoEm).length;
+  const n = { cortes: esp || '', redes: rr || '', agenda: fila || '', visao: '' };
+  document.querySelectorAll('[data-n]').forEach((el) => { el.textContent = n[el.dataset.n] ?? ''; });
+  $('#rodape').textContent = A?.postador?.automatico ? 'Piloto automático ligado' : 'Postagem com aprovação';
+}
+
+function desenhar() {
+  if (!D) { $('#tela').innerHTML = '<p class="vazio">Não consegui ler a central. Ela está rodando no Mac?</p>'; return; }
+  if (!TELAS[aba]) aba = 'visao';
+  document.querySelectorAll('#menu [data-a]').forEach((b) => b.classList.toggle('on', b.dataset.a === aba));
+  contadores();
+  $('#tela').innerHTML = TELAS[aba]();
+  if (aba === 'visao') grafico($('#cxg'));
+  if (aba === 'gravacoes') prepararEnvio();
+}
+
+function prepararEnvio() {
+  const box = $('#envio'), input = $('#arquivo');
+  const enviar = (f) => {
+    if (!f) return;
+    const barra = $('.barra', box), msg = $('#envioMsg');
+    barra.hidden = false; msg.textContent = `Enviando ${f.name}...`;
+    const x = new XMLHttpRequest();
+    x.open('POST', `/api/enviar?nome=${encodeURIComponent(f.name)}`);
+    x.upload.onprogress = (e) => { if (e.lengthComputable) $('i', barra).style.width = `${(e.loaded / e.total) * 100}%`; };
+    x.onload = () => { let r = {}; try { r = JSON.parse(x.responseText); } catch {} msg.textContent = x.status === 200 ? `Recebido: ${r.nome}. Os cortes saem sozinhos.` : (r.erro || 'Não foi.'); setTimeout(carregar, 1500); };
+    x.onerror = () => { msg.textContent = 'O envio caiu. Tente de novo.'; };
+    x.send(f);
+  };
+  input.onchange = () => enviar(input.files[0]);
+  box.ondragover = (e) => { e.preventDefault(); box.classList.add('sobre'); };
+  box.ondragleave = () => box.classList.remove('sobre');
+  box.ondrop = (e) => { e.preventDefault(); box.classList.remove('sobre'); enviar(e.dataTransfer.files[0]); };
+}
+
+async function salvarConta(dados) {
+  const r = await fetch('/api/contas', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(dados) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { alert(j.erro || 'Não salvou.'); return false; }
+  C = j; return true;
+}
+
+document.addEventListener('click', async (e) => {
+  const q = (s) => e.target.closest(s);
+  if (q('[data-fechar]') || e.target.id === 'modal') { $('#modal').close(); return; }
+  const post = q('[data-post]'); if (post) { abrirPost(post.dataset.post); return; }
+  const sr = q('[data-salvar-ritmo]');
+  if (sr) { const box = sr.closest('.ritmo'), dados = { automatico: $('[data-ritmo-auto]', box).checked };
+    box.querySelectorAll('[data-ritmo]').forEach((i) => { dados[i.dataset.ritmo] = i.value; });
+    const r = await fetch('/api/ritmo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(dados) }).then((x) => x.json()).catch(() => ({ erro: 'Não salvou.' }));
+    if (r.erro) { $('[data-ritmo-msg]', box).textContent = r.erro; return; } await carregar(); return; }
+  const dp = q('[data-despachar]');
+  if (dp) { dp.disabled = true; dp.textContent = 'Despachando...';
+    const r = await fetch('/api/reagendar', { method: 'POST' }).then((x) => x.json()).catch(() => ({ erro: 'A central não respondeu.' }));
+    await carregar(); const msg = $('[data-ritmo-msg]'); if (msg) msg.textContent = r.erro || `${(r.mudancas || []).length} post(s) com horário novo. O primeiro sai em uns 5 minutos.`; return; }
+  const pj = q('[data-postar-ja]');
+  if (pj) { pj.disabled = true; pj.textContent = 'Postando...'; const msg = $('[data-pj-msg]');
+    const r = await fetch('/api/postar-agora', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: pj.dataset.postarJa }) }).then((x) => x.json()).catch(() => ({ erro: 'A central não respondeu.' }));
+    if (r.erro) { msg.textContent = r.erro; pj.textContent = 'Postar agora'; pj.disabled = false; return; }
+    const ok = (r.feitos || []).filter((f) => f.feito === 'publicado').map((f) => NOME[f.rede]), err = (r.feitos || []).filter((f) => f.feito === 'erro');
+    msg.textContent = `${ok.length ? 'Publicado: ' + ok.join(', ') + '. ' : ''}${err.length ? 'Falhou: ' + err.map((f) => `${NOME[f.rede]} (${f.erro})`).join('; ') + '. ' : ''}${!ok.length && !err.length ? 'Entrou na frente da fila. ' : ''}O TikTok sai pela extensão em poucos minutos.`;
+    pj.textContent = 'Enviado'; await carregar(); return; }
+  const idq = q('[data-ideia]'); if (idq) { abrirIdeia(idq.dataset.ideia); return; }
+  const rf = q('[data-rfiltro]'); if (rf) { est.radarFiltro = rf.dataset.rfiltro; desenhar(); return; }
+  const rt = q('[data-rtipo]'); if (rt) { est.radarTipo = rt.dataset.rtipo; desenhar(); return; }
+  const cp = q('[data-copiar]'); if (cp) { navigator.clipboard?.writeText(cp.dataset.copiar).catch(() => {}); const t = cp.textContent; cp.textContent = 'Copiado'; setTimeout(() => { cp.textContent = t; }, 1200); return; }
+  const mk = q('[data-marcar]');
+  if (mk) { const it = D.radar.itens.find((x) => x.id === mk.dataset.marcar); const estado = it?.marcado === mk.dataset.estado ? null : mk.dataset.estado;
+    await fetch('/api/radar/estado', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: mk.dataset.marcar, estado }) }); await carregar(); return; }
+  const qd = q('[data-quadro]');
+  if (qd) { const box = qd.closest('.addfoto'), msg = $('[data-fmsg]', box); msg.textContent = 'Pegando o quadro...';
+    const r = await fetch('/api/radar/quadro', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: qd.dataset.quadro, gravacao: $('[data-fgrav]', box).value, tempo: $('[data-ftempo]', box).value }) }).then((x) => x.json()).catch(() => ({ erro: 'Não foi.' }));
+    if (r.erro) { msg.textContent = r.erro; return; } await carregar(); abrirIdeia(qd.dataset.quadro); return; }
+  const md = q('[data-medida]'); if (md) { est.medida = md.dataset.medida; desenhar(); return; }
+  const di = q('[data-dias]'); if (di) { est.dias = +di.dataset.dias; desenhar(); return; }
+  const se = q('[data-semana]'); if (se) { est.semana = +se.dataset.semana === 0 ? 0 : est.semana + +se.dataset.semana; desenhar(); return; }
+  const od = q('[data-ordem]'); if (od) { est.ordem = od.dataset.ordem; desenhar(); return; }
+  const at = q('[data-atualizar]');
+  if (at) { at.disabled = true; at.textContent = 'Lendo as redes...'; const r = await fetch('/api/metricas/atualizar', { method: 'POST' }).then((x) => x.json()).catch(() => ({})); await carregar(); if (r.erros && Object.keys(r.erros).length) alert(Object.entries(r.erros).map(([k, v]) => `${NOME[k] || k}: ${v}`).join('\n')); return; }
+  const sc = q('[data-salvar-cred]');
+  if (sc) {
+    e.preventDefault();
+    const rede = sc.dataset.salvarCred, dados = { rede };
+    document.querySelectorAll(`[data-cred="${rede}"]`).forEach((i) => { if (i.value.trim()) dados[i.dataset.campo] = i.value.trim(); });
+    const r = await fetch('/api/credenciais', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(dados) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { alert(j.erro || 'Não salvou.'); return; }
+    carregar(); return;
+  }
+  const cod = q('[data-codigo-tiktok]');
+  if (cod) { const j = await fetch('/api/tiktok-chrome/codigo').then((r) => r.json()).catch(() => ({})); cod.parentElement.querySelector('[data-codigo-saida]').textContent = j.codigo || j.erro || 'Não abriu.'; return; }
+  const b = q('#menu [data-a], [data-ir]');
+  if (b) { e.preventDefault(); aba = b.dataset.a || b.dataset.ir; history.replaceState(null, '', '#' + aba); desenhar(); scrollTo(0, 0); }
+});
+document.addEventListener('change', async (e) => {
+  const up = e.target.closest('[data-fupload]');
+  if (up && up.files[0]) { const msg = $('[data-fmsg]', up.closest('.addfoto')); msg.textContent = 'Enviando...';
+    const r = await fetch(`/api/radar/foto?id=${encodeURIComponent(up.dataset.fupload)}`, { method: 'POST', body: up.files[0] }).then((x) => x.json()).catch(() => ({ erro: 'Não foi.' }));
+    if (r.erro) { msg.textContent = r.erro; return; } await carregar(); abrirIdeia(up.dataset.fupload); return; }
+  const box = e.target.closest('[data-chave]');
+  if (!box) return;
+  const chave = box.dataset.chave;
+  if (e.target.dataset.passo) { if (await salvarConta({ chave, passo: e.target.dataset.passo, feito: e.target.checked })) e.target.closest('.passo').classList.toggle('feito', e.target.checked); }
+  else if (e.target.hasAttribute('data-arroba')) await salvarConta({ chave, arroba: e.target.value });
+});
+$('#modal').addEventListener('close', () => { const v = $('#modal video'); if (v) v.pause(); });
+addEventListener('hashchange', () => { const a = location.hash.slice(1); aba = ANTIGAS[a] || a; desenhar(); });
+let rs; addEventListener('resize', () => { clearTimeout(rs); rs = setTimeout(() => { if (aba === 'visao' && D) grafico($('#cxg')); }, 150); });
+carregar();
+// refresh every 60 s, never while he is typing, watching, or has a section or the video open
+setInterval(() => {
+  const ocupado = document.activeElement?.matches('input, textarea') || [...document.querySelectorAll('video')].some((v) => !v.paused) || document.querySelector('.rede details[open]') || $('#modal').open;
+  if (!ocupado && aba !== 'gravacoes') carregar();
+}, 60000);
+</script>
+</body>
+</html>

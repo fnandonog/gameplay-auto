@@ -18,6 +18,13 @@ export async function volumePorSegundo(video, stream) {
   try { return parseVolume(await run('ffmpeg', argsVolume(video, stream), { timeoutMs: 2 * 3600000 })); } catch { return []; }
 }
 
+// pure: share of the seconds where the mic track is dead silent (an OBS noise gate closed, a muted mic). Above ~0.5 the
+// cuts come out without the voice: the session gets a warning on the panel.
+export function micMudo(db = []) {
+  if (db.length < 30) return 0;
+  return +(db.filter((v) => v <= -89).length / db.length).toFixed(2);
+}
+
 // z-score of each second against the session (robust: median and MAD), ignoring silence
 export function zScores(db) {
   const vivos = db.filter((v) => v > -60).sort((a, b) => a - b);
@@ -95,6 +102,7 @@ export function mesclar(lista) {
       ult.end = Math.max(ult.end, c.end);
       if (c.nota > ult.nota) { ult.nota = c.nota; }
       ult.fixo = ult.fixo || c.fixo;
+      ult.radar ||= c.radar;
       if (!ult.motivo.includes(c.motivo)) ult.motivo += `; ${c.motivo}`;
     } else out.push({ ...c });
   }

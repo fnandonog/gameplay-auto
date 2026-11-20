@@ -112,3 +112,29 @@ test('entrega copia os aprovados para a pasta da skill e troca de formato no pai
   assert.deepEqual(s.cortes.map((x) => x.status), ['entregue', 'aguardando']);
   assert.equal(entregarAprovados(config, { log: () => {} }), 0);
 });
+
+import { focosDe, cropFoco, argsCorte as argsCorteFoco } from '../src/corte.js';
+
+test('enquadramento: minimapa quando fala dele, zoom rápido na reação', () => {
+  const p = [{ text: 'olha', start: 0.2, end: 0.5 }, { text: 'Bizarro!', start: 1.0, end: 1.5 }, { text: 'olha', start: 2.0, end: 2.3 }, { text: 'no', start: 6, end: 6.2 }, { text: 'minimapa', start: 6.2, end: 6.8 }, { text: 'caraca', start: 7, end: 7.4 }];
+  const f = focosDe(p, 12);
+  assert.deepEqual(f.map((x) => x.tipo), ['normal', 'zoom', 'normal', 'regiao', 'normal']);
+  assert.equal(f[0].de, 0); assert.equal(f.at(-1).ate, 12);
+  for (let i = 1; i < f.length; i++) assert.equal(f[i].de, f[i - 1].ate);
+  assert.equal(focosDe(p, 12, { reacoes: false, minimapa: null }).length, 1);
+  assert.match(cropFoco(f[3], 1), /^crop=\d+:\d+:\d+:\d+,$/);
+  const args = argsCorteFoco({ jogo: 'a.mp4', camera: 'a.mp4', start: 10, end: 22, ass: 'x.ass', out: 'o.mp4', formato: 'jogo', focos: f });
+  const fc = args[args.indexOf('-filter_complex') + 1];
+  assert.match(fc, /concat=n=5:v=1:a=0\[fg\]/);
+  assert.match(fc, /trim=start=5.8:end=9.2,setpts=PTS-STARTPTS,crop=\d+:\d+:\d+:\d+,/);
+});
+
+import { encolherSilencios } from '../src/corte.js';
+test('silêncio longo dentro do corte vira corte seco; palavras acompanham', () => {
+  const p = [0.2, 0.6, 1.0, 1.4, 5.0, 5.4].map((t, i) => ({ text: `p${i}`, start: t, end: t + 0.3 }));
+  const r = encolherSilencios(p, 8);
+  assert.equal(r.manter.length, 2);
+  assert.ok(r.dur < 8 - 2.5);
+  assert.ok(Math.abs(r.palavras[4].start - (r.palavras[3].end + 0.45)) < 0.01);
+  assert.equal(encolherSilencios(p.slice(0, 3), 8).manter.length, 1); // pouca fala: fica inteiro
+});

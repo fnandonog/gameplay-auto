@@ -16,7 +16,7 @@ test('arquivos separados usam três entradas; cena única usa split', () => {
   const sep = argsCorte({ jogo: '/g.mp4', camera: '/c.mp4', start: 10, end: 40, ass: '/x.ass', out: '/o.mp4' });
   assert.equal(sep.filter((a) => a === '-i').length, 3);
   const comCena = argsCorte({ jogo: '/g.mp4', camera: '/c.mp4', audio: '/s.mp4', start: 10, end: 40, ass: '/x.ass', out: '/o.mp4' }).join(' ');
-  assert.match(comCena, /\[2:a:0\]afade/);
+  assert.match(comCena, /\[2:a:0\]aresample=48000:async=1:first_pts=0\[asrc\].*\[asrc\]afade/);
   assert.match(comCena, /\[st\]\[3:v\]overlay/);
   assert.match(sep.join(' '), /\[1:v\]crop/);
   const cena = argsCorte({ jogo: '/s.mp4', camera: '/s.mp4', start: 10, end: 40, ass: '/x.ass', out: '/o.mp4', regiaoCamera: { x: 1440, y: 780, w: 480, h: 300 } });

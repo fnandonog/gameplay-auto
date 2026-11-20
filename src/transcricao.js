@@ -24,12 +24,48 @@ export function palavrasDoWhisper(json) {
   return out;
 }
 
+// Whisper invents credits in silence or music ("Legendado por Sônia", "Legendas pela comunidade Amara.org",
+// "Obrigado por assistir") and sometimes loops one phrase. Pure: drops those words before they reach captions.
+const ALUCINACOES = [
+  ['legendado', 'por'], ['legendada', 'por'], ['legendas', 'por'], ['legenda', 'por'], ['legendas', 'pela'], ['legendagem', 'por'],
+  ['transcricao', 'por'], ['traducao', 'por'], ['revisao', 'por'], ['subtitles', 'by'], ['subtitulos', 'por'], ['captions', 'by'],
+  ['amara', 'org'], ['amaraorg'], ['legendas', 'pela', 'comunidade'], ['pela', 'comunidade', 'amara'], ['obrigado', 'por', 'assistir'], ['obrigada', 'por', 'assistir'], ['inscreva', 'se', 'no', 'canal'],
+  ['ate', 'o', 'proximo', 'video'], ['e', 'isso', 'pessoal'],
+];
+const normPalavra = (t) => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').trim();
+export function removerAlucinacoes(words, { nomeDepois = 3, maxRepeticoes = 2 } = {}) {
+  const toks = [];
+  words.forEach((w, i) => { for (const t of normPalavra(w.text).split(/\s+/).filter(Boolean)) toks.push({ t, i }); });
+  const fora = new Set();
+  for (let k = 0; k < toks.length; k++) {
+    for (const f of ALUCINACOES) {
+      if (!f.every((x, j) => toks[k + j]?.t === x)) continue;
+      const credito = f.length === 2 && /^(por|pela|by)$/.test(f[1]);
+      const ate = k + f.length + (credito ? nomeDepois : 0);
+      for (let j = k; j < Math.min(ate, toks.length); j++) {
+        // after "legendado por" only a Name (capitalized) goes too
+        if (credito && j >= k + f.length && (!/^[A-ZÀ-Ý]/.test(String(words[toks[j].i].text).trim()) || words[toks[j].i].start - words[toks[j - 1].i].end > 1.5)) break;
+        fora.add(toks[j].i);
+      }
+    }
+  }
+  // a phrase of 2-6 words repeated more than maxRepeticoes times in a row is a loop: keep the first copies
+  const ws = words.map((w) => normPalavra(w.text));
+  for (let n = 2; n <= 6; n++) for (let k = 0; k + n * (maxRepeticoes + 1) <= ws.length; k++) {
+    const frase = ws.slice(k, k + n).join(' ');
+    let r = 1;
+    while (ws.slice(k + r * n, k + (r + 1) * n).join(' ') === frase) r++;
+    if (r > maxRepeticoes) for (let j = k + maxRepeticoes * n; j < k + r * n; j++) fora.add(j);
+  }
+  return words.filter((_, i) => !fora.has(i));
+}
+
 export async function transcrever(wav, { modelo, idioma = 'pt', threads = 8, bin = 'whisper-cli' } = {}) {
   if (!modelo || !fs.existsSync(modelo)) throw new Error(`Modelo do Whisper não encontrado: ${modelo || '(vazio)'}. Rode: sh tools/instalar-mac.sh`);
   const base = wav.replace(/\.wav$/, '');
-  await run(bin, ['-m', modelo, '-f', wav, '-l', idioma, '-t', String(threads), '-ml', '1', '-sow', '-oj', '-of', base], { timeoutMs: 4 * 3600000 });
+  await run(bin, ['-m', modelo, '-f', wav, '-l', idioma, '-t', String(threads), '-ml', '1', '-sow', '-mc', '0', '-oj', '-of', base], { timeoutMs: 4 * 3600000 });
   const json = JSON.parse(fs.readFileSync(`${base}.json`, 'utf8'));
-  return palavrasDoWhisper(json);
+  return removerAlucinacoes(palavrasDoWhisper(json));
 }
 
 // Words inside [start, end], with times relative to start (for the captions of one cut).

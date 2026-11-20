@@ -56,3 +56,52 @@ prontos/<linha>/<sessão>_<corte>/
 O `post.json` é escrito por último: se ele existe, a pasta está completa. O corte passa a "entregue" no painel. Com `postarAutomatico`, o filtro de qualidade aprova sozinho antes da entrega. O `gameplay observar` entrega a cada 5 minutos, e `gameplay postar` entrega na hora.
 
 Para a postagem ser feita aqui pelo Upload-Post, use `postagem: "upload-post"`.
+
+## Filtro de palavrão, adesivos e música (src/efeitos.js)
+
+- **Palavrão:** com `filtroPalavroes: 'pesado'` (padrão), palavrão pesado e ofensa levam bipe no som e aparecem como "C******" na legenda. `'todos'` pega também os leves (porra, merda, puto...); `false` desliga. Palavras a mais em `palavroesExtras`.
+- **Adesivos estilo GTA:** quando a fala cita polícia/fuga, aparecem 5 estrelas de procurado; quando cita dinheiro/compra/assalto, um "$$$" verde. No máximo 4 por corte, um a cada 6 s, nunca no gancho nem no fim. São desenhos vetoriais próprios, sem arte oficial do jogo. `efeitos.adesivos: false` desliga.
+- **Música de fundo:** coloque faixas livres de direitos (YouTube Audio Library ou Pixabay Music, sem atribuição obrigatória) em `~/Gameplay/musicas`. Cada corte pega uma, baixinha (`musica.volume` 0.12), e ela abaixa sozinha quando você fala. Pasta vazia = sem música.
+- **Áudio do jogo x microfone:** o OBS grava os dois misturados na faixa 1, então o equilíbrio se acerta no mixer do OBS antes de gravar.
+
+## Dinamismo (sem câmera)
+
+- **Título fixo**: o gancho fica em cima o vídeo todo (`estilo.ganchoSeg`; use `2.5` para só os primeiros segundos). A IA escreve como curiosidade ou pergunta ("DÁ ATÉ PRA...", "O JASON TEM O PODER DO FRANKLIN?").
+- **Corte seco nas pausas**: pausa na fala maior que 1,6 s vira 0,45 s (`cortarSilencio: { maxGap, fica }`; `false` desliga). Corte sem fala fica inteiro.
+- **Zoom com tremida e whoosh**: nas reações o jogo dá um zoom de 0,9 s com uma tremida leve, e cada mudança de enquadramento toca um whoosh (`efeitos.whoosh: false` desliga). Minimapa: veja `docs/ao-vivo.md`.
+- **Séries "Parte N"**: a IA diz se o corte é de uma série ("Coisas que dá pra fazer no GTA 6"); a plataforma numera (contadores em `<pastaSaida>/.series.json`), escreve "(Parte N)" no título e um selo amarelo "PARTE N" em cima do vídeo.
+- **Sem câmera**: `temCamera: false` (padrão até ligar a webcam) faz só os formatos de jogo.
+
+## Volume seguro
+
+Cada conta posta no máximo `limites` por dia (padrão: TikTok 4, Instagram 3, YouTube 4, Facebook 3), nos horários de pico da linha. O `post.json` leva `agendarPara` com o horário que a sua skill deve publicar. Acima disso as redes tratam como spam (alcance zero, "conteúdo não original", bloqueio de postagem). Para postar mais, crie mais contas (linhas), sem repetir o mesmo corte em duas contas.
+
+## Vídeo por missão (YouTube)
+
+Além do vídeo da sessão inteira, cada missão vira um vídeo longo (`src/missoes.js`): a IA olha um quadro a cada 6 s e marca onde a missão começa (nome ou "CAPÍTULO N" na tela, ligação, objetivo novo) e termina (missão concluída, última cena). O trecho é cortado sem recodificar (rápido), ganha thumbnail, título, descrição com capítulos e tags, e aparece na aba **Vídeo longo** e em **Aprovar cortes**. Missão com nudez ou violência explícita na tela vem com aviso. Aprovado, vai para `prontos/youtube-longo/`. `missoes: false` desliga; `{ "passo": 6, "minSeg": 150 }` ajusta. Precisa da IA.
+
+## TikTok pelo Chrome (extensão)
+
+O TikTok posta pela extensão **FNANDO: TikTok pelo Chrome** (pasta `extensao-tiktok/`), sem API do TikTok e sem serviço pago. A cada 2 minutos ela pergunta à central (`http://localhost:4322/api/tiktok-chrome/proximo`) se há corte de uma linha com TikTok já entregue em `prontos/`, com `agendarPara` vencido e ainda sem link do TikTok no `postado.json`. Quando há, abre o TikTok Studio numa janela própria, anexa o `video.mp4`, digita a legenda (título, descrição, crédito e hashtags, até 2.200 caracteres), clica em **Publicar** e conta o resultado. A central grava `links.tiktok` no `postado.json` (os links das outras redes ficam). Com o freio puxado (`.pausa.json`) ela não entrega nada.
+
+Para carregar (uma vez, no Chrome logado no TikTok @fnando.gameplay):
+
+1. Deixe o painel rodando (`npm run painel` ou `npm run observar`).
+2. Em `chrome://extensions`, ligue o **Modo do desenvolvedor**, clique em **Carregar sem compactação** e escolha a pasta `extensao-tiktok` deste projeto.
+3. Na central, aba **Contas** > cartão do TikTok > **Mostrar código** (só abre no próprio Mac). Copie.
+4. Clique no ícone da extensão, cole o código e **Salvar e conferir agora**.
+
+O código fica em `~/Gameplay/.tiktok-chrome-token` (fora do git). Apagar o arquivo e reiniciar o painel gera outro, e a extensão precisa do novo. Se parar antes de clicar em Publicar, tenta mais uma vez 15 minutos depois. Depois do clique, nunca manda de novo (para não postar duas vezes), e o erro fica em `.tiktok-chrome.json` na pasta do corte. Se o TikTok mudar a página do Studio, os seletores estão em `extensao-tiktok/studio.js`.
+
+## Postagem automática pelas APIs oficiais (Instagram, Página do Facebook, YouTube)
+
+Com `postadorLigado: true`, o painel (e o `observar`) roda o postador a cada 5 minutos (`src/postador.js`). Ele pega **um** post entregue em `prontos/` com `agendarPara` vencido e publica em **uma** rede que ainda falta: Instagram Reels e Reels da Página pela Graph API (o arquivo sobe direto do Mac, sem link público), e YouTube Shorts (e os vídeos longos e de missão) pela YouTube Data API. O TikTok continua pela extensão do Chrome. Os links vão para `postado.json` (`links` e `emRede`), sem apagar os das outras redes. Cada rede respeita o limite seguro por dia (`limites`). Post com `aviso` (nudez ou violência na tela) nunca sai sozinho, e trechos listados em `trechosBloqueados` nunca passam no filtro automático.
+
+Erro grave da plataforma (bloqueio, política, strike) puxa o freio (`.pausa.json`) para tudo. Token vencido para só aquela rede, até conectar de novo. Falha comum tenta de novo em 15 min, 1 h e 6 h, e para depois de 3 tentativas.
+
+Para conectar (uma vez, no próprio Mac, em http://localhost:4322/#contas):
+
+1. **Meta**: cole a chave secreta do app (developers.facebook.com > app FNexus Publicador > Configurações > Básico) e clique em **Conectar Instagram e Página**. Escolha a Página Fnando e o Instagram @fnando.gameplay.
+2. **YouTube**: cole a chave secreta do cliente OAuth do Google e clique em **Conectar YouTube**, com a conta fnando.gameplay@gmail.com.
+
+As chaves e os tokens ficam só em `~/Gameplay/.credenciais.json` (permissão 600, fora do git). Os ids das playlists do YouTube ficam em `config.json` > `youtube.playlists` (`shorts`, `curiosidades`, `dicas`, `missoes`). Cada Short entra em Shorts e em Dicas ou Curiosidades (pelo título e pelas hashtags), cada missão em Missões completas, e a sessão inteira em nenhuma.

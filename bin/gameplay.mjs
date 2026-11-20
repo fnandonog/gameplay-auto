@@ -8,6 +8,10 @@ import path from 'node:path';
 import { carregarConfig } from '../src/config.js';
 import { processarSessao } from '../src/sessao.js';
 import { observar } from '../src/observador.js';
+import { arquivoToken, garantirToken } from '../src/tiktokChrome.js';
+import { iniciarPostador } from '../src/postador.js';
+import { iniciarMetricas } from '../src/metricas.js';
+import { arquivoCredenciais, aplicarChaveIa } from '../src/credenciais.js';
 import { temFfmpeg } from '../src/run.js';
 import { criarPainel, enderecosLocais } from '../src/painel.js';
 import { postarAprovados } from '../src/postagem.js';
@@ -15,12 +19,14 @@ import { entregarAprovados } from '../src/entrega.js';
 import { gerarIntro } from '../src/intro.js';
 import { marcaDaLinha } from '../src/marca.js';
 import { linhasDe } from '../src/canais.js';
+import { limparTrabalhando } from '../src/atividade.js';
 
 const [cmd, ...resto] = process.argv.slice(2);
 const flags = new Set(resto.filter((a) => a.startsWith('--')));
 const args = resto.filter((a) => !a.startsWith('--'));
 const config = carregarConfig();
 if (flags.has('--sem-ia')) config.semIa = true;
+aplicarChaveIa(arquivoCredenciais(config)); // the AI key pasted in the central, when the shell has none
 
 if (!(await temFfmpeg())) { console.error('Falta o ffmpeg. No Mac: brew install ffmpeg'); process.exit(1); }
 
@@ -28,11 +34,16 @@ if (cmd === 'processar' && args[0]) {
   await processarSessao(path.resolve(args[0]), config);
 } else if (cmd === 'observar' || cmd === 'painel') {
   const porta = config.portaPainel || 4321;
+  limparTrabalhando(config.pastaSaida); // the office never shows a job from before this start as running
+  garantirToken(arquivoToken(config)); // the TikTok extension's code (shown in the Contas tab)
   criarPainel(config).listen(porta, '0.0.0.0', () => {
     console.log(`Painel: http://localhost:${porta}`);
     for (const u of enderecosLocais(porta)) console.log(`No celular (mesmo Wi-Fi): ${u}${config.senhaPainel ? '/?senha=...' : ''}`);
   });
   if (cmd === 'observar') observar(config);
+  // Instagram, Facebook Page and YouTube through the official APIs (TikTok goes through the Chrome extension)
+  iniciarPostador(config);
+  iniciarMetricas(config); // followers, subscribers and views from the official APIs, every 3 h
   // every 5 minutes, what was approved on the panel goes out: to the posting skill's folder, or to Upload-Post
   if (config.postagem === 'upload-post') {
     const postar = () => postarAprovados(config).catch((e) => console.log(`Postagem: ${e.message}`));

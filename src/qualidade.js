@@ -6,7 +6,7 @@ import path from 'node:path';
 export const PADRAO_FILTRO = { notaMinima: 8.5, duracaoMin: 12, duracaoMax: 75, errosParaPausar: 3 };
 
 // pure: why a cut may not go out on its own (empty list = it may)
-export function motivosRecusa(c, { config = {}, linha = null } = {}) {
+export function motivosRecusa(c, { config = {}, linha = null, sessao = null } = {}) {
   const f = { ...PADRAO_FILTRO, ...(config.filtro || {}) };
   if (config.notaMinima != null && config.filtro?.notaMinima == null) f.notaMinima = config.notaMinima;
   const m = [];
@@ -15,6 +15,17 @@ export function motivosRecusa(c, { config = {}, linha = null } = {}) {
   if (Number.isFinite(dur) && (dur < f.duracaoMin || dur > f.duracaoMax)) m.push(`duração ${Math.round(dur)} s fora de ${f.duracaoMin}–${f.duracaoMax} s`);
   if (!String(c.titulo || '').trim()) m.push('sem título');
   if (!String(c.gancho || '').trim()) m.push('sem gancho');
+  if (c.aviso) m.push(`aviso: ${c.aviso}`);
+  // a stretch the owner asked for by hand: he sees it before it goes out
+  if (c.obrigatorio) m.push('trecho pedido por você: confira antes de postar');
+  // made without the AI (generic title): the owner titles and approves it by hand
+  if (c.semIa || /^Não acredito no que aconteceu/.test(String(c.titulo || ''))) m.push('feito sem a IA: título genérico, aprove na mão');
+  // stretches of a recording that must never go out on their own (nudity, gore...): config.trechosBloqueados
+  for (const t of config.trechosBloqueados || []) {
+    if (t.sessao && sessao && t.sessao !== sessao) continue;
+    if (t.sessao && !sessao) continue;
+    if (Number(c.inicio) < Number(t.fim) && Number(c.fim) > Number(t.inicio)) m.push(`trecho bloqueado (${t.motivo || 'conteúdo sensível'})`);
+  }
   const terceiro = !!c.credito || !!linha?.terceiros;
   if (terceiro) {
     const fonte = (config.terceiros?.fontes || []).find((x) => x.streamer === c.credito?.streamer);

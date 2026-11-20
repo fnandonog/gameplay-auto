@@ -1,0 +1,263 @@
+// The poster: every few minutes, with config.postadorLigado, takes ONE delivered post whose agendarPara is due and posts it
+// on ONE network still missing (Instagram, Facebook Page, YouTube through the official APIs; TikTok goes through the Chrome
+// extension, src/tiktokChrome.js). One upload per round, never a burst, and never more per network per day than the safe
+// limits (src/canais.js). A post with a warning (aviso: nudity/gore on screen) never goes out on its own.
+// Results: postado.json { em, links: { rede: url }, emRede: { rede: iso } } (links of other networks are kept);
+// failures: .postador.json { rede: { tentativas, erro, proximaEm } } in the post folder. A platform pushing back (grave)
+// pulls the brake (.pausa.json) for everything; an expired token stops only that network until it is reconnected.
+import fs from 'node:fs';
+import path from 'node:path';
+import { LIMITES_SEGUROS, limitesDe, horariosDoDia } from './canais.js';
+import { proximoHorario } from './postagem.js';
+import { horariosDoLongo } from './entrega.js';
+import { lerPausa, pausar } from './qualidade.js';
+import { registrar } from './atividade.js';
+import { arquivoCredenciais, lerCredenciais, salvarCredenciais } from './credenciais.js';
+import { publicarInstagram, publicarFacebook, legendaMeta } from './postadores/meta.js';
+import { publicarYoutube, definirThumbYoutube } from './postadores/youtube.js';
+
+export const REDES_API = ['instagram', 'facebook', 'youtube'];
+export const MAX_TENTATIVAS = 3;
+const ESPERAS = [15 * 60000, 60 * 60000, 6 * 3600000];
+const ler = (f) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return null; } };
+const nome = (s) => s && !s.startsWith('.');
+
+// every delivered post with its state
+export function listarEntregues(base) {
+  const out = [];
+  let linhas = []; try { linhas = fs.readdirSync(base).filter(nome); } catch {}
+  for (const linha of linhas) {
+    let pastas = []; try { pastas = fs.readdirSync(path.join(base, linha)).filter(nome); } catch {}
+    for (const pasta of pastas) {
+      const dir = path.join(base, linha, pasta);
+      const post = ler(path.join(dir, 'post.json'));
+      const postado = ler(path.join(dir, 'postado.json')) || {};
+      // a fully posted cut whose video was cleaned (src/disco.js) stays listed for its links and numbers
+      if (!post || (!fs.existsSync(path.join(dir, 'video.mp4')) && !postado.limpoEm)) continue;
+      out.push({ id: `${linha}/${pasta}`, dir, post, postado, estado: ler(path.join(dir, '.postador.json')) || {}, ytChrome: ler(path.join(dir, '.youtube-chrome.json')) || null });
+    }
+  }
+  return out;
+}
+
+const dia = (t) => new Date(t).toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+// pure: how many posts each network already got today (São Paulo day)
+export function contagemHoje(posts, agora) {
+  const hoje = dia(agora), n = {};
+  for (const p of posts) for (const [rede, em] of Object.entries(p.postado.emRede || {})) if (em && dia(Date.parse(em)) === hoje) n[rede] = (n[rede] || 0) + 1;
+  return n;
+}
+
+// pure: the YouTube posts the API sends today: of the ones due today (or overdue) and not handed to the Chrome
+// extension, the best by nota (long videos and "Postar agora" first), as many as the quota still allows
+const CHROME_SEGURA_MS = 40 * 60000;
+export const comChrome = (p, agora) => !!(p.ytChrome && (p.ytChrome.postou || (p.ytChrome.em && agora - Date.parse(p.ytChrome.em) < CHROME_SEGURA_MS)));
+export const pesoYoutube = (post) => (post.postarJa ? 100 : 0) + (post.tipo === 'missao' || post.tipo === 'longo' || post.formato === 'horizontal' ? 50 : 0) + (Number(post.nota) || 0);
+export function selecaoApiYoutube(posts, agora, limite) {
+  const feitos = contagemHoje(posts, agora).youtube || 0;
+  const vagas = Math.max(0, limite - feitos);
+  return posts.filter((p) => (p.post.linha?.redes || []).includes('youtube') && !p.postado.links?.youtube && !p.post.aviso && !comChrome(p, agora)
+    && (p.estado.youtube?.tentativas || 0) < MAX_TENTATIVAS && (!p.post.agendarPara || dia(Date.parse(p.post.agendarPara)) <= dia(agora)))
+    .sort((a, b) => pesoYoutube(b.post) - pesoYoutube(a.post)).slice(0, vagas);
+}
+
+// pure: the next (post, network) to send, or null. conectadas = networks with working credentials.
+export function proximoEnvio(posts, { agora = Date.now(), conectadas = REDES_API, limites = {} } = {}) {
+  const lim = { ...LIMITES_SEGUROS, ...limites };
+  const feitos = contagemHoje(posts, agora);
+  const fila = posts
+    .filter((p) => !p.post.aviso && (!p.post.agendarPara || Date.parse(p.post.agendarPara) <= agora))
+    .sort((a, b) => (b.post.postarJa ? 1 : 0) - (a.post.postarJa ? 1 : 0) || String(a.post.agendarPara || a.post.criadoEm || '').localeCompare(String(b.post.agendarPara || b.post.criadoEm || '')));
+  // YouTube has a small daily quota: the API takes the best of the day; the rest goes by Chrome (src/youtubeChrome.js)
+  const melhoresYt = new Set(selecaoApiYoutube(posts, agora, lim.youtube ?? 3).map((p) => p.id));
+  for (const p of fila) {
+    for (const rede of (p.post.linha?.redes || []).filter((r) => REDES_API.includes(r) && conectadas.includes(r))) {
+      if (p.postado.links?.[rede]) continue;
+      if (rede === 'youtube' && !melhoresYt.has(p.id)) continue;
+      const e = p.estado[rede] || {};
+      if (e.tentativas >= MAX_TENTATIVAS || (e.proximaEm && Date.parse(e.proximaEm) > agora)) continue;
+      if ((feitos[rede] || 0) >= (lim[rede] ?? 3)) continue;
+      return { post: p, rede };
+    }
+  }
+  return null;
+}
+
+// pure: networks whose credentials are complete
+export function redesConectadas(c) {
+  const out = [];
+  const m = c.meta || {}, y = c.youtube || {};
+  if (m.appSecret && m.pageToken && m.igUserId && !m.erro) out.push('instagram');
+  if (m.appSecret && m.pageToken && m.pageId && !m.erro) out.push('facebook');
+  if (y.clientSecret && y.refreshToken && !y.erro) out.push('youtube');
+  return out;
+}
+
+export function gravarSucesso(dir, rede, link, agora = Date.now()) {
+  const f = path.join(dir, 'postado.json');
+  const antes = ler(f) || {};
+  const em = new Date(agora).toISOString();
+  const novo = { ...antes, em: antes.em || em, links: { ...(antes.links || {}), [rede]: link || 'publicado' }, emRede: { ...(antes.emRede || {}), [rede]: em } };
+  fs.writeFileSync(f, JSON.stringify(novo, null, 2));
+  return novo;
+}
+
+// pure: the video id inside a youtu.be / shorts / watch link
+export const idDoLinkYoutube = (l) => (String(l || '').match(/(?:youtu\.be\/|shorts\/|[?&]v=)([\w-]{11})/) || [])[1] || null;
+// posted YouTube videos without the custom cover yet (at most 3 tries each)
+export function thumbsPendentes(posts) {
+  return posts.map((p) => ({ p, videoId: idDoLinkYoutube(p.postado.links?.youtube) }))
+    .filter(({ p, videoId }) => videoId && !p.postado.thumbYoutube && (p.postado.thumbTentativas || 0) < 3 && fs.existsSync(path.join(p.dir, 'capa.jpg')));
+}
+export function marcarThumb(dir, r) {
+  const f = path.join(dir, 'postado.json');
+  const antes = ler(f) || {};
+  fs.writeFileSync(f, JSON.stringify({ ...antes, thumbYoutube: !!r.thumb, thumbTentativas: (antes.thumbTentativas || 0) + (r.thumb ? 0 : 1), thumbErro: r.thumb ? null : (r.thumbErro || null) }, null, 2));
+}
+
+export function gravarFalha(dir, rede, err, agora = Date.now()) {
+  const f = path.join(dir, '.postador.json');
+  const e = ler(f) || {};
+  const t = (e[rede]?.tentativas || 0) + 1;
+  const espera = err.adiar || ESPERAS[Math.min(t - 1, ESPERAS.length - 1)];
+  e[rede] = { tentativas: err.adiar ? (e[rede]?.tentativas || 0) : t, erro: String(err.message || err).slice(0, 300), em: new Date(agora).toISOString(), proximaEm: new Date(agora + espera).toISOString(), reconectar: !!err.reconectar };
+  fs.writeFileSync(f, JSON.stringify(e, null, 2));
+  return e[rede];
+}
+
+const PUBLICAR = {
+  instagram: (c, p) => publicarInstagram({ igUserId: c.meta.igUserId, token: c.meta.pageToken, arquivo: path.join(p.dir, 'video.mp4'), legenda: legendaMeta(p.post, 'instagram') }),
+  facebook: (c, p) => publicarFacebook({ pageId: c.meta.pageId, token: c.meta.pageToken, arquivo: path.join(p.dir, 'video.mp4'), legenda: legendaMeta(p.post, 'facebook') }),
+  youtube: (c, p, config) => publicarYoutube(c.youtube, { arquivo: path.join(p.dir, 'video.mp4'), post: p.post, playlists: config.youtube?.playlists || {}, capa: path.join(p.dir, 'capa.jpg') }),
+};
+
+// One round. Returns what it did (for the log and the tests).
+export async function rodadaPostador(config, { agora = Date.now(), publicar = PUBLICAR, log = console.log } = {}) {
+  if (!config.postadorLigado) return { feito: 'desligado' };
+  if (lerPausa(config.pastaSaida)) return { feito: 'pausado' };
+  const credFile = arquivoCredenciais(config);
+  const cred = lerCredenciais(credFile);
+  // config.youtubeApi false: YouTube goes only by the Chrome extension (the owner's choice while the quota is 6 a day)
+  const conectadas = redesConectadas(cred).filter((r) => r !== 'youtube' || config.youtubeApi !== false);
+  if (!conectadas.length) return { feito: 'sem redes conectadas' };
+  const posts = listarEntregues(config.pastaEntrega);
+  const prox = proximoEnvio(posts, { agora, conectadas, limites: limitesDe(config) });
+  if (!prox) {
+    // nothing due: put the cover on a YouTube video that went up without one (e.g. before the channel was verified)
+    if (conectadas.includes('youtube')) {
+      const sem = thumbsPendentes(posts)[0];
+      if (sem) {
+        const r = await definirThumbYoutube(cred.youtube, sem.videoId, path.join(sem.p.dir, 'capa.jpg')).catch((e) => ({ thumb: false, thumbErro: e.message }));
+        marcarThumb(sem.p.dir, r);
+        log(`Postador: capa do YouTube ${sem.videoId}: ${r.thumb ? 'ok' : r.thumbErro}`);
+        return { feito: r.thumb ? 'capa' : 'capa falhou', id: sem.p.id, erro: r.thumbErro };
+      }
+    }
+    return { feito: 'nada vencido' };
+  }
+  const { post: p, rede } = prox;
+  registrar(config.pastaSaida, 'agendador', 'trabalhando', `Postando "${p.post.titulo}" no ${rede}`);
+  try {
+    const r = await publicar[rede](cred, p, config);
+    gravarSucesso(p.dir, rede, r.link, agora);
+    if (rede === 'youtube') marcarThumb(p.dir, r);
+    if (rede === 'youtube' && r.travadoPrivado !== undefined) salvarCredenciais(credFile, 'youtube', { travadoPrivado: !!r.travadoPrivado });
+    registrar(config.pastaSaida, 'agendador', 'pronto', `Publicado no ${rede}: "${p.post.titulo}"${r.travadoPrivado ? ' (o YouTube travou como privado)' : ''}`);
+    log(`Postador: ${rede} ← ${p.id} ${r.link || ''}`);
+    return { feito: 'publicado', rede, id: p.id, link: r.link };
+  } catch (e) {
+    const st = gravarFalha(p.dir, rede, e, agora);
+    if (e.reconectar) salvarCredenciais(credFile, rede === 'youtube' ? 'youtube' : 'meta', { erro: e.message });
+    if (e.grave) pausar(config.pastaSaida, `${rede} recusou: ${e.message}`);
+    registrar(config.pastaSaida, 'agendador', 'erro', `${rede}: ${e.message}`);
+    log(`Postador: ${rede} falhou em ${p.id}: ${e.message}`);
+    return { feito: 'erro', rede, id: p.id, erro: e.message, grave: !!e.grave, estado: st };
+  }
+}
+
+// one round at a time in this process: the 5-minute timer and the owner's "Postar agora" share the same lock
+let rodando = false;
+
+// "Postar agora" on the central: this post jumps the queue now (still one upload at a time, still the daily limits,
+// still never a post with a warning). TikTok picks it up on the extension's next check.
+export async function postarAgora(config, id, { log = console.log, agora = Date.now() } = {}) {
+  const [linha, pasta] = String(id || '').split('/');
+  if (!nome(linha) || !nome(pasta) || linha !== path.basename(linha) || pasta !== path.basename(pasta)) throw new Error('Post inválido.');
+  const f = path.join(config.pastaEntrega, linha, pasta, 'post.json');
+  const post = ler(f);
+  if (!post) throw new Error('Post não encontrado.');
+  if (post.aviso) throw new Error(`Este post tem aviso (${post.aviso}) e não sai sozinho.`);
+  const novo = { ...post, agendadoAntes: post.agendadoAntes || post.agendarPara || null, agendarPara: new Date(agora).toISOString(), postarJa: true };
+  fs.writeFileSync(f, JSON.stringify(novo, null, 2));
+  registrar(config.pastaSaida, 'agendador', 'trabalhando', `Você mandou postar agora: "${post.titulo}"`);
+  const feitos = [];
+  if (!rodando) {
+    rodando = true;
+    try {
+      for (let i = 0; i < REDES_API.length; i++) {
+        const r = await rodadaPostador(config, { log });
+        feitos.push(r);
+        if (r.feito !== 'publicado' && r.feito !== 'erro') break;
+      }
+    } finally { rodando = false; }
+  }
+  return { agendarPara: novo.agendarPara, feitos };
+}
+
+export function iniciarPostador(config, { intervaloMin = 5, log = console.log } = {}) {
+  if (!config.postadorLigado) { log('Postador das APIs desligado (postadorLigado: false no config.json).'); return () => {}; }
+  const vez = async () => {
+    if (rodando) return;
+    rodando = true;
+    try { await rodadaPostador(config, { log }); } catch (e) { log(`Postador: ${e.message}`); } finally { rodando = false; }
+  };
+  log(`Postador das APIs ligado: um envio por vez, a cada ${intervaloMin} min, só no horário agendado.`);
+  vez();
+  const t = setInterval(vez, intervaloMin * 60000);
+  return () => clearInterval(t);
+}
+
+// "Despachar a fila": everything waiting goes out as soon as the daily limits allow. Today: from now to 23:30, evenly
+// spaced (at least 15 min apart per line, 60 min for long videos); the rest from tomorrow on the normal pace.
+// The current order is kept (series parts were already put in order). Posts with a warning are left alone.
+export function reagendarFila(config, { agora = Date.now(), fusoHoras = -3 } = {}) {
+  const lim = limitesDe(config);
+  const todos = listarEntregues(config.pastaEntrega);
+  const local = new Date(agora + fusoHoras * 3600000);
+  const fimHoje = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), 23, 30) - fusoHoras * 3600000;
+  const porLinha = new Map();
+  for (const p of todos) { const k = p.id.split('/')[0]; if (!porLinha.has(k)) porLinha.set(k, []); porLinha.get(k).push(p); }
+  const mudancas = [];
+  for (const [linhaId, posts] of porLinha) {
+    const fila = posts.filter((p) => !Object.keys(p.postado.links || {}).length && !p.post.aviso)
+      .sort((a, b) => String(a.post.agendarPara || 'z').localeCompare(String(b.post.agendarPara || 'z')));
+    if (!fila.length) continue;
+    const longo = linhaId === 'youtube-longo';
+    const redes = fila[0].post.linha?.redes || [];
+    const feitos = contagemHoje(posts, agora);
+    // YouTube does not hold the line back: what passes the API quota goes by the Chrome extension
+    const redesRitmo = redes.filter((r) => r !== 'youtube').length ? redes.filter((r) => r !== 'youtube') : redes;
+    const porDia = longo ? (Number(config.ritmo?.longosPorDia) || 3) : Math.min(...redesRitmo.map((r) => lim[r] ?? 3));
+    const jaHoje = Math.max(0, ...redesRitmo.map((r) => feitos[r] || 0));
+    const hoje = Math.max(0, Math.min(fila.length, porDia - jaHoje));
+    const inicio = agora + 5 * 60000;
+    const passo = hoje > 1 ? Math.max((longo ? 60 : 15) * 60000, (fimHoje - inicio) / (hoje - 1)) : 0;
+    const ocupados = [];
+    fila.forEach((p, i) => {
+      let quando;
+      const t = inicio + i * passo;
+      if (i < hoje && t <= fimHoje) quando = new Date(t).toISOString().replace(/\.\d{3}Z$/, 'Z');
+      else {
+        const horarios = longo ? horariosDoLongo(config, fila.length - i) : horariosDoDia(p.post.linha || {}, config, fila.length - i);
+        quando = proximoHorario(Math.max(agora, fimHoje + 60000), horarios, ocupados, { margemMin: 0 });
+      }
+      ocupados.push(quando);
+      if (quando !== p.post.agendarPara) {
+        fs.writeFileSync(path.join(p.dir, 'post.json'), JSON.stringify({ ...p.post, agendarPara: quando }, null, 2));
+        mudancas.push({ id: p.id, titulo: p.post.titulo, agendarPara: quando });
+      }
+    });
+  }
+  if (mudancas.length) registrar(config.pastaSaida, 'agendador', 'pronto', `Fila despachada: ${mudancas.length} post(s) com horário novo`);
+  return { mudancas };
+}

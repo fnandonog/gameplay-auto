@@ -12,10 +12,10 @@ export const ELENCO = [
   { id: 'roteirista', curto: 'Roteirista', nome: 'Roteirista IA', papel: 'Escolhe o corte exato, o gancho, o título e as hashtags', mesa: [3, 0], cor: '#a855f7', cabelo: '#2a1a3a', pele: '#8d5a3b' },
   { id: 'editor', curto: 'Editor', nome: 'Editor', papel: 'Monta o vertical: câmera em cima, jogo embaixo, legenda', mesa: [0, 1], cor: '#ff4f9a', cabelo: '#111111', pele: '#8d5a3b' },
   { id: 'montador', curto: 'Montador', nome: 'Montador do longo', papel: 'Monta o vídeo do YouTube com capítulos e thumbnail', mesa: [1, 1], cor: '#ef4444', cabelo: '#4a4a4a', pele: '#e8b48f' },
-  { id: 'revisor', curto: 'Você', nome: 'Você (aprovação)', papel: 'Aprova ou descarta no celular', mesa: [2, 1], cor: '#FFE600', cabelo: '#1b1b1b', pele: '#d9a47c', dono: true },
-  { id: 'agendador', curto: 'Agendador', nome: 'Agendador', papel: 'Agenda cada corte na linha certa (Upload-Post)', mesa: [3, 1], cor: '#22c55e', cabelo: '#3c2416', pele: '#c68a5e' },
+  { id: 'revisor', curto: 'Você', nome: 'Você (aprovação)', papel: 'Aprova ou descarta o que o filtro não aprovou sozinho', mesa: [2, 1], cor: '#FFE600', cabelo: '#1b1b1b', pele: '#d9a47c', dono: true },
+  { id: 'agendador', curto: 'Agendador', nome: 'Agendador', papel: 'Agenda e publica: Instagram, Facebook e YouTube pela API oficial, TikTok pela extensão', mesa: [3, 1], cor: '#22c55e', cabelo: '#3c2416', pele: '#c68a5e' },
   { id: 'clipador', curto: 'Clipador', nome: 'Clipador CLIPAÍ', papel: 'Corta lives de streamers que autorizaram por escrito', mesa: [0, 2], cor: '#00E0FF', cabelo: '#e2c26b', pele: '#f2cfb0' },
-  { id: 'analista', curto: 'Analista', nome: 'Analista', papel: 'Lê as métricas e diz o que reeditar (em breve)', mesa: [1, 2], cor: '#94a3b8', cabelo: '#7a1f1f', pele: '#f6d7bd' },
+  { id: 'analista', curto: 'Analista', nome: 'Analista', papel: 'Lê seguidores, inscritos e views das redes a cada 3 horas', mesa: [1, 2], cor: '#94a3b8', cabelo: '#7a1f1f', pele: '#f6d7bd' },
 ];
 
 export const ESTADOS = ['parado', 'trabalhando', 'pronto', 'esperando', 'erro'];
@@ -58,8 +58,8 @@ export function quadroEscritorio({ atividade, sessoes = [], linhas = [], agora =
     if (at.estado === 'trabalhando' && at.em && agora - Date.parse(at.em) > TRAVADO_MS) at = { ...at, estado: 'parado', texto: `${at.texto} (parou sem terminar)` };
     if (a.id === 'agendador' && pausa) at = { estado: 'erro', texto: `Pausado: ${pausa.motivo}`, em: pausa.em };
     if (a.id === 'revisor' && config.postarAutomatico) {
-      const n = cortes.filter((c) => c.descartadoPor === 'filtro').length;
-      at = { estado: 'pronto', texto: `Piloto automático: o filtro aprova sozinho${n ? ` (${n} corte(s) barrado(s))` : ''}` };
+      const n = cortes.filter((c) => c.barrado && c.status === 'aguardando').length;
+      at = { estado: 'pronto', texto: `Piloto automático: o filtro aprova sozinho${n ? ` (${n} corte(s) esperando você)` : ''}` };
     } else if (a.id === 'revisor') {
       const n = conta('aguardando');
       at = n ? { estado: 'esperando', texto: `${n} corte(s) esperando sua aprovação` } : { estado: 'pronto', texto: 'Nada para aprovar' };
@@ -68,7 +68,7 @@ export function quadroEscritorio({ atividade, sessoes = [], linhas = [], agora =
       const fontes = (config.terceiros?.fontes || []).filter((f) => f.permissao);
       at = { estado: 'parado', texto: fontes.length ? `${fontes.length} streamer(s) autorizado(s)` : 'Esperando a primeira permissão de streamer' };
     }
-    if (a.id === 'analista' && !at.em) at = { estado: 'parado', texto: 'Liga quando os canais tiverem os primeiros posts' };
+    if (a.id === 'analista' && !at.em) at = { estado: 'parado', texto: 'Ainda não leu os números das redes' };
     return { ...a, ...at };
   });
   const filas = linhas.map((l) => {
@@ -85,4 +85,12 @@ export function quadroEscritorio({ atividade, sessoes = [], linhas = [], agora =
     automatico: !!config.postarAutomatico,
     pausa,
   };
+}
+
+// on startup nothing is running yet: a "working" left by a process that was restarted becomes "parado"
+export function limparTrabalhando(pastaSaida, em = new Date().toISOString()) {
+  const a = lerAtividade(pastaSaida);
+  const presos = Object.entries(a.agentes || {}).filter(([, v]) => v?.estado === 'trabalhando').map(([k]) => k);
+  for (const id of presos) registrar(pastaSaida, id, 'parado', `${a.agentes[id].texto || 'Tarefa'} (interrompida quando a central reiniciou)`, em);
+  return presos;
 }
