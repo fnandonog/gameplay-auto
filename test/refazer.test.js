@@ -119,3 +119,11 @@ test('the music ducks under the voice track, not the whole mix', async () => {
   const semVoz = argsCorte(base).join(' ');
   assert.ok(semVoz.includes('[mu][a0s]sidechaincompress'));
 });
+
+test('webcam fixes: tighter frame up on the face and a light color fix', async () => {
+  const { filtroCamera } = await import('../src/corte.js');
+  assert.equal(filtroCamera({ camH: 960 }).includes('colorbalance'), false);
+  const f = filtroCamera({ camH: 960, ajuste: { zoom: 1.25, subir: 0.8, brilho: 0.05, gama: 1.15, verde: -0.08 } });
+  assert.ok(f.includes("crop='iw/1.25':'ih/1.25':'(iw-iw/1.25)/2':'(ih-ih/1.25)*0.20'"));
+  assert.ok(f.includes('colorbalance=gm=-0.080')); assert.ok(f.includes('eq=brightness=0.050:gamma=1.150'));
+});

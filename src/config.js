@@ -23,6 +23,8 @@ export const PADRAO = {
   zoomJogo: 1,
   fps: 60,
   regiaoCamera: null, // scene mode only: {x,y,w,h} of the camera inside the 1920x1080 scene
+  // webcam fixes in the edit (src/corte.js filtroCamera): zoom/subir frame the face, brilho/gama/verde fix a dim greenish picture
+  ajusteCamera: null,
   offsetCamera: 0, // seconds the camera file is ahead (+) or behind (-) the game file
   // cut formats (src/corte.js FORMATOS): meio (camera half / game half), camtopo (camera 40%), jogo (game square over the
   // blurred game), jogocheio (game fills the screen). Every cut is rendered in each one; formatoPadrao picks the one that

@@ -22,10 +22,21 @@ export function layoutDe(camPct = 0.4) {
 export const fp = (p) => String(p).replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'").replace(/,/g, '\\,');
 
 // crop of the camera: region {x,y,w,h} of the source (scene mode) then a centered crop to the box's aspect
-export function filtroCamera({ regiao, camH }) {
+// ajuste: { zoom (1 = whole frame; 1.2 = tighter on the face), subir (0..1: how far the tighter frame goes up, 0.5 =
+// centered; higher shows less of the chest, e.g. hides a mic arm), brilho (-0.2..0.2), gama (0.8..1.4), verde (-0.2..0.2:
+// negative takes the green cast off), saturacao } — light fixes for a dim webcam, kept subtle
+export function filtroCamera({ regiao, camH, ajuste = null }) {
   const pre = regiao ? `crop=${regiao.w}:${regiao.h}:${regiao.x}:${regiao.y},` : '';
   const ar = `${W}/${camH}`;
-  return `${pre}crop='min(iw,ih*${ar})':'min(ih,iw/(${ar}))',scale=${W}:${camH}:flags=lanczos,setsar=1`;
+  const a = ajuste || {};
+  const z = Math.min(2, Math.max(1, Number(a.zoom) || 1));
+  const subir = Math.min(1, Math.max(0, a.subir ?? 0.5));
+  const base = `crop='min(iw,ih*${ar})':'min(ih,iw/(${ar}))'`;
+  const aperto = z > 1 ? `,crop='iw/${z}':'ih/${z}':'(iw-iw/${z})/2':'(ih-ih/${z})*${(1 - subir).toFixed(2)}'` : '';
+  const cor = [];
+  if (a.verde) cor.push(`colorbalance=gm=${Number(a.verde).toFixed(3)}:gs=${(Number(a.verde) / 2).toFixed(3)}`);
+  if (a.brilho || a.gama || a.saturacao) cor.push(`eq=brightness=${Number(a.brilho || 0).toFixed(3)}:gamma=${Number(a.gama || 1).toFixed(3)}:saturation=${Number(a.saturacao || 1).toFixed(3)}`);
+  return `${pre}${base}${aperto},scale=${W}:${camH}:flags=lanczos,setsar=1${cor.length ? `,${cor.join(',')}` : ''}`;
 }
 
 // the game fills its box by height and is cropped in the center (zoom: >1 tighter on the action)
@@ -216,7 +227,7 @@ export function argsCorte(job) {
     jogoEnquadrado(vIn, H, 'st');
   } else {
     if (job.camera === job.jogo) g.push(`[${vIn}]split=2[src_c][src_g]`);
-    g.push(`[${job.camera === job.jogo ? 'src_c' : camIn}]${filtroCamera({ regiao: job.camera === job.jogo ? job.regiaoCamera : null, camH: L.camH })},fps=${fps}[cam]`,
+    g.push(`[${job.camera === job.jogo ? 'src_c' : camIn}]${filtroCamera({ regiao: job.camera === job.jogo ? job.regiaoCamera : null, camH: L.camH, ajuste: job.ajusteCamera })},fps=${fps}[cam]`,
       `[${job.camera === job.jogo ? 'src_g' : vIn}]${filtroJogo({ gameH: L.gameH, zoom: job.zoom })},fps=${fps}[game]`,
       '[cam][game]vstack=inputs=2[st]');
   }
@@ -298,7 +309,7 @@ export async function renderCorte({ jogo, camera, audio, faixaVoz = null, start,
   fs.writeFileSync(ass, assOf(cuesOf(palavras), { layout: L, style: config.estilo, hook: gancho, selo, hookSec: Math.min(ganchoSeg ?? config.estilo?.ganchoSeg ?? 2.5, dur), marca: marca?.arroba ? { ...marca, dur, arrobaPos: L.arrobaPos } : null, extras }));
   const logo = marca?.logo && fs.existsSync(marca.logo) ? marca.logo : null;
   const args = argsCorte({ jogo, camera: camera || jogo, audio: audio || jogo, start, end, ass, out, formato: L.formato, regiaoCamera: config.regiaoCamera, camPct: fmt === 'camtopo' ? config.camPct : undefined, zoom: config.zoomJogo, fps: config.fps, offsetCamera: config.offsetCamera, corBarra: marca?.corBarra || config.corBarra, logo,
-    focos, manter: enx.manter, sons, impactos: imp.map((m) => m.t), boom: config.efeitos?.boom === true, bips: filtro.bips, faixaVoz, musica: arqMusica ? { arquivo: arqMusica, volume: config.musica?.volume } : null, encoder: config.encoder || await melhorEncoder() });
+    focos, manter: enx.manter, sons, impactos: imp.map((m) => m.t), boom: config.efeitos?.boom === true, bips: filtro.bips, faixaVoz, ajusteCamera: config.ajusteCamera, musica: arqMusica ? { arquivo: arqMusica, volume: config.musica?.volume } : null, encoder: config.encoder || await melhorEncoder() });
   await run('ffmpeg', args, { timeoutMs: 30 * 60000 });
   // never hand out a cut whose sound and picture differ in length (it plays out of sync on the networks)
   const sin = await conferirSincronia(out);
