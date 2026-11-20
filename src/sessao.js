@@ -17,6 +17,8 @@ import { registrar } from './atividade.js';
 import { linhasDe, distribuirLinhas } from './canais.js';
 import { aplicarSeries } from './series.js';
 import { detectarMissoes, renderMissoes } from './missoes.js';
+import { alinharJogo } from './sincronia.js';
+import { pastasDeGravacao } from './disco.js';
 
 const VIDEO = /\.(mp4|mkv|mov)$/i;
 const tem = (nome, lista) => lista.some((p) => nome.toLowerCase().includes(p));
@@ -145,6 +147,18 @@ export async function processarSessao(principal, config, { log = console.log } =
 
   aplicarSeries(config.pastaSaida, decididos);
   at('roteirista', 'pronto', `${decididos.length} cortes escolhidos`);
+  // 4b. the Source Record game file can lose time under load: put it on the scene's clock before cutting from it
+  let jogoSincronizado = null, mapaJogo = null;
+  if (arq.jogo && arq.jogo !== arq.cena) {
+    try {
+      at('editor', 'trabalhando', 'Conferindo a sincronia do arquivo do jogo');
+      const r = await alinharJogo({ cena: arq.cena, jogo: arq.jogo, duracao, pastaDestino: pastasDeGravacao(config).gravacoes, config, log });
+      mapaJogo = r.mapa;
+      if (r.jogo !== arq.jogo) { jogoSincronizado = r.jogo; at('editor', 'pronto', 'Arquivo do jogo sincronizado com a cena'); }
+    } catch (e) { log(`Sincronia do jogo falhou: ${e.message}`); at('editor', 'erro', `Sincronia do jogo falhou: ${e.message}`); }
+  }
+  const jogoImg = jogoSincronizado || arq.jogo;
+
   // 5. render: each cut goes to its line first, so the video carries that line's @ and colors
   const linhas = linhasDe(config);
   const fila = decididos.map((c, i) => ({ c, i, corte: { nota: c.nota } }));
@@ -163,7 +177,7 @@ export async function processarSessao(principal, config, { log = console.log } =
     for (const fmt of formatos) {
       at('editor', 'trabalhando', `Corte ${i + 1}/${decididos.length} (${FORMATOS[fmt].nome}): ${c.titulo}`);
       const out = path.join(pasta, `${nome}-${fmt}.mp4`);
-      await renderCorte({ jogo: arq.jogo, camera: arq.camera, audio: arq.cena, faixaVoz: audios > faixaMic && faixaMic > 0 ? faixaMic : null, start: c.start, end: c.end, palavras, gancho: c.gancho, selo: c.parte ? `PARTE ${c.parte}` : '', out, formato: fmt, marca, config: c.obrigatorio ? { ...config, cortarSilencio: false } : config });
+      await renderCorte({ jogo: jogoImg, camera: arq.camera, audio: arq.cena, faixaVoz: audios > faixaMic && faixaMic > 0 ? faixaMic : null, start: c.start, end: c.end, palavras, gancho: c.gancho, selo: c.parte ? `PARTE ${c.parte}` : '', out, formato: fmt, marca, config: c.obrigatorio ? { ...config, cortarSilencio: false } : config });
       if (config.intro?.nosCortes) await comIntro(out, { orientacao: 'vertical', marca, config, log });
       variantes[fmt] = path.basename(out);
       // one cover per format, so switching the format on the panel switches the cover too
@@ -181,17 +195,17 @@ export async function processarSessao(principal, config, { log = console.log } =
   let longo = null;
   if (config.videoLongo !== false && duracao >= 120) {
     at('montador', 'trabalhando', 'Montando o vídeo do YouTube');
-    try { longo = await renderLongo({ cena: arq.cena, video: semRosto ? arq.jogo : null, words, duracao, momentos: decididos, pasta, config, remover: descartados, marca: marcaDaLinha(linhas.find((l) => !l.terceiros) || linhas[0], config), log }); at('montador', 'pronto', 'Vídeo longo pronto'); } catch (e) { log(`Vídeo longo falhou: ${e.message}`); at('montador', 'erro', `Vídeo longo falhou: ${e.message}`); }
+    try { longo = await renderLongo({ cena: arq.cena, video: semRosto ? jogoImg : null, words, duracao, momentos: decididos, pasta, config, remover: descartados, marca: marcaDaLinha(linhas.find((l) => !l.terceiros) || linhas[0], config), log }); at('montador', 'pronto', 'Vídeo longo pronto'); } catch (e) { log(`Vídeo longo falhou: ${e.message}`); at('montador', 'erro', `Vídeo longo falhou: ${e.message}`); }
   }
 
   // 7. one YouTube video per mission
   let missoes = [];
   if (achadas.length) {
-    try { missoes = await renderMissoes({ cena: arq.cena, video: semRosto ? arq.jogo : null, words, missoes: achadas, pasta, config, log }); }
+    try { missoes = await renderMissoes({ cena: arq.cena, video: semRosto ? jogoImg : null, words, missoes: achadas, pasta, config, log }); }
     catch (e) { log(`Missões falharam: ${e.message}`); }
   }
 
-  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, camera: arq.camera, duracao, ...(avisoMic ? { avisoMic, micMudo: mudo } : {}), faixaVoz: audios > faixaMic && faixaMic > 0 ? faixaMic : null, criadoEm: new Date().toISOString(), cortes, longo, missoes, descartados };
+  const manifesto = { sessao: arq.base, gravacao: arq.cena, jogo: arq.jogo, ...(jogoSincronizado ? { jogoSincronizado } : {}), ...(mapaJogo ? { mapaJogo } : {}), camera: arq.camera, duracao, ...(avisoMic ? { avisoMic, micMudo: mudo } : {}), faixaVoz: audios > faixaMic && faixaMic > 0 ? faixaMic : null, criadoEm: new Date().toISOString(), cortes, longo, missoes, descartados };
   fs.writeFileSync(path.join(pasta, 'sessao.json'), JSON.stringify(manifesto, null, 2));
   log(`Pronto: ${cortes.length} cortes em ${pasta}`);
   return { pasta, manifesto };

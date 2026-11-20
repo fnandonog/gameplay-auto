@@ -120,7 +120,7 @@ export function refazerCorte(config, { pasta, arquivo, edicao }, { render = rend
         const n = ((await probe(atual.gravacao).catch(() => ({}))).streams || []).filter((x) => x.codec_type === 'audio').length;
         if (n > config.faixaMic) faixaVoz = config.faixaMic;
       }
-      await render({ jogo: atual.jogo || atual.gravacao, camera: atual.camera || atual.gravacao, audio: atual.gravacao, faixaVoz, start: k.inicio, end: k.fim, palavras, gancho: k.gancho, selo: op.selo, out, formato: op.formato, marca: op.marca, config: cfg });
+      await render({ jogo: atual.jogoSincronizado || atual.jogo || atual.gravacao, camera: atual.camera || atual.gravacao, audio: atual.gravacao, faixaVoz, start: k.inicio, end: k.fim, palavras, gancho: k.gancho, selo: op.selo, out, formato: op.formato, marca: op.marca, config: cfg });
       await fazerCapa(out, out.replace(/\.mp4$/, '.jpg'), Math.min(k.fim - k.inicio - 0.5, (k.fim - k.inicio) * 0.4)).catch(() => null);
       k.versoes = [...(k.versoes || []), { arquivo: k.arquivo, formato: k.formato, em: new Date().toISOString() }];
       k.variantes = { ...(k.variantes || {}), [op.formato]: nome };
