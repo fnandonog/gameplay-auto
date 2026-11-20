@@ -54,6 +54,22 @@ test('redo renders a new file with the edit and puts the cut back in review', as
   assert.equal(s.refazendo, undefined); assert.equal(s.ajustes[0].feito, true); assert.equal(s.versoes[0].arquivo, '01-pia-meio.mp4');
 });
 
+test('a queued redo whose cut vanished from the session logs it and never crashes the queue', async () => {
+  const base = sessao();
+  const file = path.join(base, 's1', 'sessao.json');
+  let solta;
+  const trava = new Promise((r) => { solta = r; });
+  const render = async (j) => { await trava; fs.writeFileSync(j.out, 'x'); };
+  const config = { pastaSaida: base, linhas: [{ id: 'fnando' }] };
+  const logs = [];
+  const r = refazerCorte(config, { pasta: 's1', arquivo: '01-pia-meio.mp4', edicao: {} }, { render, fazerCapa: async () => null, log: (m) => logs.push(m) });
+  // the session is rewritten before the job starts, without this cut
+  const j = JSON.parse(fs.readFileSync(file, 'utf8')); j.cortes = []; fs.writeFileSync(file, JSON.stringify(j));
+  solta();
+  await r.fila;
+  assert.match(logs.join(' '), /não encontrado/);
+});
+
 test('a session without a camera cannot be redone with the camera', () => {
   const base = sessao();
   assert.throws(() => refazerCorte({ pastaSaida: base }, { pasta: 's1', arquivo: '01-pia-meio.mp4', edicao: { formato: 'meio' } }), /não tem câmera/);

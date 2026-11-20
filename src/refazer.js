@@ -59,7 +59,9 @@ function avisoNoPronto(d, ligar) {
   fs.writeFileSync(f, JSON.stringify(post, null, 2));
 }
 
-const acharCorte = (s, arquivo) => s.cortes.find((x) => x.arquivo === arquivo || Object.values(x.variantes || {}).includes(arquivo));
+// also by an older version's name: a redo queued before another one finished still finds its cut
+const acharCorte = (s, arquivo) => s.cortes.find((x) => x.arquivo === arquivo || Object.values(x.variantes || {}).includes(arquivo))
+  || s.cortes.find((x) => (x.versoes || []).some((v) => v.arquivo === arquivo));
 
 // writes the owner's note; status 'ajuste' keeps it out of posting until it is redone or approved
 export function pedirAjuste(pastaSaida, { pasta, arquivo, texto }, agora = new Date().toISOString()) {
@@ -97,6 +99,12 @@ export function refazerCorte(config, { pasta, arquivo, edicao }, { render = rend
   const tarefa = async () => {
     const atual = JSON.parse(fs.readFileSync(file, 'utf8'));
     const k = acharCorte(atual, arquivo);
+    // the cut is gone from the session (renamed or rewritten meanwhile): log it, never take the server down
+    if (!k) {
+      log(`Refazer: corte ${arquivo} não encontrado na sessão.`);
+      registrar(config.pastaSaida, 'editor', 'erro', `Refazer: corte não encontrado (${arquivo})`);
+      return;
+    }
     try {
       let words = [];
       try { words = JSON.parse(fs.readFileSync(path.join(dir, 'transcricao.json'), 'utf8')); } catch {}
@@ -139,6 +147,7 @@ export function refazerCorte(config, { pasta, arquivo, edicao }, { render = rend
       fs.writeFileSync(file, JSON.stringify(atual, null, 2));
     }
   };
-  fila = fila.then(tarefa, tarefa);
+  const segura = () => tarefa().catch((e) => log(`Refazer falhou: ${e.message || e}`)); // the queue never rejects
+  fila = fila.then(segura, segura);
   return { ok: true, refazendo: true, fila };
 }
