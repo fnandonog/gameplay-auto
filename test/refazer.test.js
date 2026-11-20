@@ -169,3 +169,11 @@ test('jump cuts also trim a separate camera file, so the captions stay in sync',
   const a = argsCorte({ jogo: 'j.mp4', camera: 'c.mp4', audio: 'cena.mp4', start: 0, end: 10, ass: 'a.ass', out: 'o.mp4', formato: 'meio', manter: [[0, 3], [4, 10]] }).join(' ');
   assert.ok(a.includes('[1:v]split=2')); assert.ok(a.includes('concat=n=2:v=1:a=0[cm]')); assert.ok(a.includes('[cm]'));
 });
+
+test('a dead start cut off (one piece) is applied to picture and sound too', async () => {
+  const { argsCorte } = await import('../src/corte.js');
+  const a = argsCorte({ jogo: 'j.mp4', camera: 'c.mp4', audio: 'cena.mp4', start: 0, end: 27.8, ass: 'a.ass', out: 'o.mp4', formato: 'meio', manter: [[11.76, 27.8]] }).join(' ');
+  assert.ok(a.includes('trim=start=11.76:end=27.8')); assert.ok(a.includes('[cm]'));
+  const inteiro = argsCorte({ jogo: 'j.mp4', camera: 'c.mp4', audio: 'cena.mp4', start: 0, end: 10, ass: 'a.ass', out: 'o.mp4', formato: 'meio', manter: [[0, 10]] }).join(' ');
+  assert.ok(!inteiro.includes('[cm]'));
+});

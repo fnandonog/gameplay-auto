@@ -195,7 +195,8 @@ export function argsCorte(job) {
   const mesmo = semCam || job.camera === job.jogo;
   // jump cuts (encolherSilencios): only when the picture comes from one file
   // jump cuts: the same trims go to the game, the sound and (separate file) the camera, so the captions stay in sync
-  const manter = Array.isArray(job.manter) && job.manter.length > 1 ? job.manter : null;
+  // (one piece counts too: a dead start cut off leaves a single piece that does not begin at 0)
+  const manter = Array.isArray(job.manter) && job.manter.length >= 1 && (job.manter.length > 1 || job.manter[0][0] > 0.01 || job.manter[0][1] < durFonte - 0.01) ? job.manter : null;
   const dur = manter ? +manter.reduce((n, [a, b]) => n + b - a, 0).toFixed(3) : durFonte;
   const args = ['-hide_banner', '-loglevel', 'error', '-y',
     '-ss', String(job.start), '-t', String(durFonte), '-i', job.jogo];
@@ -359,6 +360,8 @@ export async function renderCorte({ jogo, camera, audio, faixaVoz = null, start,
   // never hand out a cut whose sound and picture differ in length (it plays out of sync on the networks)
   const sin = await conferirSincronia(out);
   if (!sin.ok) throw new Error(`som e imagem com tamanhos diferentes (vídeo ${sin.video}s, áudio ${sin.audio}s): corte não entregue`);
+  // the captions were timed for `dur` (after the jump cuts): a video of another length means they would drift
+  if (Number.isFinite(sin.video) && Math.abs(sin.video - dur) > 0.3) throw new Error(`legenda fora de sincronia (legenda ${dur}s, vídeo ${sin.video}s): corte não entregue`);
   return out;
 }
 

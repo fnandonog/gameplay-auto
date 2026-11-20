@@ -75,6 +75,13 @@ export function observar(config, { estavelSeg = config.aoVivo?.ligado ? 15 : 90,
         await processarSessao(principal, configDoArquivo(f, config), { log });
         registrar(config.pastaSaida, 'vigia', 'esperando', `${f} processada. De olho na pasta do OBS`);
         for (const p of new Set([arq.cena, arq.jogo, arq.camera])) moverGravacao(p, path.join(processados, path.basename(p)));
+        // the session must still find its recording (redoing a cut reads it)
+        const man = path.join(config.pastaSaida, pastaDaGravacao(f), 'sessao.json');
+        try {
+          const j = JSON.parse(fs.readFileSync(man, 'utf8'));
+          for (const k of ['gravacao', 'jogo', 'camera']) if (j[k]) j[k] = path.join(processados, path.basename(j[k]));
+          fs.writeFileSync(man, JSON.stringify(j, null, 2));
+        } catch {}
       } catch (e) {
         falhas.add(f);
         log(`Falhou ${f}: ${e.message}`);
