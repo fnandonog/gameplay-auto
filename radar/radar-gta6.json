@@ -1,7 +1,7 @@
 {
   "versao": 1,
   "jogo": "GTA 6",
-  "atualizado_em": "2026-11-20T13:30:00Z",
+  "atualizado_em": "2026-11-21T13:30:00Z",
   "como_usar": "Cada item é um momento/curiosidade que viralizou fora do Brasil. A central cruza 'palavras_chave' com a transcrição (whisper) e os marcadores das gravações; se bater, o trecho vira corte com prioridade alta e usa 'titulo_short' e 'gancho'. Itens com coberto_no_br=true perdem prioridade.",
   "itens": [
     {
@@ -713,6 +713,111 @@
       "local": {
         "regiao": "Belville",
         "referencia": "Casa em Belville igual à foto do San Andreas DE",
+        "imagens": []
+      }
+    },
+    {
+      "id": "gta6-botijao-cofre",
+      "tipo": "dica",
+      "titulo": "Abrir cofre com botijão de gás",
+      "o_que_e": "Coloque um botijão de propano do lado do cofre e atire nele de longe: a explosão abre o cofre.",
+      "como_achar": "Qualquer cofre durante um assalto.",
+      "palavras_chave": [
+        "botijão de gás",
+        "botijão do lado do cofre",
+        "explodir o cofre",
+        "abrir o cofre",
+        "propano",
+        "propane tank"
+      ],
+      "titulo_short": "O jeito mais INSANO de abrir cofre no GTA 6",
+      "gancho": "O tiro no botijão e a explosão",
+      "fonte": "https://journalarta.com/en/2026/11/20/gta-6-hidden-sniper-rifle-casino/",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-21",
+      "prioridade": 2,
+      "por_que_viraliza": "Truque criativo e explosivo que funciona: satisfatório de ver.",
+      "fontes": [
+        {
+          "url": "https://journalarta.com/en/2026/11/20/gta-6-hidden-sniper-rifle-casino/",
+          "titulo": "Abrir cofre com botijão de gás",
+          "plataforma": "JournalArta",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida",
+        "referencia": "Qualquer cofre em assalto",
+        "imagens": []
+      }
+    },
+    {
+      "id": "gta6-viatura-trooper",
+      "tipo": "dica",
+      "titulo": "Roubar a viatura da policial rodoviária",
+      "o_que_e": "Quando uma policial está parando alguém e te vê num carro roubado, ela sai correndo atrás de você e dá para pegar a viatura dela (Bravado Buffalo).",
+      "como_achar": "Aproxime-se com carro roubado de uma blitz da polícia rodoviária.",
+      "palavras_chave": [
+        "viatura da polícia",
+        "roubar a viatura",
+        "policial rodoviária",
+        "blitz",
+        "state trooper"
+      ],
+      "titulo_short": "Roubei a viatura da POLÍCIA no GTA 6",
+      "gancho": "A policial correndo e o personagem entrando na viatura",
+      "fonte": "https://www.noobfeed.com/articles/10-hidden-gta-6-features-first-hours",
+      "confirmado": false,
+      "coberto_no_br": true,
+      "encontrado_em": "2026-11-21",
+      "prioridade": 3,
+      "por_que_viraliza": "Inverter o jogo com a polícia sempre rende clipe.",
+      "fontes": [
+        {
+          "url": "https://www.noobfeed.com/articles/10-hidden-gta-6-features-first-hours",
+          "titulo": "Roubar a viatura da policial rodoviária",
+          "plataforma": "NoobFeed",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida",
+        "referencia": "Blitz da polícia rodoviária em rodovia",
+        "imagens": []
+      }
+    },
+    {
+      "id": "gta6-sniper-cassino",
+      "tipo": "arma",
+      "titulo": "Sniper escondido no teto de um cassino",
+      "o_que_e": "Um fuzil de precisão escondido no telhado de um cassino.",
+      "como_achar": "Telhado de um cassino em Leonida. O nome do cassino não foi publicado.",
+      "palavras_chave": [
+        "teto do cassino",
+        "telhado do cassino",
+        "sniper escondido",
+        "cassino"
+      ],
+      "titulo_short": "Tem um SNIPER escondido no teto do cassino",
+      "gancho": "Subindo no telhado e a arma brilhando",
+      "fonte": "https://journalarta.com/en/2026/11/20/gta-6-hidden-sniper-rifle-casino/",
+      "confirmado": false,
+      "coberto_no_br": false,
+      "encontrado_em": "2026-11-21",
+      "prioridade": 3,
+      "por_que_viraliza": "Arma escondida em lugar improvável.",
+      "fontes": [
+        {
+          "url": "https://journalarta.com/en/2026/11/20/gta-6-hidden-sniper-rifle-casino/",
+          "titulo": "Sniper escondido no teto de um cassino",
+          "plataforma": "JournalArta",
+          "views": null
+        }
+      ],
+      "local": {
+        "regiao": "Leonida",
+        "referencia": "Telhado de um cassino (qual não foi informado)",
         "imagens": []
       }
     }
