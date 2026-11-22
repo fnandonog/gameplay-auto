@@ -1,7 +1,7 @@
 {
   "versao": 1,
   "jogo": "GTA 6",
-  "atualizado_em": "2026-11-21T13:30:00Z",
+  "atualizado_em": "2026-11-22T13:30:00Z",
   "como_usar": "Cada item é um momento/curiosidade que viralizou fora do Brasil. A central cruza 'palavras_chave' com a transcrição (whisper) e os marcadores das gravações; se bater, o trecho vira corte com prioridade alta e usa 'titulo_short' e 'gancho'. Itens com coberto_no_br=true perdem prioridade.",
   "itens": [
     {
@@ -609,9 +609,9 @@
     {
       "id": "gta6-pe-grande",
       "tipo": "easter_egg",
-      "titulo": "Pé Grande comendo um cervo",
+      "titulo": "Pé Grande (Mister Mangrove / Skunk Ape)",
       "o_que_e": "O Pé Grande aparece comendo a carcaça de um cervo num cruzamento de terra. Se você seguir ele até o mato, acha um boneco estranho amarrado numa árvore, desmaia e acorda de volta no cruzamento.",
-      "como_achar": "Num cruzamento de estrada de terra em Leonida, com mata em volta. O local exato não foi publicado, e vários jogadores já postaram clipes.",
+      "como_achar": "Pântanos de Leonida. Guias citam a região de Cottonmouth Lake. Vira uma série de missões de mistério com um investigador de criaturas, e dizem que a recompensa é um sniper.",
       "palavras_chave": [
         "pé grande",
         "pe grande",
@@ -619,15 +619,19 @@
         "cervo",
         "boneco na árvore",
         "desmaiei",
-        "estrada de terra"
+        "estrada de terra",
+        "mister mangrove",
+        "skunk ape",
+        "cottonmouth lake",
+        "pântano"
       ],
       "titulo_short": "O PÉ GRANDE existe no GTA 6",
       "gancho": "Silhueta peluda comendo o cervo na estrada",
       "fonte": "https://www.gamesradar.com/games/grand-theft-auto/gta-6-bigfoot-sightings-are-already-ramping-up-as-rockstar-honors-a-22-year-old-grand-theft-auto-legend/",
       "confirmado": false,
-      "coberto_no_br": false,
+      "coberto_no_br": true,
       "encontrado_em": "2026-11-19",
-      "prioridade": 1,
+      "prioridade": 3,
       "por_que_viraliza": "Lenda clássica do GTA confirmada por clipes de jogadores, com final assustador.",
       "fontes": [
         {
@@ -635,11 +639,23 @@
           "titulo": "Pé Grande comendo um cervo",
           "plataforma": "GamesRadar",
           "views": null
+        },
+        {
+          "url": "https://www.dreadcentral.com/news/598338/gta-vi-has-a-full-blown-bigfoot-horror-mystery-hidden-in-its-swamps/",
+          "titulo": "Bigfoot horror mystery",
+          "plataforma": "Dread Central",
+          "views": null
+        },
+        {
+          "url": "https://www.playnews.gg/guides/bigfoot-gta-6-ou-trouver-le-skunk-ape-a-cottonmouth-lake",
+          "titulo": "Skunk Ape à Cottonmouth Lake",
+          "plataforma": "PlayNews",
+          "views": null
         }
       ],
       "local": {
         "regiao": "Leonida (interior)",
-        "referencia": "Cruzamento de estrada de terra cercado de mata",
+        "referencia": "Pântanos, região de Cottonmouth Lake (segundo playnews.gg)",
         "imagens": []
       }
     },
