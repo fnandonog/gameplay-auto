@@ -1,7 +1,7 @@
 {
   "versao": 1,
   "jogo": "GTA 6",
-  "atualizado_em": "2026-11-22T13:30:00Z",
+  "atualizado_em": "2026-11-23T13:30:00Z",
   "como_usar": "Cada item é um momento/curiosidade que viralizou fora do Brasil. A central cruza 'palavras_chave' com a transcrição (whisper) e os marcadores das gravações; se bater, o trecho vira corte com prioridade alta e usa 'titulo_short' e 'gancho'. Itens com coberto_no_br=true perdem prioridade.",
   "itens": [
     {
@@ -588,15 +588,21 @@
       "gancho": "Luz azul no céu, no meio do mato à noite",
       "fonte": "https://www.powerpyx.com/gta-6-ufo-aliens-easter-egg-location",
       "confirmado": false,
-      "coberto_no_br": false,
+      "coberto_no_br": true,
       "encontrado_em": "2026-11-19",
-      "prioridade": 1,
+      "prioridade": 2,
       "por_que_viraliza": "Mistério e alienígena é tradição do GTA e ainda dá troféu: todo mundo vai querer ver.",
       "fontes": [
         {
           "url": "https://www.powerpyx.com/gta-6-ufo-aliens-easter-egg-location",
           "titulo": "OVNI que dá troféu secreto",
           "plataforma": "PowerPyx",
+          "views": null
+        },
+        {
+          "url": "https://www.omelete.com.br/gta-6/gta-6-jogadores-ja-encontraram-alienigenas-e-pe-grande",
+          "titulo": "Jogadores já encontraram alienígenas e Pé-Grande",
+          "plataforma": "Omelete (BR)",
           "views": null
         }
       ],
